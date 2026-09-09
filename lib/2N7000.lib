@@ -1,0 +1,6 @@
+* 2N7000 N-channel enhancement MOSFET, TO-92.
+* VDMOS level model (LTspice/ngspice compatible). Typical part: Vto=2.0 (datasheet 0.8..3.0 V).
+* Corner models 2N7000_LO (Vto=0.8) and 2N7000_HI (Vto=3.0) for worst-case logic checks.
+.model 2N7000    VDMOS(Rg=3 Vto=2.0 Rd=0.2 Rs=0.1 Rb=0.1 Kp=0.13 Lambda=0.02 Cgdmax=30p Cgdmin=5p Cgs=25p Cjo=30p Is=2p ksubthres=0.1)
+.model 2N7000_LO VDMOS(Rg=3 Vto=0.8 Rd=0.2 Rs=0.1 Rb=0.1 Kp=0.13 Lambda=0.02 Cgdmax=30p Cgdmin=5p Cgs=25p Cjo=30p Is=2p ksubthres=0.1)
+.model 2N7000_HI VDMOS(Rg=3 Vto=3.0 Rd=0.2 Rs=0.1 Rb=0.1 Kp=0.13 Lambda=0.02 Cgdmax=30p Cgdmin=5p Cgs=25p Cjo=30p Is=2p ksubthres=0.1)

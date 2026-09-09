@@ -33,15 +33,23 @@ part, and both of those are comfortably between the two output levels.
 
 ## Numbers to confirm on the coupon
 
+Simulated with the VDMOS 2N7000 model in `lib/2N7000.lib` (`sim/out/cell.cir`), 47k pull-up, 5 V.
+
 | Quantity | Simulated | Measured |
 |---|---|---|
-| Rise time, 1 load | | |
-| Rise time, 10 loads | | |
-| Fall time | | |
-| Output low with 1 transistor | | |
-| Output low with 3 in series | | |
-| Ring oscillator frequency, 5 inverters | | |
-| Supply current, all outputs low | | |
+| Delay low-to-high, 1 load | 4 µs | |
+| Delay low-to-high, 10 loads | 28 µs | |
+| 10 %–90 % rise, 10 loads | 68 µs | |
+| Delay high-to-low | 5 ns | |
+| Output low, 1 transistor | under 1 mV | |
+| Output low, 3 in series | 1 mV | |
+| Ring oscillator, 5 inverters | 12 µs period (80 kHz) | |
+| Supply current per gate that is on | 0.1 mA | |
+
+With 22k the delays halve and the current doubles; with 100k the reverse. 47k
+is the default; the generator can pick 22k or 10k for a heavily loaded net.
+Board 01 settles in 73 µs worst case (slow threshold corner), so a clock of a
+few hundred hertz is safe and a few hertz is watchable.
 
 ## Rules the generator enforces
 

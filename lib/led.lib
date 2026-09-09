@@ -1,0 +1,2 @@
+* Generic red 3 mm indicator LED for simulation (Vf about 1.9 V at 3 mA)
+.model LEDRED D(Is=1e-18 Rs=3 N=1.8 Cjo=20p)

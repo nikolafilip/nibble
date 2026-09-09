@@ -1,0 +1,11 @@
+{
+ "tag": "kicad_exhaustive_TYP",
+ "corner": "TYP",
+ "cases": 512,
+ "fails": [],
+ "worst": {
+  "high": 4.99999868,
+  "low": 0.000304687984064,
+  "settle": 4.3869000000001934e-05
+ }
+}

@@ -1,0 +1,11 @@
+{
+ "tag": "kicad_exhaustive_HI",
+ "corner": "HI",
+ "cases": 512,
+ "fails": [],
+ "worst": {
+  "high": 4.99999868,
+  "low": 0.000441086632192,
+  "settle": 7.28499999999993e-05
+ }
+}

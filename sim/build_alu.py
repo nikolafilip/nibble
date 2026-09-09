@@ -5,32 +5,14 @@ G=ksch.G
 OUT=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','boards','01-alu')
 PROJECT='alu'
 
+import frame
 def board_frame(w,used):
     """Bus header, decoupling, mounting holes. `used` = set of signals this board connects."""
     x,y=30*G,40*G
-    w.header(x,y)
-    for pin,sig in bus.PINS.items():
-        odd=pin%2==1; px=x-2*G if odd else x+3*G; py=y-12*G+((pin-1)//2)*G
-        if sig in ('+5V','GND'):
-            ex=px-3*G if odd else px+3*G
-            w.W(px,py,ex,py); w.PW(sig,ex,py)
-        elif sig in used:
-            ex=px-4*G if odd else px+4*G
-            w.W(px,py,ex,py); w.L(sig,ex,py,180 if odd else 0,'bidirectional' if sig.startswith('BUS') else 'input')
-        else:
-            w.body+=f'\t(no_connect\n\t\t(at {ksch.f(px)} {ksch.f(py)})\n\t\t(uuid "{ksch.U()}")\n\t)\n'
-    # decoupling
-    cx=x+16*G; cy=y-8*G
-    for k,(val,pol) in enumerate([('100n',False),('10u',True)]):
-        xx=cx+k*6*G
-        w.PW('+5V',xx,cy-2.5*G); w.W(xx,cy-2.5*G,xx,cy-1.5*G); w.C(val,xx,cy,pol); w.W(xx,cy+1.5*G,xx,cy+2.5*G); w.PW('GND',xx,cy+2.5*G)
-    w.T("Decoupling at the header",cx-2*G,cy-4*G,1.27)
-    # power flags: the supply enters through the header
-    fx=cx-8*G
-    w.PW('+5V',fx,cy-2.5*G); w.W(fx,cy-2.5*G,fx,cy-1.5*G); w.pwr_flag(fx,cy-1.5*G)
-    w.PW('GND',fx,cy+2.5*G); w.W(fx,cy+2.5*G,fx,cy+1.5*G); w.pwr_flag(fx,cy+1.5*G)
-    for k in range(4): w.hole(cx+30*G+k*5*G,cy)
-    w.T("Mounting holes",cx+28*G,cy-4*G,1.27)
+    j=frame.bus_header(w,x,y,used); w.at(j,26,8,90); w.label("BUS  (pin 1 left)",28,3,1.2); frame.header_gnd(w,26,8,-1,y_gnd_trunk=16)
+    frame.power_flags(w,x+8*G,y-8*G)
+    c1,c2=frame.decoupling(w,x+16*G,y-8*G); w.at(c1,110,6,270); w.at(c2,116,6,270); frame.cap_gnd(w,110,6,2.5); frame.cap_gnd(w,116,6,2.0)
+    frame.holes(w,x+46*G,y-8*G,4)
 
 def main():
     d=alu.build(); pr=d.check(); assert not pr, pr
@@ -45,8 +27,9 @@ def main():
         "Sheet 2 (TESTBENCH) holds the stimulus sources and the hub pull-ups; they are excluded from the board.",10*G,16*G,1.6)
     board_frame(w,{'A0','A1','A2','A3','B0','B1','B2','B3','SUB','EO','CF','ZF','BUS0#','BUS1#','BUS2#','BUS3#'})
     # header outputs: CF/ZF labels are outputs of gates; the header side uses the same global label
-    cols=14
-    yend=w.layout(d.gates,alu.GROUP_TITLES,10*G,60*G,cols)
+    cols=14; w.PCB_COL=12.7
+    yend=w.layout(d.gates,alu.GROUP_TITLES,10*G,60*G,cols,pcb_origin=(8.0,22.0),pcb_cols=11)
+    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(156,w.pcb_extent[1]+4),extra=dict(silk_big=[("NIBBLE ALU",126,3,1.8)],hide_refs=['Q','R']))
     w.sheet("TESTBENCH",f"{PROJECT}-testbench.kicad_sch",x=10*G+cols*w.CELL_W+4*G,y=40*G,w=20*G,h=10*G,page="2",sheet_uuid=tb_uuid)
     W=10*G+cols*w.CELL_W+30*G; H=yend+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))

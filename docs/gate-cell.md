@@ -57,3 +57,11 @@ few hundred hertz is safe and a few hertz is watchable.
 2. At most 3 transistors in series.
 3. Every board has a 100 nF ceramic and a 10 uF electrolytic across the supply at the header.
 4. Bus lines are driven only by open-drain transistors and pulled up only on the hub.
+
+## On the PCB
+
+Every cell is the same tile: the pull-up standing at the top, the transistors
+in a column below it, 10.16 mm column pitch. Ground and +5 V run as pre-routed
+rails on the back of every column with a short stub to each pad, joined by two
+trunks above the tiles, so the autorouter only ever handles signals. The tiles
+on the board are in the same order as the cells on the schematic.

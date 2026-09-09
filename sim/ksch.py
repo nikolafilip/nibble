@@ -21,7 +21,7 @@ class Writer:
         self.project=project; self.root_uuid=root_uuid
         self.sheet_uuid=sheet_uuid or root_uuid
         self.path=f"/{root_uuid}" if sheet_uuid is None else f"/{root_uuid}/{sheet_uuid}"
-        self.place={}; self.silk=[]; self.body=''; self.n={'Q':1,'R':1,'D':1,'C':1,'J':1,'H':1,'V':1,'#PWR':1,'#FLG':1,'TP':1,'SW':1,'F':1,'U':1}
+        self.place={}; self.silk=[]; self.pwr=[]; self.rails=[]; self.vias=[]; self.body=''; self.n={'Q':1,'R':1,'D':1,'C':1,'J':1,'H':1,'V':1,'#PWR':1,'#FLG':1,'TP':1,'SW':1,'F':1,'U':1}
         self.libs={}
     def ref(self,p):
         r=f"{p}{self.n[p]}"; self.n[p]+=1; return r
@@ -146,26 +146,28 @@ class Writer:
             self.W(xc,yr+1.5*G,xc,yr+2*G)
             yq=yr+7*G                          # D at yq-2G = yr+5G
             q=self.Q(xq,yq); self.PW('GND',xc,yq+2*G)
-            if pcb: self.at(r,px+2.54,py,270); self.at(d,px+1.27,py+10.16,0); self.at(q,px,py+15.24,0); self.label(g['out'].replace('LED_',''),px+3.8,py+12.9,1.0)
+            if pcb: self.at(r,px+2.54,py,270); self.at(d,px+1.27,py+10.16,0); self.at(q,px,py+15.24,0); self.label(g['out'].replace('LED_',''),px+3.8,py+12.9,1.0); self.pwr.append(('+5V',px+2.54,py)); self.pwr.append(('GND',px,py+15.24))
             self.W(xq-2*G,yq,xin,yq); self.L(ins[0],xin,yq,180,'input')
             self.T(g['out'],xc+1.5*G,yr+3.5*G,1.0)
             return 10*G
         if kind=='BUS':
             yq=y0+4*G
             q=self.Q(xq,yq); self.PW('GND',xc,yq+2*G)
-            if pcb: self.at(q,px,py+2.54,0)
+            if pcb: self.at(q,px,py+2.54,0); self.pwr.append(('GND',px,py+2.54))
             self.W(xc,yq-2*G,xc,yq-3*G); self.W(xc,yq-3*G,xout,yq-3*G); self.L(g['out'],xout,yq-3*G,0,'bidirectional')
             self.W(xq-2*G,yq,xin,yq); self.L(ins[0],xin,yq,180,'input')
             return 8*G
         self.PW('+5V',xc,yr-1.5*G)
         r=self.R(g['pu'],xc,yr)
-        if pcb: self.at(r,px+2.54,py,270)
+        if pcb: self.at(r,px+2.54,py,270); self.pwr.append(('+5V',px+2.54,py))
         self.W(xc,yr+1.5*G,xc,yc0); self.W(xc,yc0,xout,yc0); self.L(g['out'],xout,yc0,0,'output')
         if n>1: self.J(xc,yc0)
         for k,inp in enumerate(ins):
             yq=yc0+2*G+6*G*k                   # D at yq-2G, S at yq+2G
             q=self.Q(xq,yq)
-            if pcb: self.at(q,px,py+10.16+5.08*k,0)
+            if pcb:
+                self.at(q,px,py+10.16+5.08*k,0)
+                if kind=='NOR' or k==n-1: self.pwr.append(('GND',px,py+10.16+5.08*k))
             self.W(xq-2*G,yq,xin,yq); self.L(inp,xin,yq,180,'input')
             if kind=='NAND':
                 if k<n-1: self.W(xc,yq+2*G,xc,yq+4*G)
@@ -200,6 +202,20 @@ class Writer:
                 y+=h+2*G
             y+=2*G
         self.pcb_extent=(pxo+pcb_cols*self.PCB_COL,py)
+        # power rails: per column, GND on B.Cu at x-1.27 and +5V on B.Cu at x+6.35, from the trunks above the tiles to the column bottom
+        yg=pyo-6.0; yv=pyo-3.0; xs=[pxo+j*self.PCB_COL for j in range(pcb_cols)]
+        for j,x in enumerate(xs):
+            if colh[j]==pyo: continue
+            yg_end=max([y for n,px_,y in self.pwr if n=='GND' and abs(px_-x)<0.01],default=None)
+            yv_end=max([y for n,px_,y in self.pwr if n=='+5V' and abs(px_-(x+2.54))<0.01],default=None)
+            if yg_end: self.rails.append(('GND','B.Cu',x-1.27,yg,x-1.27,yg_end,0.5)); self.vias.append(('GND',x-1.27,yg))
+            if yv_end: self.rails.append(('+5V','B.Cu',x+6.35,yv,x+6.35,yv_end,0.5)); self.vias.append(('+5V',x+6.35,yv))
+        used=[x for j,x in enumerate(xs) if colh[j]>pyo]
+        self.rails.append(('GND','F.Cu',used[0]-1.27,yg,used[-1]-1.27,yg,0.8))
+        self.rails.append(('+5V','F.Cu',used[0]+6.35,yv,used[-1]+6.35,yv,0.8))
+        for net,sx,sy in self.pwr:
+            if net=='GND': self.rails.append(('GND','B.Cu',sx,sy,sx-1.27,sy,0.5))
+            else: self.rails.append(('+5V','B.Cu',sx,sy,sx+3.81,sy,0.5))
         return y
     def file(self,paper_w,paper_h,extra_libs=()):
         libs="".join(self.libs.values())+"".join(extra_libs)
@@ -213,4 +229,4 @@ def project_file(name):
 def write_plan(w,path,outline,extra=None):
     """PCB placement plan consumed by pcb.py (run with KiCad's python)."""
     import json
-    json.dump(dict(place=w.place,silk=w.silk,outline=list(outline),extra=extra or {}),open(path,'w'),indent=0)
+    json.dump(dict(place=w.place,silk=w.silk,rails=w.rails,vias=w.vias,outline=list(outline),extra=extra or {}),open(path,'w'),indent=0)

@@ -15,3 +15,16 @@ Needs ngspice (`brew install ngspice`), numpy, matplotlib, and KiCad 10 for
 
 Rules that the generator enforces are in `docs/gate-cell.md`. ngspice node
 names are case-insensitive, so never create two nets that differ only by case.
+
+## PCB flow
+
+`pcb.py` (run with KiCad's bundled python, see the docstring) takes a project's
+schematic and its `<name>.plan.json` (placements, silkscreen labels, power
+rails; written by the `build_*.py` generators) and produces the `.kicad_pcb`:
+footprints placed, power pre-routed, signals routed by freerouting (headless,
+retried until DRC reports zero unconnected), a ground pour on the back, DRC, and
+`fab/` outputs (gerbers, drill, BOM, position file, renders).
+
+    <kicad>/python3 pcb.py ../boards/01-alu alu
+
+Gerbers are regenerated, not committed; the renders and BOM are.

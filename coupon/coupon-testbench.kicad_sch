@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "5c5b3d82-6a0a-4968-ba74-9e55835e8cf2")
+	(uuid "4b361a98-1853-4cad-b410-c9dd3abf65ca")
 	(paper "User" 203.2 127)
 	(lib_symbols
 		(symbol "Simulation_SPICE:VDC"
@@ -890,7 +890,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "85ad2ae6-4da1-4458-999a-ab6f83c94adb")
+		(uuid "3698a68d-ef69-4c64-b521-79b93494a9da")
 	)
 	(text ".tran 0.2u 4m"
 		(exclude_from_sim no)
@@ -901,7 +901,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "fb4abac9-8632-487d-864b-26e37ef15fe0")
+		(uuid "23f870a6-121e-499a-a28d-5d3907955452")
 	)
 	(text ".ic v(RING0)=0"
 		(exclude_from_sim no)
@@ -912,7 +912,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "6e0c4a52-b679-43da-99f6-59c8aa7d3c23")
+		(uuid "a6c531f7-8eef-4069-bc02-c5ab01dd8ec4")
 	)
 	(text "5 V supply (the hub board / bench supply)"
 		(exclude_from_sim no)
@@ -923,7 +923,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "e0b75aed-f665-4ecb-a4aa-b47f91a9d63d")
+		(uuid "116b5c6a-95e8-48da-8270-84ac44e177f3")
 	)
 	(symbol
 		(lib_id "Simulation_SPICE:VDC")
@@ -936,7 +936,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "de9532ae-da89-4d74-ba53-850d3ac6d329")
+		(uuid "fa8040ab-91f2-4bb8-a826-d5c30f5d465d")
 		(property "Reference" "V9001"
 			(at 38.1 74.93 0)
 			(show_name no)
@@ -1026,14 +1026,14 @@
 			)
 		)
 		(pin "1"
-			(uuid "490e6a00-e12c-4105-849f-555e662632fe")
+			(uuid "f2756e47-6c5a-4c2c-b894-2ed70513eefd")
 		)
 		(pin "2"
-			(uuid "e1a1d1df-5d64-4181-8870-ee5e82a4cc01")
+			(uuid "e306f67d-c3f2-4d76-a9f1-2ffb075717e1")
 		)
 		(instances
 			(project "coupon"
-				(path "/2408ed7a-118a-4a40-b67e-0b9703019ed6/5c5b3d82-6a0a-4968-ba74-9e55835e8cf2"
+				(path "/6c68b30d-7596-4a51-8c64-1e8d497ed12f/4b361a98-1853-4cad-b410-c9dd3abf65ca"
 					(reference "V9001")
 					(unit 1)
 				)
@@ -1048,7 +1048,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "0093eb2a-a3db-4a71-aeb1-a1f7526d5a44")
+		(uuid "25b72882-4739-437e-ab83-3f076563ccbd")
 	)
 	(symbol
 		(lib_id "power:+5V")
@@ -1061,7 +1061,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "24c12915-4e1f-4ef4-8b4d-f4223ab076e0")
+		(uuid "4a84715c-5a9a-44fe-a2f1-f9c401da5eca")
 		(property "Reference" "#PWR9001"
 			(at 38.1 67.31 0)
 			(hide yes)
@@ -1119,11 +1119,11 @@
 			)
 		)
 		(pin "1"
-			(uuid "42391a11-2928-45d6-b135-0973c99b1856")
+			(uuid "6b0b18fb-162d-4497-bebd-7cdafec872fc")
 		)
 		(instances
 			(project "coupon"
-				(path "/2408ed7a-118a-4a40-b67e-0b9703019ed6/5c5b3d82-6a0a-4968-ba74-9e55835e8cf2"
+				(path "/6c68b30d-7596-4a51-8c64-1e8d497ed12f/4b361a98-1853-4cad-b410-c9dd3abf65ca"
 					(reference "#PWR9001")
 					(unit 1)
 				)
@@ -1138,7 +1138,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "b7403721-898d-42e3-aab4-0bcf6e06ebe5")
+		(uuid "2f582318-c8ee-468d-b882-f677415e246e")
 	)
 	(symbol
 		(lib_id "power:GND")
@@ -1151,7 +1151,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "03c7470b-7446-4416-b7a1-2d9da93aa247")
+		(uuid "dcbe0ee5-8880-4334-98e2-7a9c12f4cce2")
 		(property "Reference" "#PWR9002"
 			(at 38.1 82.55 0)
 			(hide yes)
@@ -1209,11 +1209,11 @@
 			)
 		)
 		(pin "1"
-			(uuid "09b15087-3516-4319-a27c-4b54677c8c5a")
+			(uuid "16c55920-4f8f-41a0-8b5f-50dcab8b4c97")
 		)
 		(instances
 			(project "coupon"
-				(path "/2408ed7a-118a-4a40-b67e-0b9703019ed6/5c5b3d82-6a0a-4968-ba74-9e55835e8cf2"
+				(path "/6c68b30d-7596-4a51-8c64-1e8d497ed12f/4b361a98-1853-4cad-b410-c9dd3abf65ca"
 					(reference "#PWR9002")
 					(unit 1)
 				)
@@ -1231,7 +1231,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "b02e37fd-6b04-4c55-9260-db71199179b3")
+		(uuid "f81942b8-f0dd-4603-9960-123e324fe1ab")
 		(property "Reference" "V9002"
 			(at 68.58 74.93 0)
 			(show_name no)
@@ -1331,14 +1331,14 @@
 			)
 		)
 		(pin "1"
-			(uuid "eaf61b24-c1e4-4f3e-bfa3-35a7f3a663db")
+			(uuid "20702717-5ec6-4f6a-b890-773ea86771c8")
 		)
 		(pin "2"
-			(uuid "0ee1283f-101d-4683-be60-a09ca8a40fa6")
+			(uuid "66c25516-b72c-4ff6-b5a3-840daf6e579e")
 		)
 		(instances
 			(project "coupon"
-				(path "/2408ed7a-118a-4a40-b67e-0b9703019ed6/5c5b3d82-6a0a-4968-ba74-9e55835e8cf2"
+				(path "/6c68b30d-7596-4a51-8c64-1e8d497ed12f/4b361a98-1853-4cad-b410-c9dd3abf65ca"
 					(reference "V9002")
 					(unit 1)
 				)
@@ -1353,7 +1353,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "08bed1e0-ca06-4ab1-9d13-55f3761163b5")
+		(uuid "5bdf22eb-c01b-497c-82cb-fec8dd52d96c")
 	)
 	(global_label "IN"
 		(shape output)
@@ -1365,7 +1365,7 @@
 			)
 			(justify right)
 		)
-		(uuid "274dc7d8-7bd4-440c-aa59-94d3a6d1598d")
+		(uuid "cc28066e-48c3-49be-a1a0-f2de97c51ba0")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 66.04 68.58 0)
 			(hide yes)
@@ -1390,7 +1390,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "e92bde44-a074-4da5-9b4a-3a1f2c91609e")
+		(uuid "e83d007d-ace6-4f97-80ab-a2a0ac24632b")
 		(property "Reference" "#PWR9003"
 			(at 68.58 80.01 0)
 			(hide yes)
@@ -1448,11 +1448,11 @@
 			)
 		)
 		(pin "1"
-			(uuid "0fa84d65-e48d-4aec-9818-55256bcfc32d")
+			(uuid "f495f1c7-7835-459b-86f2-82d22c18cff6")
 		)
 		(instances
 			(project "coupon"
-				(path "/2408ed7a-118a-4a40-b67e-0b9703019ed6/5c5b3d82-6a0a-4968-ba74-9e55835e8cf2"
+				(path "/6c68b30d-7596-4a51-8c64-1e8d497ed12f/4b361a98-1853-4cad-b410-c9dd3abf65ca"
 					(reference "#PWR9003")
 					(unit 1)
 				)
@@ -1470,7 +1470,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "6fa2b24b-d582-4dc6-a493-d0311db61903")
+		(uuid "cf94c3fd-5351-47ff-af9e-422e99e68b56")
 		(property "Reference" "V9003"
 			(at 91.44 74.93 0)
 			(show_name no)
@@ -1570,14 +1570,14 @@
 			)
 		)
 		(pin "1"
-			(uuid "d6445c12-d261-41f8-8528-28e462efb189")
+			(uuid "d2644636-b4b9-471c-bc15-54d49d5d7223")
 		)
 		(pin "2"
-			(uuid "e19226ac-5620-48c8-b385-209f9e73c711")
+			(uuid "904a2ef6-15bb-4660-ab72-0306b17fd6fa")
 		)
 		(instances
 			(project "coupon"
-				(path "/2408ed7a-118a-4a40-b67e-0b9703019ed6/5c5b3d82-6a0a-4968-ba74-9e55835e8cf2"
+				(path "/6c68b30d-7596-4a51-8c64-1e8d497ed12f/4b361a98-1853-4cad-b410-c9dd3abf65ca"
 					(reference "V9003")
 					(unit 1)
 				)
@@ -1592,7 +1592,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "825eff73-f665-4241-a55c-2adbbc2c5882")
+		(uuid "e784647d-2ff3-4d7b-b8bf-ad78d85e0103")
 	)
 	(global_label "N1"
 		(shape output)
@@ -1604,7 +1604,7 @@
 			)
 			(justify right)
 		)
-		(uuid "09a3f4b5-6787-4c8a-b837-2572f08f5bd5")
+		(uuid "9bd28b08-8364-4b17-bbbe-bc73f123b9f7")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 88.9 68.58 0)
 			(hide yes)
@@ -1629,7 +1629,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "3efc1e53-944a-4786-99d9-ccb3662d3f3f")
+		(uuid "f91bb977-a7df-41dc-abbc-19b412a0fc2d")
 		(property "Reference" "#PWR9004"
 			(at 91.44 80.01 0)
 			(hide yes)
@@ -1687,11 +1687,11 @@
 			)
 		)
 		(pin "1"
-			(uuid "b0b2e0c7-7bcb-4fe2-88a9-acf926cb179c")
+			(uuid "1cd3c14b-5931-4105-a3e4-5314aa02bc72")
 		)
 		(instances
 			(project "coupon"
-				(path "/2408ed7a-118a-4a40-b67e-0b9703019ed6/5c5b3d82-6a0a-4968-ba74-9e55835e8cf2"
+				(path "/6c68b30d-7596-4a51-8c64-1e8d497ed12f/4b361a98-1853-4cad-b410-c9dd3abf65ca"
 					(reference "#PWR9004")
 					(unit 1)
 				)
@@ -1709,7 +1709,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "d61e1062-51fc-4a7a-a956-0c69ef6b363a")
+		(uuid "3c023891-aea6-44cc-b425-bd830734bed8")
 		(property "Reference" "V9004"
 			(at 114.3 74.93 0)
 			(show_name no)
@@ -1809,14 +1809,14 @@
 			)
 		)
 		(pin "1"
-			(uuid "be012e30-db8b-45db-9f56-376053ef858b")
+			(uuid "e33c2f33-32e8-40de-a8a6-b1ec0e20acac")
 		)
 		(pin "2"
-			(uuid "6823297c-7c45-4805-b2a6-1054431f77af")
+			(uuid "b8cfeb49-d453-4818-aacd-1322d6cdc55d")
 		)
 		(instances
 			(project "coupon"
-				(path "/2408ed7a-118a-4a40-b67e-0b9703019ed6/5c5b3d82-6a0a-4968-ba74-9e55835e8cf2"
+				(path "/6c68b30d-7596-4a51-8c64-1e8d497ed12f/4b361a98-1853-4cad-b410-c9dd3abf65ca"
 					(reference "V9004")
 					(unit 1)
 				)
@@ -1831,7 +1831,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "73bf3aa4-0624-4fd8-abe8-3c1bf6b6088f")
+		(uuid "c792a8a4-375b-44fd-bb92-49b270ceb2f3")
 	)
 	(global_label "N2"
 		(shape output)
@@ -1843,7 +1843,7 @@
 			)
 			(justify right)
 		)
-		(uuid "b70887c3-f98b-4137-8c0a-bd98e89e9cb9")
+		(uuid "b2f81053-8573-4c1f-973c-d742baea11ba")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 111.76 68.58 0)
 			(hide yes)
@@ -1868,7 +1868,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "5c8e48d0-af4e-4a87-af3e-4d49b284c960")
+		(uuid "9f57a5c8-e70a-4055-88f7-be284519b7af")
 		(property "Reference" "#PWR9005"
 			(at 114.3 80.01 0)
 			(hide yes)
@@ -1926,11 +1926,11 @@
 			)
 		)
 		(pin "1"
-			(uuid "ba0814ff-a5a3-45ee-97e4-3c7caf39060f")
+			(uuid "2ce1d8e4-0b9b-4ed8-ba67-1e6e46b951dd")
 		)
 		(instances
 			(project "coupon"
-				(path "/2408ed7a-118a-4a40-b67e-0b9703019ed6/5c5b3d82-6a0a-4968-ba74-9e55835e8cf2"
+				(path "/6c68b30d-7596-4a51-8c64-1e8d497ed12f/4b361a98-1853-4cad-b410-c9dd3abf65ca"
 					(reference "#PWR9005")
 					(unit 1)
 				)
@@ -1948,7 +1948,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "1b572728-8489-43ad-bed0-81d85ddfe2a6")
+		(uuid "dc847032-377a-4d04-8c8b-19f6285d6f64")
 		(property "Reference" "V9005"
 			(at 137.16 74.93 0)
 			(show_name no)
@@ -2048,14 +2048,14 @@
 			)
 		)
 		(pin "1"
-			(uuid "971c2364-176b-4e5c-b961-0255bb0b214a")
+			(uuid "462f6216-0d0e-4a0f-a2a1-5c023d709f3a")
 		)
 		(pin "2"
-			(uuid "7498758f-80cb-4309-b581-e9d960315543")
+			(uuid "c4cae7de-8591-4eb4-ad8d-7a77ac0a48f5")
 		)
 		(instances
 			(project "coupon"
-				(path "/2408ed7a-118a-4a40-b67e-0b9703019ed6/5c5b3d82-6a0a-4968-ba74-9e55835e8cf2"
+				(path "/6c68b30d-7596-4a51-8c64-1e8d497ed12f/4b361a98-1853-4cad-b410-c9dd3abf65ca"
 					(reference "V9005")
 					(unit 1)
 				)
@@ -2070,7 +2070,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "92c0d0e2-d661-459c-9352-b16b123b9a3a")
+		(uuid "38027eb5-a3a7-449c-a2d8-3d038304863f")
 	)
 	(global_label "N3"
 		(shape output)
@@ -2082,7 +2082,7 @@
 			)
 			(justify right)
 		)
-		(uuid "a8af5d08-be2f-47b3-a4ac-06ef983cc01e")
+		(uuid "8d1f75b6-7fe2-4ede-922e-08c233a076c7")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 134.62 68.58 0)
 			(hide yes)
@@ -2107,7 +2107,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "b248df5c-2d81-4654-a223-4e9c2dbbc72f")
+		(uuid "f37e1d9f-ceb2-4304-906b-e6e6134b0481")
 		(property "Reference" "#PWR9006"
 			(at 137.16 80.01 0)
 			(hide yes)
@@ -2165,11 +2165,11 @@
 			)
 		)
 		(pin "1"
-			(uuid "9324109f-cf9c-4d99-91d6-092645f39d0f")
+			(uuid "76f0ad11-8df7-4ce8-a919-2ba25a49fa93")
 		)
 		(instances
 			(project "coupon"
-				(path "/2408ed7a-118a-4a40-b67e-0b9703019ed6/5c5b3d82-6a0a-4968-ba74-9e55835e8cf2"
+				(path "/6c68b30d-7596-4a51-8c64-1e8d497ed12f/4b361a98-1853-4cad-b410-c9dd3abf65ca"
 					(reference "#PWR9006")
 					(unit 1)
 				)

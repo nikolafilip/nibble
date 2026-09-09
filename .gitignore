@@ -24,9 +24,3 @@ tools/*.jar
 *.dsn
 *.ses
 *.kicad_pcb-bak
-fab/*.gbr
-fab/*.gb[lsopa]
-fab/*.gt[lsopa]
-fab/*.gm1
-fab/*.drl
-fab/*.gbrjob

@@ -13,13 +13,14 @@ def main():
     x,y=14*G,26*G
     j1=w.pinheader(2,x,y,"5V IN"); w.at(j1,12,8,0); w.label("5V GND",9,4,1.0); w.W(x-2*G,y,x-4*G,y); w.PW('+5V',x-4*G,y); w.W(x-2*G,y+G,x-4*G,y+G); w.W(x-4*G,y+G,x-4*G,y+2*G); w.PW('GND',x-4*G,y+2*G)
     frame.power_flags(w,x+6*G,y)
-    c1,c2=frame.decoupling(w,x+14*G,y); w.at(c1,18,6,270); w.at(c2,26,6,270)
+    c1,c2=frame.decoupling(w,x+14*G,y); w.at(c1,18,6,270); w.at(c2,26,6,270); frame.cap_gnd(w,18,6,2.5); frame.cap_gnd(w,26,6,2.0)
     # inputs
     x2=14*G; y2=36*G
     j2=w.pinheader(4,x2,y2,"IN N1 N2 N3"); w.at(j2,34,6,0); w.label("IN N1 N2 N3",32,3,1.0)
     for k,n in enumerate(['IN','N1','N2','N3']):
         py=y2-G+k*G; w.W(x2-2*G,py,x2-5*G,py); w.L(n,x2-5*G,py,180,'input')
     for k,n in enumerate(['IN','N1','N2','N3']): w.at(frame.pulldown(w,n,x2+10*G+k*4*G,y2-2*G),42+k*4,6,270)
+    frame.gnd_bar(w,42,54,11.08,join=(54,16))      # pull-down grounds to the GND trunk
     # test points
     x3=44*G
     for k,n in enumerate(['TP_RING','TP_FO1','TP_FO10','TP_NAND','TP_NOR','TP_BUS']):
@@ -27,7 +28,7 @@ def main():
     # hub-style pull-up for the bus driver
     xx=x3+52*G; w.PW('+5V',xx,y2-4*G); w.W(xx,y2-4*G,xx,y2-3*G); w.at(w.R('10k',xx,y2-1.5*G),100,6,270); w.W(xx,y2,xx,y2+2*G); w.L('TP_BUS',xx,y2+2*G,270,'input'); w.T("hub pull-up",xx+G,y2-2*G,1.0)
     frame.holes(w,x3+64*G,y2,2)
-    yend=w.layout(d.gates,coupon.GROUP_TITLES,10*G,48*G,12,pcb_origin=(6.0,18.0),pcb_cols=10)
+    yend=w.layout(d.gates,coupon.GROUP_TITLES,10*G,48*G,12,pcb_origin=(6.0,22.0),pcb_cols=10)
     ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(112,w.pcb_extent[1]+6),extra=dict(silk_big=[("NIBBLE GATE COUPON",60,3,1.5)]))
     w.sheet("TESTBENCH",f"{PROJECT}-testbench.kicad_sch",10*G+12*w.CELL_W+4*G,26*G,20*G,10*G,"2",tbu)
     W=10*G+12*w.CELL_W+30*G; H=yend+10*G

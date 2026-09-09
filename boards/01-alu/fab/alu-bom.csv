@@ -1,0 +1,8 @@
+"Reference","Value","Footprint","QUANTITY"
+"C1","100n","Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm","1"
+"C2","10u","Capacitor_THT:CP_Radial_D5.0mm_P2.00mm","1"
+"D1-D6","LED","LED_THT:LED_D3.0mm","6"
+"J1","BUS","Connector_IDC:IDC-Header_2x25_P2.54mm_Vertical","1"
+"Q1-Q137","2N7000","Package_TO_SOT_THT:TO-92_Inline_Wide","137"
+"R1-R72","47k","Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical","72"
+"R73-R78","1k","Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical","6"

@@ -1,0 +1,19 @@
+# KiCad
+*-backups/
+*.kicad_prl
+*.lck
+~*.lck
+fp-info-cache
+_autosave-*
+*.wbk
+.history/
+_restore_backup_*/
+logs/
+# Python
+__pycache__/
+*.pyc
+# macOS
+.DS_Store
+__MACOSX/
+# simulation scratch (keep results that are committed on purpose)
+sim/out/

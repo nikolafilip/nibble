@@ -21,7 +21,7 @@ class Writer:
         self.project=project; self.root_uuid=root_uuid
         self.sheet_uuid=sheet_uuid or root_uuid
         self.path=f"/{root_uuid}" if sheet_uuid is None else f"/{root_uuid}/{sheet_uuid}"
-        self.body=''; self.n={'Q':1,'R':1,'D':1,'C':1,'J':1,'H':1,'V':1,'#PWR':1,'#FLG':1}
+        self.body=''; self.n={'Q':1,'R':1,'D':1,'C':1,'J':1,'H':1,'V':1,'#PWR':1,'#FLG':1,'TP':1,'SW':1,'F':1,'U':1}
         self.libs={}
     def ref(self,p):
         r=f"{p}{self.n[p]}"; self.n[p]+=1; return r
@@ -50,8 +50,11 @@ class Writer:
     CP_FOOT="Capacitor_THT:CP_Radial_D5.0mm_P2.00mm"
     J_FOOT="Connector_IDC:IDC-Header_2x25_P2.54mm_Vertical"
     H_FOOT="MountingHole:MountingHole_3.2mm_M3"
-    MODEL_LIB="${KIPRJMOD}/../../lib/2N7000.lib"
-    LED_LIB="${KIPRJMOD}/../../lib/led.lib"
+    LIB_PREFIX="${KIPRJMOD}/../../lib"      # boards/<name>/ -> repo lib/; builders one level up set "${KIPRJMOD}/../lib"
+    @property
+    def MODEL_LIB(self): return self.LIB_PREFIX+"/2N7000.lib"
+    @property
+    def LED_LIB(self): return self.LIB_PREFIX+"/led.lib"
     def R(self,value,x,y,rot=0,**kw):
         """pins: 1 at top (y-3.81), 2 at bottom (y+3.81) for rot 0"""
         return self.symbol("Device","R",self.ref('R'),value,x,y,rot,('1','2'),self.R_FOOT,[("Description","Resistor",True)],**kw)
@@ -75,6 +78,20 @@ class Writer:
     def header(self,x,y):
         """2x25 header; odd pins at x-5.08, even at x+7.62; pin1 at y-30.48, step 2.54 down."""
         return self.symbol("Connector_Generic","Conn_02x25_Odd_Even",self.ref('J'),"BUS",x,y,0,tuple(str(i) for i in range(1,51)),self.J_FOOT,[("Description","Nibble bus header",True)],sim=False)
+    TP_FOOT="TestPoint:TestPoint_Loop_D2.50mm_Drill1.0mm"
+    def testpoint(self,name,x,y):
+        """pin 1 at (x, y+2.54)?? -> Connector:TestPoint pin is at (0,-2.54) symbol coords = (x, y+2.54)?? see libsym"""
+        return self.symbol("Connector","TestPoint",self.ref('TP'),name,x,y,0,('1',),self.TP_FOOT,[("Description","test point",True)],in_bom=True,sim=False)
+    def pinheader(self,n,x,y,value):
+        return self.symbol("Connector_Generic",f"Conn_01x{n:02d}",self.ref('J'),value,x,y,0,tuple(str(i) for i in range(1,n+1)),f"Connector_PinHeader_2.54mm:PinHeader_1x{n:02d}_P2.54mm_Vertical",[("Description","pin header",True)],sim=False)
+    def dipswitch(self,n,x,y,value):
+        """SW_DIP_x08 etc: pins 1..n on the left at x-7.62?, n+1..2n on the right"""
+        return self.symbol("Switch",f"SW_DIP_x{n:02d}",self.ref('SW'),value,x,y,0,tuple(str(i) for i in range(1,2*n+1)),f"Button_Switch_THT:SW_DIP_SPSTx{n:02d}_Slide_9.78x{'22.5' if n==8 else '12.34'}mm_W7.62mm_P2.54mm",[("Description","DIP switch",True)],sim=False)
+    def button(self,x,y,value):
+        return self.symbol("Switch","SW_Push",self.ref('SW'),value,x,y,0,('1','2'),"Button_Switch_THT:SW_PUSH_6mm",[("Description","push button",True)],sim=False)
+    def diode(self,x,y,rot=0):
+        """1N4148: pin 1 K, pin 2 A"""
+        return self.symbol("Device","D",self.ref('D'),"1N4148",x,y,rot,('1','2'),"Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",[("Description","small signal diode",True),("Sim.Device","D",True),("Sim.Pins","1=K 2=A",True),("Sim.Library",self.LED_LIB,True),("Sim.Name","D1N4148",True)])
     def hole(self,x,y):
         return self.symbol("Mechanical","MountingHole",self.ref('H'),"M3",x,y,0,(),self.H_FOOT,[],in_bom=False,sim=False)
     def vsource(self,kind,params,x,y):

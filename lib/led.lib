@@ -1,2 +1,4 @@
 * Generic red 3 mm indicator LED for simulation (Vf about 1.9 V at 3 mA)
 .model LEDRED D(Is=1e-18 Rs=3 N=1.8 Cjo=20p)
+* 1N4148 small-signal diode
+.model D1N4148 D(Is=2.52n Rs=0.568 N=1.752 Cjo=4p M=0.4 Tt=20n Bv=100 Ibv=0.1u)

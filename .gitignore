@@ -17,3 +17,4 @@ __pycache__/
 __MACOSX/
 # simulation scratch (keep results that are committed on purpose)
 sim/out/
+tools/*.jar

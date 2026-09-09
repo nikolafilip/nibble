@@ -21,7 +21,7 @@ class Writer:
         self.project=project; self.root_uuid=root_uuid
         self.sheet_uuid=sheet_uuid or root_uuid
         self.path=f"/{root_uuid}" if sheet_uuid is None else f"/{root_uuid}/{sheet_uuid}"
-        self.body=''; self.n={'Q':1,'R':1,'D':1,'C':1,'J':1,'H':1,'V':1,'#PWR':1,'#FLG':1,'TP':1,'SW':1,'F':1,'U':1}
+        self.place={}; self.silk=[]; self.body=''; self.n={'Q':1,'R':1,'D':1,'C':1,'J':1,'H':1,'V':1,'#PWR':1,'#FLG':1,'TP':1,'SW':1,'F':1,'U':1}
         self.libs={}
     def ref(self,p):
         r=f"{p}{self.n[p]}"; self.n[p]+=1; return r
@@ -44,12 +44,12 @@ class Writer:
         self.body+=s; return ref
     # ---- parts ----
     R_FOOT="Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical"
-    Q_FOOT="Package_TO_SOT_THT:TO-92_Inline"
+    Q_FOOT="Package_TO_SOT_THT:TO-92_Inline_Wide"
     LED_FOOT="LED_THT:LED_D3.0mm"
     C_FOOT="Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm"
     CP_FOOT="Capacitor_THT:CP_Radial_D5.0mm_P2.00mm"
     J_FOOT="Connector_IDC:IDC-Header_2x25_P2.54mm_Vertical"
-    H_FOOT="MountingHole:MountingHole_3.2mm_M3"
+    H_FOOT="MountingHole:MountingHole_3.2mm_M3_Pad"
     LIB_PREFIX="${KIPRJMOD}/../../lib"      # boards/<name>/ -> repo lib/; builders one level up set "${KIPRJMOD}/../lib"
     @property
     def MODEL_LIB(self): return self.LIB_PREFIX+"/2N7000.lib"
@@ -118,37 +118,54 @@ class Writer:
             f'\t\t(property "Sheetname" "{name}"\n\t\t\t(at {f(x)} {f(y-0.7116)} 0)\n\t\t\t(effects\n\t\t\t\t(font\n\t\t\t\t\t(size 1.27 1.27)\n\t\t\t\t)\n\t\t\t\t(justify left bottom)\n\t\t\t)\n\t\t)\n'
             f'\t\t(property "Sheetfile" "{file}"\n\t\t\t(at {f(x)} {f(y+h+0.5846)} 0)\n\t\t\t(effects\n\t\t\t\t(font\n\t\t\t\t\t(size 1.27 1.27)\n\t\t\t\t)\n\t\t\t\t(justify left top)\n\t\t\t)\n\t\t)\n'
             f'\t\t(instances\n\t\t\t(project "{self.project}"\n\t\t\t\t(path "/{self.root_uuid}"\n\t\t\t\t\t(page "{page}")\n\t\t\t\t)\n\t\t\t)\n\t\t)\n\t)\n')
+    def at(self,ref,x,y,rot=0):
+        """PCB placement (mm) for a part."""
+        self.place[ref]=(x,y,rot); return ref
+    def label(self,text,x,y,size=1.0):
+        self.silk.append((text,x,y,size))
     # ---- cells ----
-    CELL_W=15*G   # 38.1
-    def gate(self,g,x0,y0):
+    CELL_W=15*G   # 38.1 schematic
+    PCB_COL=10.16 # PCB tile pitch
+    @staticmethod
+    def tile_h(g):
+        n=len(g['ins']); k=g['kind']
+        if k=='LED': return 25.4
+        if k=='BUS': return 10.16
+        return 10.16+5.08*n+5.08
+    def gate(self,g,x0,y0,pcb=None):
         """Draw one NAND/NOR/INV/BUS/LED cell at (x0,y0). Returns height used."""
         ins=g['ins']; n=len(ins); kind=g['kind']
         xq=x0+8*G; xc=xq+G; xbus=xq+3*G; xout=x0+14*G; xin=x0+2*G
         yr=y0+3*G          # pull-up resistor centre
         yc0=yr+3*G         # output node
+        px,py=pcb if pcb else (None,None)
         if kind=='LED':
             self.PW('+5V',xc,yr-1.5*G)
-            self.R(g['pu'],xc,yr)              # pins yr-1.5G / yr+1.5G
-            self.LED(xc,yr+3.5*G)              # A at yr+2G, K at yr+5G
+            r=self.R(g['pu'],xc,yr)              # pins yr-1.5G / yr+1.5G
+            d=self.LED(xc,yr+3.5*G)              # A at yr+2G, K at yr+5G
             self.W(xc,yr+1.5*G,xc,yr+2*G)
             yq=yr+7*G                          # D at yq-2G = yr+5G
-            self.Q(xq,yq); self.PW('GND',xc,yq+2*G)
+            q=self.Q(xq,yq); self.PW('GND',xc,yq+2*G)
+            if pcb: self.at(r,px+2.54,py,270); self.at(d,px+1.27,py+10.16,0); self.at(q,px,py+15.24,0); self.label(g['out'].replace('LED_',''),px+3.8,py+12.9,1.0)
             self.W(xq-2*G,yq,xin,yq); self.L(ins[0],xin,yq,180,'input')
             self.T(g['out'],xc+1.5*G,yr+3.5*G,1.0)
             return 10*G
         if kind=='BUS':
             yq=y0+4*G
-            self.Q(xq,yq); self.PW('GND',xc,yq+2*G)
+            q=self.Q(xq,yq); self.PW('GND',xc,yq+2*G)
+            if pcb: self.at(q,px,py+2.54,0)
             self.W(xc,yq-2*G,xc,yq-3*G); self.W(xc,yq-3*G,xout,yq-3*G); self.L(g['out'],xout,yq-3*G,0,'bidirectional')
             self.W(xq-2*G,yq,xin,yq); self.L(ins[0],xin,yq,180,'input')
             return 8*G
         self.PW('+5V',xc,yr-1.5*G)
-        self.R(g['pu'],xc,yr)
+        r=self.R(g['pu'],xc,yr)
+        if pcb: self.at(r,px+2.54,py,270)
         self.W(xc,yr+1.5*G,xc,yc0); self.W(xc,yc0,xout,yc0); self.L(g['out'],xout,yc0,0,'output')
         if n>1: self.J(xc,yc0)
         for k,inp in enumerate(ins):
             yq=yc0+2*G+6*G*k                   # D at yq-2G, S at yq+2G
-            self.Q(xq,yq)
+            q=self.Q(xq,yq)
+            if pcb: self.at(q,px,py+10.16+5.08*k,0)
             self.W(xq-2*G,yq,xin,yq); self.L(inp,xin,yq,180,'input')
             if kind=='NAND':
                 if k<n-1: self.W(xc,yq+2*G,xc,yq+4*G)
@@ -160,18 +177,29 @@ class Writer:
                     ytop=yc0 if k==1 else yq-2*G-6*G
                     self.W(xbus,ytop,xbus,yq-2*G); self.J(xbus,ytop)
         return 6*G*n+8*G
-    def layout(self,gates,titles,x0,y0,cols):
+    def layout(self,gates,titles,x0,y0,cols,pcb_origin=(10.0,10.0),pcb_cols=None):
+        """Draw all gates group by group (schematic) and assign PCB tiles in a grid of pcb_cols columns."""
         y=y0; groups=[]
+        pcb_cols=pcb_cols or cols; pxo,pyo=pcb_origin; py=pyo; tiles=[]
         for g in gates:
             if not groups or groups[-1][0]!=g['group']: groups.append((g['group'],[]))
             groups[-1][1].append(g)
+        # pcb tile positions: fill columns left to right in gate order, each column packed independently
+        # (skyline packing: next gate goes to the lowest column, ties broken left to right)
+        colh=[pyo]*pcb_cols
+        for g in gates:
+            j=min(range(pcb_cols),key=lambda c:(round(colh[c],3),c))
+            tiles.append((g,(pxo+j*self.PCB_COL,colh[j]))); colh[j]+=self.tile_h(g)
+        py=max(colh)
+        pos={id(g):t for g,t in tiles}
         for name,gs in groups:
             self.T(titles.get(name,name),x0,y-G,2.0,True); y+=2*G
             for i in range(0,len(gs),cols):
-                row=gs[i:i+cols]; h=0
-                for j,g in enumerate(row): h=max(h,self.gate(g,x0+j*self.CELL_W,y))
+                rw=gs[i:i+cols]; h=0
+                for j,g in enumerate(rw): h=max(h,self.gate(g,x0+j*self.CELL_W,y,pcb=pos[id(g)]))
                 y+=h+2*G
             y+=2*G
+        self.pcb_extent=(pxo+pcb_cols*self.PCB_COL,py)
         return y
     def file(self,paper_w,paper_h,extra_libs=()):
         libs="".join(self.libs.values())+"".join(extra_libs)
@@ -181,3 +209,8 @@ class Writer:
 
 def project_file(name):
     return '{\n  "board": {"design_settings": {"defaults": {}, "rules": {}}},\n  "meta": {"filename": "%s.kicad_pro", "version": 3},\n  "schematic": {"drawing": {}, "legacy_lib_dir": "", "legacy_lib_list": []},\n  "sheets": [],\n  "text_variables": {}\n}\n' % name
+
+def write_plan(w,path,outline,extra=None):
+    """PCB placement plan consumed by pcb.py (run with KiCad's python)."""
+    import json
+    json.dump(dict(place=w.place,silk=w.silk,outline=list(outline),extra=extra or {}),open(path,'w'),indent=0)

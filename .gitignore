@@ -18,3 +18,15 @@ __MACOSX/
 # simulation scratch (keep results that are committed on purpose)
 sim/out/
 tools/*.jar
+# PCB build intermediates
+*.net
+*.drc.json
+*.dsn
+*.ses
+*.kicad_pcb-bak
+fab/*.gbr
+fab/*.gb[lsopa]
+fab/*.gt[lsopa]
+fab/*.gm1
+fab/*.drl
+fab/*.gbrjob

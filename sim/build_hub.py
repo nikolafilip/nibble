@@ -44,7 +44,7 @@ def main():
     tx=mx+36*G
     w.T("Test loops",tx-2*G,y-6*G,1.27)
     for k,n in enumerate(['BUS0#','BUS1#','BUS2#','BUS3#','CLK','RST']):
-        xx=tx+k*5*G; w.at(w.testpoint(n,xx,y),130+(k%2)*6,6+(k//2)*6,0); w.label(n.replace('#',''),127.5+(k%2)*6,10.2+(k//2)*6,0.8); w.W(xx,y,xx,y+2*G); w.L(n,xx,y+2*G,270,'input')
+        xx=tx+k*5*G; w.at(w.testpoint(n,xx,y),120+(k%3)*6,7+(k//3)*6,0); w.label(n.replace("#",""),117.5+(k%3)*6,11.2+(k//3)*6,0.8); w.W(xx,y,xx,y+2*G); w.L(n,xx,y+2*G,270,'input')
     frame.holes(w,tx+34*G,y,4)
     # headers: all signals connected
     used=set(s for s in bus.PINS.values() if s not in ('+5V','GND'))

@@ -40,6 +40,8 @@ Reference programs, in `sim/programs/`, assembled by `sim/asm.py`:
 - `sort.asm`: four numbers from the switches sorted in memory with STORE [B] and shown in order.
 - `lfsr.asm`: a pseudo-random sequence from a 4-bit shift register, using AND, OR, XOR.
 - `gcd.asm`: Euclid's algorithm on two numbers from the switches.
+- `logic.asm`: AND, OR and XOR of sixteen operand pairs, so every bit of both operands and every function is exercised, not the single pair `lfsr.asm` happens to use.
+- `call.asm`: a subroutine that calls another. The return register holds one address, so this must fail exactly the way the ISA says (the outer RET goes back into the subroutine); the program counts the arrivals and halts on the second.
 
 Boards that do not exist yet are absent from the deck; the front panel model
 drives their lines to 0. As each board is designed, it is added and the
@@ -47,7 +49,7 @@ programs that need it are enabled.
 
 Speed: the ALU settles in 89 us worst case; the machine deck runs its clock at
 1 ms per tick. Measured: about 10 s of ngspice per tick with 1,600 transistors
-in the deck, so the nine programs (4,400 ticks) are half a day per corner.
+in the deck, so the eleven programs (5,500 ticks) are half a day per corner.
 `sim/gate.py` runs them as a batch, four corners in parallel; during design,
 `--ticks` runs the first part of a program in minutes.
 

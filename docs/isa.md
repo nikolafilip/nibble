@@ -59,6 +59,30 @@ one-word instructions take 3 ticks, memory instructions 4, jumps 5.
 `PCL` copies the 8-bit operand register into the program counter over a path
 internal to the sequencer board; the 4-bit bus is not involved.
 
+After S1 the step counter goes to S2 for a two-word opcode and straight to S3
+otherwise, so one-word instructions never spend a tick in S2.
+
+## Registers on the sequencer
+
+- **IR**, 4 bits: the opcode. `II` loads it from M7..M4.
+- **OPR**, 8 bits: the operand. `II` loads its low nibble from M3..M0 at the
+  same time as IR (that is the `n` of LDI, LOAD and STORE); `OPI` loads all
+  eight bits from M (the address word of a jump). `IO` drives OPR3..0 onto the
+  bus, `PCL` copies all of OPR into the program counter.
+- **PC**, 8 bits. `PCE` increments it, `PCL` loads it. By the time an
+  instruction executes (S3), PC already points at the next word.
+- **CF, ZF**: latched from the ALU's carry and zero outputs when `FI` is
+  high, which only ADD and SUB assert. No other instruction touches the flags:
+  a LOAD of zero does not set Z, so loops test the result of a SUB, not the
+  value they loaded (see `sim/programs/mul.asm`).
+- **RST** clears PC, IR, OPR, the flags and the step counter. A, B and OUT are
+  not on the reset line and keep whatever they held.
+
+Every register captures on the rising edge of CLK, from values present before
+the edge: ADD latches A = A + B and the flags of that same sum on one edge.
+`sim/emu.py` implements exactly this and is the reference for the machine
+simulation.
+
 ## The control matrix
 
 The sequencer board decodes all sixteen opcodes and ANDs each with S3 and S4,

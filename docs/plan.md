@@ -24,17 +24,18 @@ model of the switch program memory holding a program. The clock is a pulse
 source. The deck is run with ngspice and the OUT register, the flags and the
 program counter are sampled at every clock edge.
 
-The expected values come from `sim/emu.py`, a 60-line Python emulator of the
-instruction set, running the same program. The test passes when the ngspice
+The expected values come from `sim/emu.py`, a tick-accurate Python emulator
+of the instruction set, running the same program (`sim/test_emu.py` checks
+every program's `; expect:` line on the emulator alone). The test passes when the ngspice
 trace and the emulator trace are identical, tick for tick.
 
 Reference programs, in `sim/programs/`, assembled by `sim/asm.py`:
 
 - `fib.asm`: Fibonacci to 8, halts on carry. Exercises LDI, MOV, XCH, ADD, OUT, JC, JMP, HLT and the two-word jump.
-- `count.asm`: count 0..15 and wrap. Exercises SUB via a countdown and JZ.
+- `count.asm`: count 0..15, wrap on carry, count back down with SUB and JZ.
 - `alu.asm`: every ADD/SUB result and flag pattern reachable from a short program.
 - `mul.asm` (after the data memory board): 8-bit product of two nibbles using LOAD/STORE and the carry flag.
-- `list.asm` (after the data memory board): maximum of four numbers in memory, walking with B as a pointer.
+- `list.asm` (after the data memory board): maximum of four numbers held in data memory, compared with SUB and JC.
 
 Boards that do not exist yet are absent from the deck; the front panel model
 drives their lines to 0. As each board is designed, it is added and the

@@ -8,7 +8,7 @@ PCB_COLS=28
 
 def board_frame(w,used):
     x,y=30*G,40*G
-    j=frame.bus_header(w,x,y,used); w.at(j,26,8,90); w.label("BUS  (pin 1 left)",28,3,1.2); frame.header_gnd(w,26,8,-1,y_gnd_trunk=16)
+    j=frame.bus_header(w,x,y,used); w.at(j,26,8,90); w.label("BUS  (pin 1 left)",26,14,1.2); frame.header_gnd(w,26,8,-1,y_gnd_trunk=16)
     frame.power_flags(w,x+8*G,y-8*G)
     c1,c2=frame.decoupling(w,x+16*G,y-8*G); w.at(c1,118,6,270); w.at(c2,124,6,270); frame.cap_gnd(w,118,6,2.5); frame.cap_gnd(w,124,6,2.0)
     frame.holes(w,x+46*G,y-8*G,4)

@@ -30,6 +30,7 @@ class Writer:
         return (f'\t\t(property "{name}" "{val}"\n\t\t\t(at {f(x)} {f(y)} {rot})\n'+("\t\t\t(hide yes)\n" if hide else "")+
                 "\t\t\t(show_name no)\n\t\t\t(do_not_autoplace no)\n\t\t\t"+eff+"\n\t\t)\n")
     def symbol(self,lib,name,ref,value,x,y,rot,pins,footprint="",props=(),mirror=None,in_bom=True,on_board=True,sim=True,hide_value=False):
+        if int(re.sub(r'\D','',ref) or 0)>=9000: in_bom=on_board=False     # testbench parts (refs 9000 and up) never reach the board or the BOM
         self.libs.setdefault(f"{lib}:{name}",libsym(lib,name))
         s=f'\t(symbol\n\t\t(lib_id "{lib}:{name}")\n\t\t(at {f(x)} {f(y)} {rot})\n'
         if mirror: s+=f'\t\t(mirror {mirror})\n'

@@ -10,11 +10,11 @@ def board_frame(w,used):
     """Two bus headers wired pin for pin in parallel (D039): the hub's ribbon on the left one, the next page's on the
     right one, both on the top edge so a 10 cm hop joins pages side by side. Every line is carried, not just PC and M."""
     x,y=30*G,40*G
-    j=frame.bus_header(w,x,y,used,through=True); w.at(j,26,8,90); w.label("BUS  (pin 1 left)",28,3,1.2); frame.header_gnd(w,26,8,-1,y_gnd_trunk=16)
-    j=frame.bus_header(w,x+18*G,y,used,through=True); w.at(j,118,8,90); w.label("BUS to next page  (pin 1 left)",120,3,1.2); frame.header_gnd(w,118,8,-1)
+    j=frame.bus_header(w,x,y,used,through=True); w.at(j,26,8,90); w.label("BUS  (pin 1 left)",26,14,1.2); frame.header_gnd(w,26,8,-1,y_gnd_trunk=16)
+    j=frame.bus_header(w,x+18*G,y,used,through=True); w.at(j,118,8,90); w.label("BUS to next page  (pin 1 left)",118,14,1.2); frame.header_gnd(w,118,8,-1)
     w.T("Both headers carry all 64 lines: the hub's ribbon on the left, the next page's on the right (D039).",x-8*G,y-20*G,1.6)
     frame.power_flags(w,x+28*G,y-8*G)
-    c1,c2=frame.decoupling(w,x+36*G,y-8*G); w.at(c1,112,15,270); w.at(c2,118,15,270); frame.cap_gnd(w,112,15,2.5); frame.cap_gnd(w,118,15,2.0)
+    c1,c2=frame.decoupling(w,x+36*G,y-8*G); w.at(c1,200,15,270); w.at(c2,206,15,270); frame.cap_gnd(w,200,15,2.5); frame.cap_gnd(w,206,15,2.0)
     frame.holes(w,x+56*G,y-8*G,4)
 
 def word_block(w,n,x,y,pcb,mapping):

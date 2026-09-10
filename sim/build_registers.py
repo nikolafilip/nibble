@@ -9,7 +9,7 @@ PCB_COLS=20
 
 def board_frame(w,used):
     x,y=30*G,40*G
-    j=frame.bus_header(w,x,y,used); w.at(j,26,8,90); w.label("BUS  (pin 1 left)",28,3,1.2); frame.header_gnd(w,26,8,-1,y_gnd_trunk=16)
+    j=frame.bus_header(w,x,y,used); w.at(j,26,8,90); w.label("BUS  (pin 1 left)",26,14,1.2); frame.header_gnd(w,26,8,-1,y_gnd_trunk=16)
     frame.power_flags(w,x+8*G,y-8*G)
     c1,c2=frame.decoupling(w,x+16*G,y-8*G); w.at(c1,118,6,270); w.at(c2,124,6,270); frame.cap_gnd(w,118,6,2.5); frame.cap_gnd(w,124,6,2.0)
     frame.holes(w,x+46*G,y-8*G,4)
@@ -30,7 +30,7 @@ def main():
     board_frame(w,{'BUS0#','BUS1#','BUS2#','BUS3#','CLK','AI','AO','BI','BO','BA','AB','OI','A0','A1','A2','A3','B0','B1','B2','B3'})
     cols=14; w.PCB_COL=12.7
     yend=w.layout(d.gates,registers.GROUP_TITLES,10*G,66*G,cols,pcb_origin=(8.0,22.0),pcb_cols=PCB_COLS)
-    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(BW,w.pcb_extent[1]+4),extra=dict(silk_big=[("NIBBLE REGISTERS",BW-30,3,1.8)],hide_refs=['Q','R'],rules=dict(track=0.2,clearance=0.15)))
+    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(BW,w.pcb_extent[1]+4),extra=dict(silk_big=[("NIBBLE REGISTERS",BW-40,3,1.8)],hide_refs=['Q','R'],rules=dict(track=0.2,clearance=0.15)))
     w.sheet("TESTBENCH",f"{PROJECT}-testbench.kicad_sch",x=10*G+cols*w.CELL_W+4*G,y=40*G,w=20*G,h=10*G,page="2",sheet_uuid=tb_uuid)
     W=10*G+cols*w.CELL_W+30*G; H=yend+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))

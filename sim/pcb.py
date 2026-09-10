@@ -1,5 +1,5 @@
 """Build, route and check a board from a KiCad project + placement plan.
-Run with KiCad's python:  <kicad>/python3 pcb.py <projectdir> <name> [--no-route] [--passes N]   (N: freerouting router and optimizer pass cap, default 40; a board that cannot finish stops there with its unrouted nets listed)
+Run with KiCad's python:  <kicad>/python3 pcb.py <projectdir> <name> [--no-route] [--passes N] [--silk]   (N: freerouting router and optimizer pass cap, default 40; a board that cannot finish stops there with its unrouted nets listed; --silk only replaces the silkscreen text of a routed board from the plan)
 Reads <name>.kicad_sch (via kicad-cli netlist), <name>.plan.json; writes <name>.kicad_pcb, fab/ outputs.
 """
 import sys, os, json, subprocess, re
@@ -33,7 +33,7 @@ def build(projdir,name,route=True,passes=40):
     # footprints
     holes=[]; missing=[]
     for ref,(val,fp) in comps.items():
-        if not fp: continue
+        if not fp or int(re.sub(r'\D','',ref) or 0)>=9000: continue     # testbench parts (refs 9000 and up) are not on the board
         lib,fn=fp.split(':')
         m=pcbnew.FootprintLoad(f'{F}/{lib}.pretty',fn)
         if m is None: missing.append(fp); continue
@@ -57,13 +57,7 @@ def build(projdir,name,route=True,passes=40):
         for (x1,y1,x2,y2) in [(a,b,c,b),(c,b,c,e),(c,e,a,e),(a,e,a,b)]:
             sh=pcbnew.PCB_SHAPE(board); sh.SetShape(pcbnew.SHAPE_T_SEGMENT); sh.SetStart(V(x1,y1)); sh.SetEnd(V(x2,y2)); sh.SetLayer(pcbnew.Edge_Cuts); sh.SetWidth(mm(0.1)); board.Add(sh)
     outline(1.5 if route else 0)
-    # silkscreen labels
-    for text,x,y,size in plan['silk']+plan['extra'].get('silk',[]):
-        t=pcbnew.PCB_TEXT(board); t.SetText(text); t.SetPosition(V(x,y)); t.SetLayer(pcbnew.F_SilkS)
-        t.SetTextSize(pcbnew.VECTOR2I(mm(size),mm(size))); t.SetTextThickness(mm(0.15)); t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT); board.Add(t)
-    for text,x,y,size in plan['extra'].get('silk_big',[]):
-        t=pcbnew.PCB_TEXT(board); t.SetText(text); t.SetPosition(V(x,y)); t.SetLayer(pcbnew.F_SilkS)
-        t.SetTextSize(pcbnew.VECTOR2I(mm(size),mm(size))); t.SetTextThickness(mm(0.25)); t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT); board.Add(t)
+    add_silk(board,plan)
     def pour(netname,layer):
         if netname not in netobj: return
         z=pcbnew.ZONE(board); z.SetLayer(layer); z.SetNet(netobj[netname])
@@ -125,6 +119,24 @@ def build(projdir,name,route=True,passes=40):
         if best and os.path.exists(best[1]): os.remove(best[1])
         outline(0); gnd_pour(); pcbnew.SaveBoard(pcb,board)
     sync_project(projdir,name,tw,cl)     # again: SaveBoard rewrites the project file with KiCad's defaults (0.2 mm clearance)
+    return pcb
+
+def add_silk(board,plan):
+    """Board-level silkscreen text from the plan (labels, then the big board name)."""
+    for text,x,y,size in plan['silk']+plan['extra'].get('silk',[]):
+        t=pcbnew.PCB_TEXT(board); t.SetText(text); t.SetPosition(V(x,y)); t.SetLayer(pcbnew.F_SilkS)
+        t.SetTextSize(pcbnew.VECTOR2I(mm(size),mm(size))); t.SetTextThickness(mm(0.15)); t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT); board.Add(t)
+    for text,x,y,size in plan['extra'].get('silk_big',[]):
+        t=pcbnew.PCB_TEXT(board); t.SetText(text); t.SetPosition(V(x,y)); t.SetLayer(pcbnew.F_SilkS)
+        t.SetTextSize(pcbnew.VECTOR2I(mm(size),mm(size))); t.SetTextThickness(mm(0.25)); t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT); board.Add(t)
+
+def resilk(projdir,name):
+    """--silk: replace the board-level silkscreen text of an already routed board from the plan, without re-routing."""
+    pcb=os.path.join(projdir,f'{name}.kicad_pcb'); board=pcbnew.LoadBoard(pcb)
+    plan=json.load(open(os.path.join(projdir,f'{name}.plan.json')))
+    for d in [d for d in board.GetDrawings() if isinstance(d,pcbnew.PCB_TEXT) and d.GetLayer()==pcbnew.F_SilkS]: board.Remove(d)
+    add_silk(board,plan); pcbnew.SaveBoard(pcb,board)
+    rules=plan['extra'].get('rules',{}); sync_project(projdir,name,rules.get('track',0.25),rules.get('clearance',0.2))
     return pcb
 
 def gnd_stitch(board,pcb,netobj,refill,gndname='GND'):
@@ -227,5 +239,5 @@ def outputs(pcb,name):
 if __name__=='__main__':
     projdir,name=sys.argv[1],sys.argv[2]
     passes=int(sys.argv[sys.argv.index('--passes')+1]) if '--passes' in sys.argv else 40
-    pcb=build(projdir,name,route='--no-route' not in sys.argv,passes=passes)
+    pcb=resilk(projdir,name) if '--silk' in sys.argv else build(projdir,name,route='--no-route' not in sys.argv,passes=passes)
     drc(pcb); outputs(pcb,name)

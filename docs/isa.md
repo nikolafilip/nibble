@@ -118,7 +118,11 @@ S3 otherwise, so one-word instructions never spend a tick in S2.
 The carry flag is the adder's carry out; for the logic functions it reads 0.
 The zero flag is 1 when the selected result is 0000.
 
-## Registers on the sequencer
+## Registers on the sequencer and the counter boards
+
+The program counter and the return register are on their own board (09,
+D035); the operand register and the lines `PCR` and `RAI` reach it over a
+12-pin link cable, `PCL` and `PCE` over the bus header.
 
 - **IR**, 4 bits: the opcode. `II` loads it from M7..M4.
 - **OPR**, 8 bits: the operand. `II` loads its low nibble from M3..M0 at the
@@ -145,12 +149,15 @@ simulation.
 ## The control matrix
 
 The sequencer board decodes the opcode into 16 lines and, for opcode 0000,
-the operand nibble into 16 more. ANDed with S3 and S4 that gives 62 row wires
-(15 opcodes plus 16 family members, two steps each). The control lines are
-columns. A diode soldered at a crossing pulls that column when that row is
-active. Every instruction above is populated at assembly; the free opcodes
-take any future instruction that can be expressed with the lines on the
-header. Columns have 1 Meg pull-downs.
+the operand nibble into 16 more. ANDed with S3 that gives a row wire per
+instruction (16 family members, 7 opcodes, 8 free opcodes); the four memory
+accesses also get an S4 row, and JC and JZ each get a row that includes the
+flag (`PCL` hangs on that one, `DONE` on the plain one): 37 rows. The 23
+control lines (19 header lines plus `PCL`, `PCR`, `RAI`, `DONE`) are columns.
+A diode soldered at a crossing pulls that column when that row is active.
+Every instruction above is populated at assembly (83 diodes); the free
+opcodes take any future instruction that can be expressed with the lines on
+the header. Columns have 1 Meg pull-downs.
 
 ## Worked program: Fibonacci on the LEDs
 

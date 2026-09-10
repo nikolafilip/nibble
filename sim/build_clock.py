@@ -32,11 +32,11 @@ def main():
     w.T("SCHMITT TRIGGER: Q1 (gate X) and Q2 (gate = Q1's drain) share RS = 1k.  Q2 on: source at 0.45 V (RD2 10k); Q1 on: source at 0.1 V (RD1 47k).  VD2, Q2's drain, is the output: 0.5 V with X low, 5 V with X high.",x-4*G,y-8*G,1.6,True)
     # Q1
     q1=w.Q(x+8*G,y); w.at(q1,90,80,0); w.L('X',x+2*G,y,180,'input'); w.W(x+2*G,y,x+6*G,y)
-    w.W(x+9*G,y-2*G,x+9*G,y-3*G); w.J(x+9*G,y-3*G); w.at(w.R('47k',x+9*G,y-4.5*G),96,74,270); w.W(x+9*G,y-6*G,x+9*G,y-7*G); w.PW('+5V',x+9*G,y-7*G)
+    w.W(x+9*G,y-2*G,x+9*G,y-3*G); w.J(x+9*G,y-3*G); w.at(w.R("47k",x+9*G,y-4.5*G),96,68,270); w.W(x+9*G,y-6*G,x+9*G,y-7*G); w.PW('+5V',x+9*G,y-7*G)
     w.W(x+9*G,y+2*G,x+9*G,y+3*G); w.J(x+9*G,y+3*G)                                   # source node VS
     # Q2, gate from Q1's drain
     q2=w.Q(x+20*G,y); w.at(q2,102,80,0); w.W(x+9*G,y-3*G,x+14*G,y-3*G); w.W(x+14*G,y-3*G,x+14*G,y); w.W(x+14*G,y,x+18*G,y)
-    w.W(x+21*G,y-2*G,x+21*G,y-3*G); w.J(x+21*G,y-3*G); w.at(w.R('10k',x+21*G,y-4.5*G),108,74,270); w.W(x+21*G,y-6*G,x+21*G,y-7*G); w.PW('+5V',x+21*G,y-7*G)
+    w.W(x+21*G,y-2*G,x+21*G,y-3*G); w.J(x+21*G,y-3*G); w.at(w.R("10k",x+21*G,y-4.5*G),108,68,270); w.W(x+21*G,y-6*G,x+21*G,y-7*G); w.PW('+5V',x+21*G,y-7*G)
     w.W(x+21*G,y-3*G,x+24*G,y-3*G); w.L('VD2',x+24*G,y-3*G,0,'output')
     w.W(x+21*G,y+2*G,x+21*G,y+3*G); w.W(x+9*G,y+3*G,x+21*G,y+3*G); w.W(x+21*G,y+3*G,x+24*G,y+3*G); w.L('VS',x+24*G,y+3*G,0,'output')
     # RS from VS to GND
@@ -61,7 +61,7 @@ def main():
     sw=w.dipswitch(1,x+3*G,y2,"RUN"); w.at(sw,96,124,0); w.label("RUN",93,120,1.0)
     w.W(x,y2,x-2*G,y2); w.PW('+5V',x-2*G,y2); w.W(x+6*G,y2,x+8*G,y2); w.J(x+8*G,y2); w.L('RUNSW',x+8*G,y2,0,'output')
     w.W(x+8*G,y2,x+8*G,y2+G); w.at(w.R('1Meg',x+8*G,y2+2.5*G),90,132,270); w.W(x+8*G,y2+4*G,x+8*G,y2+5*G); w.PW('GND',x+8*G,y2+5*G)
-    w.W(x+8*G,y2,x+9*G,y2); w.at(w.diode(x+10.5*G,y2,180),102,124,0); w.W(x+12*G,y2,x+13*G,y2)          # diode: in STEP the 10k must not pull CLK down against the panel's button
+    w.W(x+8*G,y2,x+9*G,y2); w.at(w.diode(x+10.5*G,y2,180),108,124,0); w.W(x+12*G,y2,x+13*G,y2)          # diode: in STEP the 10k must not pull CLK down against the panel's button
     w.at(w.R('10k',x+14.5*G,y2,90),96,132,270); w.W(x+16*G,y2,x+17*G,y2); w.L('CLK',x+17*G,y2,0,'bidirectional')
     # power-on reset
     y3=y2+10*G

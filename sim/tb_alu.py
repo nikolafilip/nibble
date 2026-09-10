@@ -68,7 +68,7 @@ def deck(netlist_lines, cases, corner, outfile, probes, kicad=False, seed=1):
     tend=len(cases)*T
     lib=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','lib','2N7000.lib')
     return "\n".join(["* ALU testbench", f'.include "{lib}"', nmos.LED_MODEL]+supply+sources(cases)+body+
-        [f".tran 2u {tend:.6g}", ".option method=gear", ".control","run","set wr_singlescale","set wr_vecnames",
+        [f".tran 2u {tend:.6g}", ".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12", ".control","run","set wr_singlescale","set wr_vecnames",
          f"wrdata {outfile} "+" ".join(f"v({p.lower()})" for p in probes),"quit",".endc",".end"])
 
 def dev_netlist():

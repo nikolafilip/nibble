@@ -7293,6 +7293,10 @@
 "hide_refs": [
 "Q",
 "R"
-]
+],
+"rules": {
+"track": 0.2,
+"clearance": 0.15
+}
 }
 }

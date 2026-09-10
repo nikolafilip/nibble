@@ -24,3 +24,7 @@ tools/*.jar
 *.dsn
 *.ses
 *.kicad_pcb-bak
+*.erc.json
+*.freerouting.log
+*.best.kicad_pcb
+*.kicad_pcb.best

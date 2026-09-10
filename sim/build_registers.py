@@ -30,7 +30,7 @@ def main():
     board_frame(w,{'BUS0#','BUS1#','BUS2#','BUS3#','CLK','AI','AO','BI','BO','BA','AB','OI','A0','A1','A2','A3','B0','B1','B2','B3'})
     cols=14; w.PCB_COL=12.7
     yend=w.layout(d.gates,registers.GROUP_TITLES,10*G,66*G,cols,pcb_origin=(8.0,22.0),pcb_cols=PCB_COLS)
-    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(BW,w.pcb_extent[1]+4),extra=dict(silk_big=[("NIBBLE REGISTERS",BW-30,3,1.8)],hide_refs=['Q','R']))
+    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(BW,w.pcb_extent[1]+4),extra=dict(silk_big=[("NIBBLE REGISTERS",BW-30,3,1.8)],hide_refs=['Q','R'],rules=dict(track=0.2,clearance=0.15)))
     w.sheet("TESTBENCH",f"{PROJECT}-testbench.kicad_sch",x=10*G+cols*w.CELL_W+4*G,y=40*G,w=20*G,h=10*G,page="2",sheet_uuid=tb_uuid)
     W=10*G+cols*w.CELL_W+30*G; H=yend+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))

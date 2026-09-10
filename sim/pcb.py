@@ -1,5 +1,5 @@
 """Build, route and check a board from a KiCad project + placement plan.
-Run with KiCad's python:  <kicad>/python3 pcb.py <projectdir> <name> [--no-route]
+Run with KiCad's python:  <kicad>/python3 pcb.py <projectdir> <name> [--no-route] [--passes N]   (N: freerouting optimisation passes, default 40; big boards: 8)
 Reads <name>.kicad_sch (via kicad-cli netlist), <name>.plan.json; writes <name>.kicad_pcb, fab/ outputs.
 """
 import sys, os, json, subprocess, re
@@ -95,9 +95,14 @@ def build(projdir,name,route=True,passes=40):
             # pre-routed power (GND/+5V rails, stubs, stitches) is fixed so the router cannot move it; the SES then omits it,
             # and KiCad's SES import replaces all tracks, so the rails are re-added after every import (add_rails below)
             lines=open(dsn).read().split('\n')
-            lines=[l.replace('(type route)','(type fix)') if ('(net GND)' in l or '(net +5V)' in l) else l for l in lines]
+            fixed=set(['GND','+5V'])|set(r[0] for r in plan.get('rails',[]))     # every pre-routed net (power, matrix rows and columns) is fixed
+            lines=[l.replace('(type route)','(type fix)') if any(f'(net {n})' in l for n in fixed) else l for l in lines]
             open(dsn,'w').write('\n'.join(lines))
-            r=subprocess.run([JAVA,'-Djava.awt.headless=true','-jar',JAR,'-de',dsn,'-do',ses,'-mp',str(passes),'-dct','2'],capture_output=True,text=True,timeout=3600)
+            # freerouting's own log goes to <name>.freerouting.log so a long run can be watched
+            with open(os.path.join(projdir,f'{name}.freerouting.log'),'w') as flog:
+                subprocess.run([JAVA,'-Djava.awt.headless=true','-jar',JAR,'-de',dsn,'-do',ses,'-mp',str(passes),'-dct','2'],stdout=flog,stderr=subprocess.STDOUT,text=True,timeout=6*3600)
+            class R: stdout=open(os.path.join(projdir,f'{name}.freerouting.log')).read()
+            r=R()
             last=[l for l in r.stdout.splitlines() if 'unrouted' in l.lower()]
             m=re.search(r'\((\d+) unrouted\)',last[-1]) if last else None
             unrouted=int(m.group(1)) if m else 0
@@ -220,5 +225,6 @@ def outputs(pcb,name):
 
 if __name__=='__main__':
     projdir,name=sys.argv[1],sys.argv[2]
-    pcb=build(projdir,name,route='--no-route' not in sys.argv)
+    passes=int(sys.argv[sys.argv.index('--passes')+1]) if '--passes' in sys.argv else 40
+    pcb=build(projdir,name,route='--no-route' not in sys.argv,passes=passes)
     drc(pcb); outputs(pcb,name)

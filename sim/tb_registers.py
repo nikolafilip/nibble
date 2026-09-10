@@ -62,7 +62,7 @@ def deck(lines,s,corner,outfile,probes,kicad,seed):
         L.append(f"Sd{i} BUS{i}# 0 d{i} 0 ODRV")      # ideal open-drain driver: a switch to ground
     L+=body
     tend=edges[-1]+T/2
-    L+=[f".tran 1u {tend:.6g}",".option method=gear",".control","run","set wr_singlescale","set wr_vecnames",
+    L+=[f".tran 1u {tend:.6g}",".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12",".control","run","set wr_singlescale","set wr_vecnames",
         f"wrdata {outfile} "+" ".join(f"v({p})" for p in probes),"quit",".endc",".end"]
     return "\n".join(L)+"\n", edges
 

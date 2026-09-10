@@ -1,5 +1,5 @@
 """Build, route and check a board from a KiCad project + placement plan.
-Run with KiCad's python:  <kicad>/python3 pcb.py <projectdir> <name> [--no-route] [--passes N]   (N: freerouting optimisation passes, default 40; big boards: 8)
+Run with KiCad's python:  <kicad>/python3 pcb.py <projectdir> <name> [--no-route] [--passes N]   (N: freerouting router and optimizer pass cap, default 40; a board that cannot finish stops there with its unrouted nets listed)
 Reads <name>.kicad_sch (via kicad-cli netlist), <name>.plan.json; writes <name>.kicad_pcb, fab/ outputs.
 """
 import sys, os, json, subprocess, re
@@ -8,7 +8,7 @@ import pcbnew, knet
 K='/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli'
 F='/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints'
 JAVA=os.path.expanduser('~/.sdkman/candidates/java/21.0.2-tem/bin/java')
-JAR=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','tools','freerouting-2.1.0.jar')
+JAR=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','tools','freerouting-1.9.0.jar')   # 1.9: -mp caps the passes and the SES is written; 2.1 ignores every cap headless
 mm=lambda v:int(round(v*1e6))
 V=lambda x,y:pcbnew.VECTOR2I(mm(x),mm(y))
 
@@ -100,7 +100,7 @@ def build(projdir,name,route=True,passes=40):
             open(dsn,'w').write('\n'.join(lines))
             # freerouting's own log goes to <name>.freerouting.log so a long run can be watched
             with open(os.path.join(projdir,f'{name}.freerouting.log'),'w') as flog:
-                subprocess.run([JAVA,'-Djava.awt.headless=true','-jar',JAR,'-de',dsn,'-do',ses,'-mp',str(passes),'-dct','2'],stdout=flog,stderr=subprocess.STDOUT,text=True,timeout=6*3600)
+                subprocess.run([JAVA,'-jar',JAR,'-de',dsn,'-do',ses,'-mp',str(passes),'-dct','2'],stdout=flog,stderr=subprocess.STDOUT,text=True,timeout=6*3600)
             class R: stdout=open(os.path.join(projdir,f'{name}.freerouting.log')).read()
             r=R()
             last=[l for l in r.stdout.splitlines() if 'unrouted' in l.lower()]
@@ -124,6 +124,7 @@ def build(projdir,name,route=True,passes=40):
                 pour('GND',pcbnew.B_Cu)
         if best and os.path.exists(best[1]): os.remove(best[1])
         outline(0); gnd_pour(); pcbnew.SaveBoard(pcb,board)
+    sync_project(projdir,name,tw,cl)     # again: SaveBoard rewrites the project file with KiCad's defaults (0.2 mm clearance)
     return pcb
 
 def gnd_stitch(board,pcb,netobj,refill,gndname='GND'):

@@ -16,14 +16,6 @@ def dip8_levels(w,x,y,names,title,pcb):
             w.body+=f'\t(no_connect\n\t\t(at {ksch.f(x+3*G)} {ksch.f(sy)})\n\t\t(uuid "{ksch.U()}")\n\t)\n'; continue
         w.W(x+3*G,sy,x+4*G,sy); r=w.R('10k',x+5.5*G,sy,90); w.W(x+7*G,sy,x+8*G,sy); w.L(n,x+8*G,sy,0,'output')
         w.at(r,rx+(i%2)*6,ry+(i//2)*8,270)
-def dip4_data(w,x,y,pcb):
-    sw=w.dipswitch(4,x,y,"DATA (closed = 1 on the bus)"); px,py=pcb; w.at(sw,px,py,0); w.rails.append(('GND','F.Cu',px,py,px,py+3*2.54,0.5))
-    w.W(x-3*G,y-2*G,x-3*G,y+G); w.W(x-3*G,y+G,x-3*G,y+3*G); w.PW('GND',x-3*G,y+3*G)
-    for i in range(4):
-        sy=y-2*G+i*G
-        if i not in (0,3): w.J(x-3*G,sy)
-        w.W(x+3*G,sy,x+5*G,sy); w.L(panel.DATA_SW[i],x+5*G,sy,0,'bidirectional')
-        w.label(f"D{i}",px-6,py+i*2.54-0.6,1.0)
 def button(w,x,y,name,pcb):
     """+5V -> button -> 10k -> X (1u, 220k to GND) -> 100k -> N (label name_N); name_S2 -> 1Meg -> N; name_S2 -> 10k -> diode -> name"""
     px,py=pcb
@@ -48,41 +40,40 @@ def main():
     w=ksch.Writer(PROJECT,root)
     w.T("NIBBLE BOARD 06 - FRONT PANEL: switches to force any bus line, debounced CLK and RST buttons, an LED on every line",10*G,6*G,3.5,True)
     w.T(f"{d.ntransistors()} transistors, {d.nleds()} LEDs.  Level switches connect a line to +5V through 10k: a switch left on can never fight a board that pulls the line low, it only adds a 1 where nothing else drives.\n"
-        "Every switched or observed line has a 1Meg pull-down so it reads 0 when no board drives it.  DATA switches pull BUS_i# to GND directly (that is what an open-drain driver does), so closed = 1 on the bus.\n"
+        "Every switched or observed line has a 1Meg pull-down so it reads 0 when no board drives it.  The DATA switches are the input port: a closed switch is a 1, and while INP=1 the four bits are driven onto the bus (open drain) for the IN instruction.\n"
         "CLK and RST come from RC-debounced buttons through a Schmitt trigger and a diode, so the clock board can drive the same lines later.  Order 1 test: hub + panel + ALU: set A, B, SUB, EO; read S on the D3..D0 LEDs and CF/ZF.\n"
-        "The M0..M7 LEDs have no pull-downs here: the M lines are pulled down on the hub (D021).  SP0..SP3 are spare and not on the panel.",10*G,16*G,1.6)
-    used=set(panel.LEVEL_SW+panel.CTRL_SW1+panel.CTRL_SW2+panel.CTRL_SW3+panel.DATA_SW+panel.OBSERVED+panel.BUTTONS)   # SP0..SP3 stay unconnected
-    BW,BH=200,240; HY=BH-8; w.PCB_COL=15.24
+        "The M0..M7 LEDs have no pull-downs here: the M lines are pulled down on the hub (D021).",10*G,16*G,1.6)
+    used=set(panel.LEVEL_SW+panel.CTRL_SW1+panel.CTRL_SW2+panel.CTRL_SW3+panel.OBSERVED+panel.BUTTONS+['BUS0#','BUS1#','BUS2#','BUS3#'])
+    SX=170; BW=SX+76; BH=250; HY=BH-8; BY=HY-22; w.PCB_COL=15.24     # SX: left edge of the switch/pull-down area (LED matrix to its left); BY: the CLK/RST button row, above the header
     j=frame.bus_header(w,30*G,40*G,used); w.at(j,50,HY,90); w.label("BUS  (pin 1 left)",52,HY-8,1.2); frame.header_gnd(w,50,HY,+1)
     frame.power_flags(w,44*G,32*G)
-    c1,c2=frame.decoupling(w,52*G,32*G); w.at(c1,12,200,270); w.at(c2,18,200,270); frame.cap_gnd(w,12,200,2.5); frame.cap_gnd(w,18,200,2.0)
+    c1,c2=frame.decoupling(w,52*G,32*G); w.at(c1,140,BY,270); w.at(c2,146,BY,270); frame.cap_gnd(w,140,BY,2.5); frame.cap_gnd(w,146,BY,2.0)
     frame.holes(w,72*G,32*G,4)
     sx=100*G
-    dip8_levels(w,sx,34*G,panel.LEVEL_SW,"A3..A0 B3..B0",(144,12,160,10))
-    dip8_levels(w,sx+22*G,34*G,panel.CTRL_SW1," ".join(panel.CTRL_SW1),(144,46,160,44))
-    dip8_levels(w,sx+44*G,34*G,panel.CTRL_SW2," ".join(panel.CTRL_SW2),(144,80,160,78))
-    dip8_levels(w,sx+66*G,34*G,panel.CTRL_SW3," ".join(panel.CTRL_SW3),(160,114,176,112))
-    dip4_data(w,sx+84*G,34*G,(144,114))
-    w.rails.append(('+5V','F.Cu',144,12,144,80,0.5))   # one +5V spine through all three DIP-8 level-switch columns
-    w.label("A3..B0",143,8,1.0); w.label("CONTROL",143,42,1.0); w.label("CONTROL",143,76,1.0); w.label("MEMORY",159,110,1.0); w.label("DATA",143,110,1.0)
-    button(w,sx+80*G,30*G,'CLK',(136,140)); button(w,sx+80*G,42*G,'RST',(136,160))
-    # button-cluster grounds -> pull-down ground bar row 0 (y=183.08), via a free column at x=180
-    w.rails.append(('GND','B.Cu',160,143.08,160,145.5,0.5)); w.rails.append(('GND','B.Cu',160,145.5,180,145.5,0.5)); w.rails.append(('GND','B.Cu',180,145.5,180,183.08,0.5)); w.vias.append(('GND',180,183.08))
-    w.rails.append(('GND','B.Cu',160,163.08,160,165.5,0.5)); w.rails.append(('GND','B.Cu',160,165.5,180,165.5,0.5))
+    dip8_levels(w,sx,34*G,panel.LEVEL_SW,"A3..A0 B3..B0",(SX+4,12,SX+20,10))
+    dip8_levels(w,sx+22*G,34*G,panel.CTRL_SW1," ".join(panel.CTRL_SW1),(SX+4,46,SX+20,44))
+    dip8_levels(w,sx+44*G,34*G,panel.CTRL_SW2," ".join(panel.CTRL_SW2),(SX+4,80,SX+20,78))
+    dip8_levels(w,sx+66*G,34*G,panel.CTRL_SW3," ".join(panel.CTRL_SW3),(SX+4,114,SX+20,112))
+    dip8_levels(w,sx+88*G,34*G,panel.DATA_SW,"DATA (input port, read by IN)",(SX+44,12,SX+60,10))
+    w.rails.append(('+5V','F.Cu',SX+4,12,SX+4,114,0.5))   # one +5V spine through the four DIP-8 switch columns
+    w.label("A3..B0",SX+3,8,1.0); w.label("CONTROL",SX+3,42,1.0); w.label("CONTROL",SX+3,76,1.0); w.label("CONTROL",SX+3,110,1.0); w.label("DATA IN",SX+43,8,1.0)
+    button(w,sx+80*G,30*G,'CLK',(8,BY)); button(w,sx+80*G,42*G,'RST',(64,BY))
     w.T("1Meg pull-downs: every line the panel switches or observes reads 0 when no board drives it",10*G,58*G,1.6,True)
+    PR=12   # pull-downs per row
     for k,n in enumerate(panel.PULLDOWNS):
-        r=frame.pulldown(w,n,12*G+(k%20)*4*G,60*G+(k//20)*8*G); w.at(r,140+(k%10)*6,178+(k//10)*10,270)
-    w.label("1Meg PULL-DOWNS",140,176,1.0)
-    nrow=(len(panel.PULLDOWNS)+9)//10
-    for r in range(nrow):   # GND bar through each row's ground pads, joined at the right end
-        last=140+(min(10,len(panel.PULLDOWNS)-r*10)-1)*6
-        w.rails.append(('GND','F.Cu',137,178+r*10+5.08,last,178+r*10+5.08,0.5))
-    w.rails.append(('GND','F.Cu',137,183.08,137,HY-2.54,0.5))   # joiner runs down to the header pin-64 ground via
-    yend=w.layout(d.gates,panel.GROUP_TITLES,10*G,80*G,16,pcb_origin=(12.0,16.0),pcb_cols=8)
+        r=frame.pulldown(w,n,12*G+(k%20)*4*G,60*G+(k//20)*8*G); w.at(r,SX+(k%PR)*6,178+(k//PR)*10,270)
+    w.label("1Meg PULL-DOWNS",SX,176,1.0)
+    nrow=(len(panel.PULLDOWNS)+PR-1)//PR
+    for r in range(nrow):   # GND bar through each row's ground pads, joined at the left end
+        last=SX+(min(PR,len(panel.PULLDOWNS)-r*PR)-1)*6
+        w.rails.append(('GND','F.Cu',SX-3,178+r*10+5.08,last,178+r*10+5.08,0.5))
+    w.rails.append(('GND','F.Cu',SX-3,183.08,SX-3,HY-2.54,0.5))   # joiner runs down to the header pin-64 ground via
+    yend=w.layout(d.gates,panel.GROUP_TITLES,10*G,80*G,16,pcb_origin=(12.0,16.0),pcb_cols=10)
+    assert w.pcb_extent[1]<BY-8, w.pcb_extent
     frame.header_gnd_link(w,50,HY,w.pcb_extent[1]+6)
     # header pin-64 ground via (placed by frame.header_gnd at x = pin 64 + 2.5) -> pull-down ground joiner (both at the bottom right)
     x64=50+((bus.N-1)//2)*2.54+2.5
-    w.rails.append(('GND','B.Cu',x64,HY-2.54,137,HY-2.54,0.5)); w.vias.append(('GND',137,HY-2.54))
+    w.rails.append(('GND','B.Cu',x64,HY-2.54,SX-3,HY-2.54,0.5)); w.vias.append(('GND',SX-3,HY-2.54))
     W=10*G+16*w.CELL_W+30*G; H=yend+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
     open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))

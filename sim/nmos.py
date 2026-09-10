@@ -48,8 +48,8 @@ class Design:
         self.nand(p+'m1',d,ckn); self.nand(p+'m2',ckn,p+'dn')
         self.nand(p+'mq',p+'m1',p+'mqn'); self.nand(p+'mqn',p+'mq',p+'m2')
         self.inv(p+'mqi',p+'mq')
-        self.nand(p+'s1',p+'mq',ckb); self.nand(p+'s2',ckb,p+'mqi')
-        self.nand(q,p+'s1',p+'qn',pu=qpu); self.nand(p+'qn',q,p+'s2')
+        self.nand(p+'sa',p+'mq',ckb); self.nand(p+'sb',ckb,p+'mqi')      # not 's1'/'s2': <q>_s1 is the series node of the q NAND
+        self.nand(q,p+'sa',p+'qn',pu=qpu); self.nand(p+'qn',q,p+'sb')
         return q
     # ---- checks ----
     def outputs(self): return {g['out']:g for g in self.gates if g['kind'] not in ('BUS','LED')}
@@ -69,6 +69,12 @@ class Design:
             if net in outs and n>MAX_LOADS[outs[net]['pu']]: pr.append(f"{net}: {n} loads on {outs[net]['pu']}")
         for g in self.gates:
             if g['kind']=='NAND' and len(g['ins'])>MAX_SERIES: pr.append(f"{g['out']}: {len(g['ins'])} in series")
+        # a NAND's internal series nodes are <out>_s1, _s2: they must not collide with a net of that name
+        nets=set(lower)|set(i.lower() for g in self.gates for i in g['ins'])
+        for g in self.gates:
+            if g['kind']=='NAND':
+                for k in range(1,len(g['ins'])):
+                    if f"{g['out']}_s{k}".lower() in nets: pr.append(f"{g['out']}: series node {g['out']}_s{k} collides with a net of that name")
         return pr
     def ntransistors(self): return sum(len(g['ins']) for g in self.gates)
     def nresistors(self): return sum(1 for g in self.gates if g['pu'])
@@ -99,3 +105,4 @@ class Design:
         return L
 
 LED_MODEL=".model LEDRED D(Is=1e-18 Rs=3 N=1.8 Cjo=20p)"
+SW_MODEL=".model ODRV SW(VT=2.5 VH=0.2 RON=20 ROFF=1e9)"   # ideal open-drain driver for testbenches: closes to ground when its control is high

@@ -72,3 +72,18 @@ def header_gnd_link(w,hx,hy,ylink):
     if not rails: return
     xr,yend=min(rails,key=lambda r:abs(r[0]-x3))
     w.rails.append(('GND','B.Cu',x3,y3,x3,ylink,0.5)); w.rails.append(('GND','B.Cu',x3,ylink,xr,ylink,0.5)); w.rails.append(('GND','B.Cu',xr,yend,xr,ylink,0.5))
+
+LINK=['OPR0','OPR1','OPR2','OPR3','OPR4','OPR5','OPR6','OPR7','PCR','RAI','GND','GND']   # the sequencer-counter link header (D035), pins 1..12
+def link_header(w,x,y,direction):
+    """2x6 IDC header carrying the operand register and the counter's load lines between boards 03 and 09.
+    direction: 'output' on the sequencer, 'input' on the counter. Returns the ref."""
+    ref=w.symbol("Connector_Generic","Conn_02x06_Odd_Even",w.ref('J'),"LINK",x,y,0,tuple(str(i) for i in range(1,13)),
+                 "Connector_IDC:IDC-Header_2x06_P2.54mm_Vertical",[("Description","sequencer-counter link",True)],sim=False)
+    for pin,sig in enumerate(LINK,1):
+        odd=pin%2==1; px=x-2*G if odd else x+3*G; py=y-2*G+((pin-1)//2)*G
+        if sig=='GND':
+            ex=px-3*G if odd else px+3*G; w.W(px,py,ex,py); w.PW('GND',ex,py)
+        else:
+            ex=px-4*G if odd else px+4*G; w.W(px,py,ex,py); w.L(sig,ex,py,180 if odd else 0,direction)
+    w.T("LINK to board 09 (counter)" if direction=='output' else "LINK from board 03 (sequencer)",x-6*G,y-4*G,1.27,True)
+    return ref

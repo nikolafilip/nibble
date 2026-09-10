@@ -13,7 +13,7 @@ import collections
 
 PU_DEFAULT='47k'
 MAX_SERIES=3
-MAX_LOADS={'47k':8,'22k':16,'10k':32}   # rising-edge budget, see docs/gate-cell.md
+MAX_LOADS={'47k':8,'22k':16,'10k':32,'4.7k':64}   # rising-edge budget, see docs/gate-cell.md
 LED_R='1k'
 
 class Design:
@@ -38,21 +38,46 @@ class Design:
         p=out+'_'
         self.nor(p+'n',a,b); self.nand(p+'a',a,b); self.inv(p+'d',p+'a')
         return self.nor(out,p+'n',p+'d',pu=pu)
-    def ff(self,q,d,clk=None,qpu=PU_DEFAULT,ckn=None,ckb=None):
+    def ff(self,q,d,clk=None,qpu=PU_DEFAULT,ckn=None,ckb=None,rstn=None):
         """Positive-edge master-slave D flip-flop from NANDs (20 transistors, 18 when the clock pair ckn/ckb is shared).
-        Master is transparent while clk is low, slave copies it on the rising edge."""
+        Master is transparent while clk is low, slave copies it on the rising edge.
+        rstn: active-low asynchronous reset to 0 (two more transistors: a third input on the master's and the slave's
+        feedback NAND). With rstn low the feedback NANDs are forced high, the master follows d AND ckn, and the slave's
+        set NAND sees (d AND ckn) AND ckb, which the non-overlapping clock keeps at 0: q = 0 whatever the phase."""
         p=q+'_'
         if ckn is None: self.inv(p+'ckn',clk); ckn=p+'ckn'
         if ckb is None: self.inv(p+'ckb',ckn); ckb=p+'ckb'
+        r=[rstn] if rstn else []
         self.inv(p+'dn',d)
         self.nand(p+'m1',d,ckn); self.nand(p+'m2',ckn,p+'dn')
-        self.nand(p+'mq',p+'m1',p+'mqn'); self.nand(p+'mqn',p+'mq',p+'m2')
+        self.nand(p+'mq',p+'m1',p+'mqn'); self.nand(p+'mqn',p+'mq',p+'m2',*r)
         self.inv(p+'mqi',p+'mq')
         self.nand(p+'sa',p+'mq',ckb); self.nand(p+'sb',ckb,p+'mqi')      # not 's1'/'s2': <q>_s1 is the series node of the q NAND
-        self.nand(q,p+'sa',p+'qn',pu=qpu); self.nand(p+'qn',q,p+'sb')
+        self.nand(q,p+'sa',p+'qn',pu=qpu); self.nand(p+'qn',q,p+'sb',*r)
         return q
+    def latch(self,q,d,en,qpu=PU_DEFAULT,rstn=None):
+        """Transparent D latch from NANDs (10 transistors): q follows d while en is high, holds when en is low.
+        Used where a register is only ever loaded from a value that is stable for the whole tick and read
+        when its enable is low (the sequencer's IR, OPR, RA and flags): enable = load line AND PH1, so the latch
+        closes before the rising edge on which everything else changes. rstn as in ff()."""
+        p=q+'_'; r=[rstn] if rstn else []
+        self.inv(p+'dn',d)
+        self.nand(p+'m1',d,en); self.nand(p+'m2',en,p+'dn')
+        self.nand(q,p+'m1',p+'qn',pu=qpu); self.nand(p+'qn',q,p+'m2',*r)
+        return q
+    def pull(self,node,*ins,note=''):
+        """An extra pull-down stack (transistors in series, no resistor) on a node that already has a pull-up:
+        the node goes low when all of ins are high. Wired-AND onto a gate output, or an open-drain bus line."""
+        assert len(ins)<=MAX_SERIES, (node,ins)
+        return self._g('PULL',node,list(ins),None,note)
+    def diode(self,row,col):
+        """Diode-matrix crossing: the column is pulled high (through the diode) while the row is high."""
+        return self._g('DIODE',col,[row],None)
+    def pulldown(self,net,value='1Meg'):
+        """Resistor from net to ground (a matrix column's pull-down)."""
+        return self._g('PD',net,[],value)
     # ---- checks ----
-    def outputs(self): return {g['out']:g for g in self.gates if g['kind'] not in ('BUS','LED')}
+    def outputs(self): return {g['out']:g for g in self.gates if g['kind'] not in ('BUS','LED','DIODE','PD','PULL')}
     def loads(self):
         c=collections.Counter(self.ext_loads)
         for g in self.gates:
@@ -60,11 +85,14 @@ class Design:
         return c
     def check(self):
         outs=self.outputs(); c=self.loads(); pr=[]
-        lower=collections.Counter(g['out'].lower() for g in self.gates if g['kind']!='BUS')
+        lower=collections.Counter(g['out'].lower() for g in self.gates if g['kind'] not in ('BUS','DIODE','PD','PULL'))
         pr+=[f"duplicate output {o}" for o,k in lower.items() if k>1]
+        cols=set(g['out'] for g in self.gates if g['kind']=='DIODE'); pds=set(g['out'] for g in self.gates if g['kind']=='PD')
+        for cc in cols:
+            if cc not in pds: pr.append(f"matrix column {cc} has no pull-down")
         for g in self.gates:
             for i in g['ins']:
-                if i not in outs and i not in self.inputs: pr.append(f"{g['out']}: input {i} is driven by nothing (floating gate)")
+                if i not in outs and i not in self.inputs and i not in cols: pr.append(f"{g['out']}: input {i} is driven by nothing (floating gate)")
         for net,n in c.items():
             if net in outs and n>MAX_LOADS[outs[net]['pu']]: pr.append(f"{net}: {n} loads on {outs[net]['pu']}")
         for g in self.gates:
@@ -76,13 +104,14 @@ class Design:
                 for k in range(1,len(g['ins'])):
                     if f"{g['out']}_s{k}".lower() in nets: pr.append(f"{g['out']}: series node {g['out']}_s{k} collides with a net of that name")
         return pr
-    def ntransistors(self): return sum(len(g['ins']) for g in self.gates)
+    def ntransistors(self): return sum(len(g['ins']) for g in self.gates if g['kind']!='DIODE')
     def nresistors(self): return sum(1 for g in self.gates if g['pu'])
     def nleds(self): return sum(1 for g in self.gates if g['kind']=='LED')
+    def ndiodes(self): return sum(1 for g in self.gates if g['kind']=='DIODE')
     # ---- SPICE ----
     def spice(self,model='2N7000',vdd='VDD'):
         """Flat netlist lines. Node names are the net names; internal series nodes get _s<k>."""
-        L=[]; q=1; r=1
+        L=[]; q=1; r=1; pulls=collections.Counter()
         for g in self.gates:
             ins=g['ins']; out=g['out']; kind=g['kind']
             if kind=='LED':
@@ -92,6 +121,18 @@ class Design:
                 continue
             if kind=='BUS':
                 L.append(f"M{q} {out} {ins[0]} 0 {model}"); q+=1
+                continue
+            if kind=='PULL':
+                node=out; k0=pulls[out]; pulls[out]+=1
+                for k,i in enumerate(ins):
+                    nxt='0' if k==len(ins)-1 else f"{out}_p{k0}s{k+1}"
+                    L.append(f"M{q} {node} {i} {nxt} {model}"); q+=1; node=nxt
+                continue
+            if kind=='DIODE':
+                L.append(f"D{r} {ins[0]} {out} D1N4148"); r+=1
+                continue
+            if kind=='PD':
+                L.append(f"R{r} {out} 0 {g['pu']}"); r+=1
                 continue
             L.append(f"R{r} {vdd} {out} {g['pu']}"); r+=1
             if kind=='NAND':

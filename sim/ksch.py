@@ -86,7 +86,7 @@ class Writer:
         return self.symbol("Connector_Generic",f"Conn_01x{n:02d}",self.ref('J'),value,x,y,0,tuple(str(i) for i in range(1,n+1)),f"Connector_PinHeader_2.54mm:PinHeader_1x{n:02d}_P2.54mm_Vertical",[("Description","pin header",True)],sim=False)
     def dipswitch(self,n,x,y,value):
         """SW_DIP_x08 etc: pins 1..n on the left at x-7.62?, n+1..2n on the right"""
-        return self.symbol("Switch",f"SW_DIP_x{n:02d}",self.ref('SW'),value,x,y,0,tuple(str(i) for i in range(1,2*n+1)),f"Button_Switch_THT:SW_DIP_SPSTx{n:02d}_Slide_9.78x{'22.5' if n==8 else '12.34'}mm_W7.62mm_P2.54mm",[("Description","DIP switch",True)],sim=False)
+        return self.symbol("Switch",f"SW_DIP_x{n:02d}",self.ref('SW'),value,x,y,0,tuple(str(i) for i in range(1,2*n+1)),f"Button_Switch_THT:SW_DIP_SPSTx{n:02d}_Slide_9.78x{ {1:'4.72',2:'7.26',4:'12.34',8:'22.5'}[n]}mm_W7.62mm_P2.54mm",[("Description","DIP switch",True)],sim=False)
     def button(self,x,y,value):
         return self.symbol("Switch","SW_Push",self.ref('SW'),value,x,y,0,('1','2'),"Button_Switch_THT:SW_PUSH_6mm",[("Description","push button",True)],sim=False)
     def diode(self,x,y,rot=0):
@@ -131,6 +131,7 @@ class Writer:
         n=len(g['ins']); k=g['kind']
         if k=='LED': return 25.4
         if k=='BUS': return 10.16
+        if k=='PULL': return 5.08*n+5.08
         return 10.16+5.08*n+5.08
     def gate(self,g,x0,y0,pcb=None):
         """Draw one NAND/NOR/INV/BUS/LED cell at (x0,y0). Returns height used."""
@@ -157,19 +158,22 @@ class Writer:
             self.W(xc,yq-2*G,xc,yq-3*G); self.W(xc,yq-3*G,xout,yq-3*G); self.L(g['out'],xout,yq-3*G,0,'bidirectional')
             self.W(xq-2*G,yq,xin,yq); self.L(ins[0],xin,yq,180,'input')
             return 8*G
-        self.PW('+5V',xc,yr-1.5*G)
-        r=self.R(g['pu'],xc,yr)
-        if pcb: self.at(r,px+2.54,py,270); self.pwr.append(('+5V',px+2.54,py))
-        self.W(xc,yr+1.5*G,xc,yc0); self.W(xc,yc0,xout,yc0); self.L(g['out'],xout,yc0,0,'output')
+        if kind=='PULL':                       # extra pull-down stack on a node that has its pull-up elsewhere: no resistor
+            self.W(xc,yc0,xout,yc0); self.L(g['out'],xout,yc0,0,'bidirectional'); qy0=py+2.54 if pcb else None
+        else:
+            self.PW('+5V',xc,yr-1.5*G)
+            r=self.R(g['pu'],xc,yr)
+            if pcb: self.at(r,px+2.54,py,270); self.pwr.append(('+5V',px+2.54,py)); qy0=py+10.16
+            self.W(xc,yr+1.5*G,xc,yc0); self.W(xc,yc0,xout,yc0); self.L(g['out'],xout,yc0,0,'output')
         if n>1: self.J(xc,yc0)
         for k,inp in enumerate(ins):
             yq=yc0+2*G+6*G*k                   # D at yq-2G, S at yq+2G
             q=self.Q(xq,yq)
             if pcb:
-                self.at(q,px,py+10.16+5.08*k,0)
-                if kind=='NOR' or k==n-1: self.pwr.append(('GND',px,py+10.16+5.08*k))
+                self.at(q,px,qy0+5.08*k,0)
+                if kind=='NOR' or k==n-1: self.pwr.append(('GND',px,qy0+5.08*k))
             self.W(xq-2*G,yq,xin,yq); self.L(inp,xin,yq,180,'input')
-            if kind=='NAND':
+            if kind in ('NAND','PULL'):
                 if k<n-1: self.W(xc,yq+2*G,xc,yq+4*G)
                 else: self.PW('GND',xc,yq+2*G)
             else:
@@ -230,3 +234,34 @@ def write_plan(w,path,outline,extra=None):
     """PCB placement plan consumed by pcb.py (run with KiCad's python)."""
     import json
     json.dump(dict(place=w.place,silk=w.silk,rails=w.rails,vias=w.vias,outline=list(outline),extra=extra or {}),open(path,'w'),indent=0)
+
+def matrix(w,rows,cols,diodes,x0,y0,pcb,pd='1Meg'):
+    """Diode control matrix. rows: [(net, caption)], cols: [net], diodes: [(row_net, col_net)].
+    Schematic: columns are vertical wires (label at the top, pull-down at the bottom), rows horizontal wires
+    (label at the left); a diode at a crossing has its anode on the row and its cathode on the column.
+    PCB (origin pcb=(x,y)), transposed to keep the board short: rows are vertical B.Cu tracks at 3.81 mm pitch
+    (left to right), columns horizontal F.Cu tracks at 10.16 mm pitch (top to bottom). The diode stands along its
+    row: cathode pad on the column track, anode pad 7.62 below with a short stub across to the row track.
+    Returns (schematic height used, pcb extent (x, y))."""
+    CW,RH=5*G,4*G; xl=x0+8*G; yt=y0+6*G
+    CP,RP=10.16,3.81; px0,py0=pcb; pxl=px0+8; pyt=py0+12
+    colx={c:xl+k*CW for k,c in enumerate(cols)}; rowy={r:yt+k*RH for k,(r,cap) in enumerate(rows)}
+    pcy={c:pyt+k*CP for k,c in enumerate(cols)}; prx={r:pxl+k*RP for k,(r,cap) in enumerate(rows)}
+    ybot=yt+len(rows)*RH; xr=xl+len(cols)*CW; pxr=pxl+len(rows)*RP+2       # pxr: where the pull-downs stand
+    for c in cols:
+        x=colx[c]; w.W(x,yt-2*G,x,ybot+G); w.L(c,x,yt-2*G,90,'output')
+        r=w.R(pd,x,ybot+2.5*G); w.W(x,ybot+4*G,x,ybot+5*G); w.PW('GND',x,ybot+5*G)
+        w.at(r,pxr,pcy[c],270); w.pwr.append(('GND',pxr,pcy[c]+5.08))     # rot 270: pad 1 at (x,y) on the column track, pad 2 (GND) at (x,y+5.08)
+        w.rails.append((c,'F.Cu',pxl-4,pcy[c],pxr,pcy[c],0.5)); w.label(c,px0,pcy[c]-0.9,0.9)
+    w.rails.append(('GND','B.Cu',pxr,pcy[cols[0]]+5.08,pxr,pcy[cols[-1]]+5.08,0.5)); w.vias.append(('GND',pxr,pcy[cols[-1]]+5.08))
+    for k,(r,cap) in enumerate(rows):
+        y=rowy[r]; w.W(xl-4*G,y,xr,y); w.L(r,xl-4*G,y,180,'input'); w.L(r,xr,y,0,'input'); w.T(cap,xl-4*G,y-0.6*G,1.0)   # a label at both ends: no dangling wire
+        w.rails.append((r,'B.Cu',prx[r],pyt-4,prx[r],pcy[cols[-1]]+8.5,0.4))
+    for k,(r,cap) in enumerate(rows):      # row captions along the top, alternating two heights so they stay legible at 3.81 pitch
+        w.label(cap.replace(' (free)',''),prx[r]-1.2,pyt-6-(k%2)*3.2,0.6)
+    for rn,cn in diodes:
+        x,y=colx[cn],rowy[rn]
+        d=w.diode(x+2*G,y+1.5*G,90); w.J(x+2*G,y); w.W(x+2*G,y+3*G,x,y+3*G); w.J(x,y+3*G)   # A on the row wire, K to the column wire
+        w.at(d,prx[rn]+1.9,pcy[cn],270); w.rails.append((rn,"B.Cu",prx[rn]+1.9,pcy[cn]+7.62,prx[rn],pcy[cn]+7.62,0.4))   # rot 270: K at (x,y), A at (x,y+7.62)
+    w.T("Rows are driven by the NOR gates on the left (10k pull-ups); a diode pulls its column high while the row is high; columns have 1 Meg pull-downs and go to the bus header.  Add an instruction: add diodes.",x0,y0+2*G,1.4)
+    return ybot+8*G-y0, (pxr+6, pcy[cols[-1]]+12)

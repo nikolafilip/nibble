@@ -55,6 +55,12 @@ in the deck, so the eleven programs (5,500 ticks) are half a day per corner.
 
 ## Order of work
 
+**Superseded on 2026-09-10 evening by `cards.md` (D042):** the boards below
+become 100 x 100 mm cards on one crimped ribbon, the sequencer stays one
+board. The gates above are unchanged and apply to every card; the table is
+kept for the history of the board designs, which the card generators are
+cut from.
+
 | Step | What | Gate | Notes |
 |---|---|---|---|
 | 1 | Regenerate ALU, panel, hub, coupon with the 64-pin header (D017) and the D031 lines | schematic + board gates | hub gains M pull-downs (D021); panel gains the control switches and LEDs for every line and the input port (IN); ALU gains ONE, F0, F1 |

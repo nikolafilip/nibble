@@ -1,5 +1,9 @@
 # Bring-up: the whole machine, one board at a time
 
+**Written for the nine-board machine; to be redone per card after D042
+(`cards.md`). The order of testing and the tests themselves carry over: a
+register bit card is tested the way the register board is, one bit at a time.**
+
 Ten boards arrive in one order (D032): the gate coupon, the hub and the nine
 boards of the machine. Solder and test them in the order below. Every step
 adds one board to a machine that already works, so a failure points at one

@@ -44,15 +44,26 @@ def main():
     tx=mx+36*G
     w.T("Test loops",tx-2*G,y-6*G,1.27)
     for k,n in enumerate(['BUS0#','BUS1#','BUS2#','BUS3#','CLK','RST']):
-        xx=tx+k*5*G; w.at(w.testpoint(n,xx,y),116+(k%3)*6,9+(k//3)*6,0); w.label(n.replace('#',''),113+(k%3)*6,13.5+(k//3)*6,0.9); w.W(xx,y,xx,y+2*G); w.L(n,xx,y+2*G,270,'input')
+        xx=tx+k*5*G; w.at(w.testpoint(n,xx,y),130+(k%2)*6,6+(k//2)*6,0); w.label(n.replace('#',''),127.5+(k%2)*6,10.2+(k//2)*6,0.8); w.W(xx,y,xx,y+2*G); w.L(n,xx,y+2*G,270,'input')
     frame.holes(w,tx+34*G,y,4)
     # headers: all signals connected
     used=set(s for s in bus.PINS.values() if s not in ('+5V','GND'))
-    hy=70*G; BW,BH=136,22+31*2.54+14   # headers run from y=22 to the last pin row at y=22+78.74; labels and margin below
+    hy=70*G; BW,BH=142,22+31*2.54+14   # headers run from y=22 to the last pin row at y=22+78.74; labels and margin below
+    HX0,HP,HY0=12,15,22; ylast=HY0+31*2.54
     for k in range(N_HEADERS):
-        hx=16*G+k*22*G
+        hx=16*G+k*22*G; px=HX0+k*HP
         w.T(f"slot {k+1}",hx-4*G,hy-16*G,1.6,True)
-        j=frame.bus_header(w,hx,hy,used); w.at(j,12+k*15,22,0); w.label(f"SLOT {k+1}",9+k*15,107,1.2)
+        j=frame.bus_header(w,hx,hy,used); w.at(j,px,HY0,0); w.label(f"SLOT {k+1}",px-3,107,1.2)
+        # power pre-routes per header (rot 0: pin n at (px+((n-1)%2)*2.54, HY0+((n-1)//2)*2.54)): GND 4-6-8 down the second column,
+        # pin 64 and pin 63 stubs to the ground via / the bottom +5V bar
+        w.rails.append(('GND','F.Cu',px+2.54,HY0+2.54,px+2.54,HY0+3*2.54,0.5))
+        w.rails.append(('GND','F.Cu',px+2.54,ylast,px+2.54,ylast+2.5,0.5)); w.vias.append(('GND',px+2.54,ylast+2.5))
+        w.rails.append(('+5V','F.Cu',px,ylast,px,ylast+3.8,0.5))
+    xl=HX0+(N_HEADERS-1)*HP+2.54
+    w.rails.append(('+5V','F.Cu',6,HY0,xl,HY0,0.8))                 # +5V bar through pins 1 and 2 of every header
+    w.rails.append(('GND','F.Cu',HX0,HY0+2.54,xl,HY0+2.54,0.8))     # GND bar through pins 3 and 4
+    w.rails.append(('+5V','F.Cu',6,ylast+3.8,HX0+(N_HEADERS-1)*HP,ylast+3.8,0.8))   # bottom +5V bar through the pin-63 stubs
+    w.rails.append(('+5V','B.Cu',6,HY0,6,ylast+3.8,0.8)); w.vias.append(('+5V',6,HY0)); w.vias.append(('+5V',6,ylast+3.8))   # left link between the two bars
     W=16*G+N_HEADERS*22*G+10*G; H=hy+24*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
     ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(BW,BH),extra=dict(silk_big=[("NIBBLE BUS HUB",BW-44,BH-3.2,1.5)],rules=dict(track=0.2,clearance=0.15)))

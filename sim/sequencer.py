@@ -36,9 +36,9 @@ GROUP_TITLES={
  'opdec':'OPCODE DECODER: IR3..0 -> OP0#..OP15# (active low), through a pair of 2-to-4 predecoders so no NAND has more than two transistors in series.  TWO = JMP or JC or JZ or CALL.',
  'famdec':'FAMILY DECODER: OPR3..0 -> F0#..F15#, the member of the opcode-0000 family.',
  'flags':'FLAGS: CFQ, ZFQ latched from the ALU while FI and PH1.  Only ADD SUB INC DEC AND OR XOR assert FI.',
- 'rows':'MATRIX ROWS: one per instruction for S3, and for S4 where the instruction uses it (the four memory accesses).  Row = NOR(OPn#, T3N) or NOR(OPn#, T4N); family rows also include F#.  JC/JZ have a conditional row for PCL: NOR(OP#, T3N, flag-not).  10k pull-ups: a row drives up to ten diodes into 1 Meg column pull-downs.',
- 'matrix':'THE CONTROL MATRIX: a diode from a row to a column pulls that control line high while the row is active.  New instructions are diodes (rows OP8..OP15 are free).',
- 'cols':'COLUMN PULL-DOWNS: every control line reads 0 when no row drives it.',
+ 'rows':'MATRIX ROWS: one per instruction for S3, and for S4 where the instruction uses it (the four memory accesses) and for every free opcode.  Row = NOR(OPn#, T3N) or NOR(OPn#, T4N); family rows also include F#.  JC/JZ have a conditional row for PCL: NOR(OP#, T3N, flag-not).  10k pull-ups: a row drives up to ten diodes into 1 Meg column pull-downs.',
+ 'matrix':'THE CONTROL MATRIX: a diode from a row to a column pulls that control line high while the row is active.  Every crossing has a diode pad pair on the board (D040); the ones drawn DNP are empty.  A new one-word instruction on the free rows OP8..OP15 (S3 and S4) is diodes soldered in; a conditional jump needs a flag-gated row, i.e. a new board.',
+ 'cols':'COLUMN BUFFERS (D041): the diode node of each column has a 1 Meg pull-down and feeds one inverter; a second inverter (22k) drives the control line, so the line falls through a transistor in microseconds instead of decaying through 1 Meg into every board and the ribbons.',
  'outs':'STEP OUTPUTS to the header: II = T0, PCE = T1 or T2.',
  'bus':'BUS DRIVERS: OPR3..0 onto BUS3#..BUS0# while IO (LDI, LOAD n, STORE n).',
  'leds':'INDICATORS: steps T0..T4, IR3..0, OPR7..0, CF, ZF.',
@@ -69,7 +69,7 @@ def build():
     d.ff('T3','T3_D',ckn='PH1',ckb='PH2',rstn='RSTN',qpu='22k')
     d.inv('DONEN','DONE'); d.nand('T4D_N','T3','DONEN'); d.inv('T4_D','T4D_N')
     d.ff('T4','T4_D',ckn='PH1',ckb='PH2',rstn='RSTN',qpu='22k')
-    d.inv('T3N','T3',pu='10k'); d.inv('T3NB','T3',pu='10k'); d.inv('T4N','T4')        # feed every row: 10k for the fan-out, T3 split in two
+    d.inv('T3N','T3',pu='10k'); d.inv('T3NB','T3',pu='10k'); d.inv('T4N','T4',pu='10k')        # feed every row: 10k for the fan-out, T3 split in two; T4N feeds 14 rows since D040
     # ---- IR, OPR ----
     d.group='ir'
     d.nand('ENIRN','T0','PH1'); d.inv('ENIR','ENIRN')              # II = T0
@@ -97,17 +97,20 @@ def build():
             d.nor(f'R_F{n}_{step}','OP0#',f'F{n}#',tn,pu='10k'); rows.append((f'R_F{n}_{step}',FAMILY[n],step))
     for n in range(1,16):
         for step,tn in ((3,'T3NB'),(4,'T4N')):
-            if step==4 and not (n in OPCODE and RECIPE[OPCODE[n]][1]): continue
+            if step==4 and n in OPCODE and not RECIPE[OPCODE[n]][1]: continue      # free opcodes get both rows (D040)
             d.nor(f'R_OP{n}_{step}',f'OP{n}#',tn,pu='10k'); rows.append((f'R_OP{n}_{step}',OPCODE.get(n),step))
     d.nor('R_JCC','OP3#','T3N','CFQ_qn',pu='10k'); d.nor('R_JZZ','OP4#','T3N','ZFQ_qn',pu='10k')
     # ---- the matrix ----
     d.group='matrix'
     for row,name,step in rows:
         if name is None: continue
-        for col in sorted(RECIPE[name][step-3],key=COLS.index): d.diode(row,col)
-    d.diode('R_JCC','PCL'); d.diode('R_JZZ','PCL')
+        for col in sorted(RECIPE[name][step-3],key=COLS.index): d.diode(row,f'{col}_m')
+    d.diode('R_JCC','PCL_m'); d.diode('R_JZZ','PCL_m')
     d.group='cols'
-    for c in COLS: d.pulldown(c)
+    # D041: the diode node <col>_m (1 Meg pull-down) feeds one gate only; a two-inverter buffer drives the line, so a
+    # control line falls in microseconds through a transistor instead of decaying through 1 Meg into every board's gates
+    # and the ribbons (350 us to 1 V bare, 800 us with cables, most of a tick). 22k on the output stage for the cable capacitance.
+    for c in COLS: d.pulldown(f'{c}_m'); d.inv(f'{c}_mn',f'{c}_m'); d.inv(c,f'{c}_mn',pu='22k')
     # ---- outputs ----
     d.group='outs'
     d.inv('IIN','T0'); d.inv('II','IIN'); d.nor('PCEN','T1','T2'); d.inv('PCE','PCEN')

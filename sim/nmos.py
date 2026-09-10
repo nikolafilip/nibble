@@ -92,7 +92,7 @@ class Design:
             if cc not in pds: pr.append(f"matrix column {cc} has no pull-down")
         for g in self.gates:
             for i in g['ins']:
-                if i not in outs and i not in self.inputs and i not in cols: pr.append(f"{g['out']}: input {i} is driven by nothing (floating gate)")
+                if i not in outs and i not in self.inputs and i not in cols and i not in pds: pr.append(f"{g['out']}: input {i} is driven by nothing (floating gate)")   # a pull-down alone is a defined 0 (a matrix column no instruction uses yet)
         for net,n in c.items():
             if net in outs and n>MAX_LOADS[outs[net]['pu']]: pr.append(f"{net}: {n} loads on {outs[net]['pu']}")
         for g in self.gates:

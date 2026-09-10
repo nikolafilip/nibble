@@ -230,8 +230,8 @@ def outputs(pcb,name):
     d=os.path.dirname(pcb); fab=os.path.join(d,'fab'); os.makedirs(fab,exist_ok=True)
     subprocess.run([K,'pcb','export','gerbers','-o',fab+'/',pcb],capture_output=True)
     subprocess.run([K,'pcb','export','drill','-o',fab+'/',pcb],capture_output=True)
-    subprocess.run([K,'pcb','export','pos','--format','csv','--units','mm','-o',os.path.join(fab,f'{name}-pos.csv'),pcb],capture_output=True)
-    subprocess.run([K,'sch','export','bom','--fields','Reference,Value,Footprint,${QUANTITY}','--group-by','Value,Footprint','-o',os.path.join(fab,f'{name}-bom.csv'),os.path.join(d,f'{name}.kicad_sch')],capture_output=True)
+    subprocess.run([K,'pcb','export','pos','--format','csv','--units','mm','--exclude-dnp','-o',os.path.join(fab,f'{name}-pos.csv'),pcb],capture_output=True)
+    subprocess.run([K,'sch','export','bom','--fields','Reference,Value,Footprint,${QUANTITY}','--group-by','Value,Footprint','--exclude-dnp','-o',os.path.join(fab,f'{name}-bom.csv'),os.path.join(d,f'{name}.kicad_sch')],capture_output=True)
     for side,fn in [('top',f'{name}-top.png'),('bottom',f'{name}-bottom.png')]:
         subprocess.run([K,'pcb','render','--side',side,'--width','2000','--height','1400','--quality','high','-o',os.path.join(fab,fn),pcb],capture_output=True)
     print('fab outputs in',fab)

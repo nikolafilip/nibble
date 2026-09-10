@@ -29,12 +29,13 @@ class Writer:
         eff="(effects\n\t\t\t\t(font\n\t\t\t\t\t(size 1.27 1.27)\n\t\t\t\t)"+(f"\n\t\t\t\t(justify {justify})" if justify else "")+"\n\t\t\t)"
         return (f'\t\t(property "{name}" "{val}"\n\t\t\t(at {f(x)} {f(y)} {rot})\n'+("\t\t\t(hide yes)\n" if hide else "")+
                 "\t\t\t(show_name no)\n\t\t\t(do_not_autoplace no)\n\t\t\t"+eff+"\n\t\t)\n")
-    def symbol(self,lib,name,ref,value,x,y,rot,pins,footprint="",props=(),mirror=None,in_bom=True,on_board=True,sim=True,hide_value=False):
+    def symbol(self,lib,name,ref,value,x,y,rot,pins,footprint="",props=(),mirror=None,in_bom=True,on_board=True,sim=True,hide_value=False,dnp=False):
         if int(re.sub(r'\D','',ref) or 0)>=9000: in_bom=on_board=False     # testbench parts (refs 9000 and up) never reach the board or the BOM
+        if dnp: in_bom=sim=False                                          # do not populate: pads on the board, nothing in the BOM or the simulation
         self.libs.setdefault(f"{lib}:{name}",libsym(lib,name))
         s=f'\t(symbol\n\t\t(lib_id "{lib}:{name}")\n\t\t(at {f(x)} {f(y)} {rot})\n'
         if mirror: s+=f'\t\t(mirror {mirror})\n'
-        s+=f'\t\t(unit 1)\n\t\t(body_style 1)\n\t\t(exclude_from_sim {"no" if sim else "yes"})\n\t\t(in_bom {"yes" if in_bom else "no"})\n\t\t(on_board {"yes" if on_board else "no"})\n\t\t(in_pos_files yes)\n\t\t(dnp no)\n\t\t(fields_autoplaced yes)\n\t\t(uuid "{U()}")\n'
+        s+=f'\t\t(unit 1)\n\t\t(body_style 1)\n\t\t(exclude_from_sim {"no" if sim else "yes"})\n\t\t(in_bom {"yes" if in_bom else "no"})\n\t\t(on_board {"yes" if on_board else "no"})\n\t\t(in_pos_files yes)\n\t\t(dnp {"yes" if dnp else "no"})\n\t\t(fields_autoplaced yes)\n\t\t(uuid "{U()}")\n'
         s+=self.prop("Reference",ref,x+2.54,y-1.27,0,hide=ref.startswith('#'),justify="left")
         s+=self.prop("Value",value,x+2.54,y+1.27,0,hide=hide_value,justify="left")
         s+=self.prop("Footprint",footprint,x,y,0,hide=True)
@@ -90,9 +91,9 @@ class Writer:
         return self.symbol("Switch",f"SW_DIP_x{n:02d}",self.ref('SW'),value,x,y,0,tuple(str(i) for i in range(1,2*n+1)),f"Button_Switch_THT:SW_DIP_SPSTx{n:02d}_Slide_9.78x{ {1:'4.72',2:'7.26',4:'12.34',8:'22.5'}[n]}mm_W7.62mm_P2.54mm",[("Description","DIP switch",True)],sim=False)
     def button(self,x,y,value):
         return self.symbol("Switch","SW_Push",self.ref('SW'),value,x,y,0,('1','2'),"Button_Switch_THT:SW_PUSH_6mm",[("Description","push button",True)],sim=False)
-    def diode(self,x,y,rot=0):
-        """1N4148: pin 1 K, pin 2 A"""
-        return self.symbol("Device","D",self.ref('D'),"1N4148",x,y,rot,('1','2'),"Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",[("Description","small signal diode",True),("Sim.Device","D",True),("Sim.Pins","1=K 2=A",True),("Sim.Library",self.LED_LIB,True),("Sim.Name","D1N4148",True)])
+    def diode(self,x,y,rot=0,dnp=False):
+        """1N4148: pin 1 K, pin 2 A. dnp: the pads are on the board, the part is not (an empty matrix crossing)"""
+        return self.symbol("Device","D",self.ref('D'),"1N4148",x,y,rot,('1','2'),"Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",[("Description","small signal diode",True),("Sim.Device","D",True),("Sim.Pins","1=K 2=A",True),("Sim.Library",self.LED_LIB,True),("Sim.Name","D1N4148",True)],dnp=dnp)
     def hole(self,x,y):
         return self.symbol("Mechanical","MountingHole",self.ref('H'),"M3",x,y,0,(),self.H_FOOT,[],in_bom=False,sim=False)
     def vsource(self,kind,params,x,y):
@@ -236,16 +237,18 @@ def write_plan(w,path,outline,extra=None):
     import json
     json.dump(dict(place=w.place,silk=w.silk,rails=w.rails,vias=w.vias,outline=list(outline),extra=extra or {}),open(path,'w'),indent=0)
 
-def matrix(w,rows,cols,diodes,x0,y0,pcb,pd='1Meg'):
-    """Diode control matrix. rows: [(net, caption)], cols: [net], diodes: [(row_net, col_net)].
+def matrix(w,rows,cols,diodes,x0,y0,pcb,pd='1Meg',caption=lambda c:c,note=None):
+    """Diode control matrix. rows: [(net, caption)], cols: [net], diodes: [(row_net, col_net)] fitted; every other
+    crossing gets a DNP diode (pads on the board, nothing fitted) so an instruction can be added by soldering (D040).
     Schematic: columns are vertical wires (label at the top, pull-down at the bottom), rows horizontal wires
     (label at the left); a diode at a crossing has its anode on the row and its cathode on the column.
-    PCB (origin pcb=(x,y)), transposed to keep the board short: rows are vertical B.Cu tracks at 3.81 mm pitch
+    PCB (origin pcb=(x,y)), transposed to keep the board short: rows are vertical B.Cu tracks at 2.54 mm pitch
     (left to right), columns horizontal F.Cu tracks at 10.16 mm pitch (top to bottom). The diode stands along its
-    row: cathode pad on the column track, anode pad 7.62 below with a short stub across to the row track.
+    row, centred between row tracks: cathode pad on the column track, anode pad 7.62 below with a short stub to the
+    row track. The pull-downs stand at the right end of the columns with a GND rail 2.5 mm beside them.
     Returns (schematic height used, pcb extent (x, y))."""
     CW,RH=5*G,4*G; xl=x0+8*G; yt=y0+6*G
-    CP,RP=10.16,3.81; px0,py0=pcb; pxl=px0+8; pyt=py0+12
+    CP,RP=10.16,2.54; px0,py0=pcb; pxl=px0+8; pyt=py0+12
     colx={c:xl+k*CW for k,c in enumerate(cols)}; rowy={r:yt+k*RH for k,(r,cap) in enumerate(rows)}
     pcy={c:pyt+k*CP for k,c in enumerate(cols)}; prx={r:pxl+k*RP for k,(r,cap) in enumerate(rows)}
     ybot=yt+len(rows)*RH; xr=xl+len(cols)*CW; pxr=pxl+len(rows)*RP+2       # pxr: where the pull-downs stand
@@ -253,16 +256,20 @@ def matrix(w,rows,cols,diodes,x0,y0,pcb,pd='1Meg'):
         x=colx[c]; w.W(x,yt-2*G,x,ybot+G); w.L(c,x,yt-2*G,90,'output')
         r=w.R(pd,x,ybot+2.5*G); w.W(x,ybot+4*G,x,ybot+5*G); w.PW('GND',x,ybot+5*G)
         w.at(r,pxr,pcy[c],270); w.pwr.append(('GND',pxr,pcy[c]+5.08))     # rot 270: pad 1 at (x,y) on the column track, pad 2 (GND) at (x,y+5.08)
-        w.rails.append((c,'F.Cu',pxl-4,pcy[c],pxr,pcy[c],0.5)); w.label(c,px0,pcy[c]-0.9,0.9)
-    w.rails.append(('GND','B.Cu',pxr,pcy[cols[0]]+5.08,pxr,pcy[cols[-1]]+5.08,0.5)); w.vias.append(('GND',pxr,pcy[cols[-1]]+5.08))
+        w.rails.append(('GND','B.Cu',pxr,pcy[c]+5.08,pxr+2.5,pcy[c]+5.08,0.5))   # stub to the GND rail beside the pull-downs (a rail through them would cross their signal pads)
+        w.rails.append((c,'F.Cu',pxl-4,pcy[c],pxr,pcy[c],0.5)); w.label(caption(c),px0,pcy[c]-0.9,0.9)
+    w.rails.append(('GND','B.Cu',pxr+2.5,pcy[cols[0]]+5.08,pxr+2.5,pcy[cols[-1]]+5.08,0.5)); w.vias.append(('GND',pxr+2.5,pcy[cols[-1]]+5.08))
     for k,(r,cap) in enumerate(rows):
         y=rowy[r]; w.W(xl-4*G,y,xr,y); w.L(r,xl-4*G,y,180,'input'); w.L(r,xr,y,0,'input'); w.T(cap,xl-4*G,y-0.6*G,1.0)   # a label at both ends: no dangling wire
         w.rails.append((r,'B.Cu',prx[r],pyt-4,prx[r],pcy[cols[-1]]+8.5,0.4))
-    for k,(r,cap) in enumerate(rows):      # row captions along the top, alternating two heights so they stay legible at 3.81 pitch
-        w.label(cap.replace(' (free)',''),prx[r]-1.2,pyt-6-(k%2)*3.2,0.6)
-    for rn,cn in diodes:
-        x,y=colx[cn],rowy[rn]
-        d=w.diode(x+2*G,y+1.5*G,90); w.J(x+2*G,y); w.W(x+2*G,y+3*G,x,y+3*G); w.J(x,y+3*G)   # A on the row wire, K to the column wire
-        w.at(d,prx[rn]+1.9,pcy[cn],270); w.rails.append((rn,"B.Cu",prx[rn]+1.9,pcy[cn]+7.62,prx[rn],pcy[cn]+7.62,0.4))   # rot 270: K at (x,y), A at (x,y+7.62)
-    w.T("Rows are driven by the NOR gates on the left (10k pull-ups); a diode pulls its column high while the row is high; columns have 1 Meg pull-downs and go to the bus header.  Add an instruction: add diodes.",x0,y0+2*G,1.4)
-    return ybot+8*G-y0, (pxr+6, pcy[cols[-1]]+12)
+    for k,(r,cap) in enumerate(rows):      # row captions along the top, three heights so they stay legible at 2.54 pitch
+        w.label(cap.replace(' (free)',''),prx[r]-0.9,pyt-6-(k%3)*3.0,0.55)
+    fitted=set(diodes)
+    for rn,cap in rows:                    # a diode symbol at every crossing (D040): fitted where the design has one, DNP (pads only) elsewhere
+        for cn in cols:
+            x,y=colx[cn],rowy[rn]; dnp=(rn,cn) not in fitted
+            d=w.diode(x+2*G,y+1.5*G,90,dnp=dnp); w.J(x+2*G,y); w.W(x+2*G,y+3*G,x,y+3*G); w.J(x,y+3*G)   # A on the row wire, K to the column wire
+            w.at(d,prx[rn]+1.27,pcy[cn],270); w.rails.append((rn,"B.Cu",prx[rn]+1.27,pcy[cn]+7.62,prx[rn],pcy[cn]+7.62,0.4))   # rot 270: K at (x,y), A at (x,y+7.62)
+    w.T(note or "Rows are driven by the NOR gates on the left (10k pull-ups); a diode pulls its column high while the row is high; columns have 1 Meg pull-downs and a buffer to the bus header.\n"
+        "Every crossing has a pad pair on the board; a crossed-out diode is not fitted.  Add an instruction: solder diodes on a free row.",x0,y0+2*G,1.4)
+    return ybot+8*G-y0, (pxr+8, pcy[cols[-1]]+12)

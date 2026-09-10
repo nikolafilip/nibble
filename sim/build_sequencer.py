@@ -41,7 +41,7 @@ def main():
     rows+=[('R_JCC','JC if C (PCL)'),('R_JZZ','JZ if Z (PCL)')]
     diodes=[(g['ins'][0],g['out']) for g in d.gates if g['kind']=='DIODE']
     w.T("THE CONTROL MATRIX",10*G+cols*w.CELL_W+6*G,66*G-G,2.0,True)
-    mh,(mxe,mye)=ksch.matrix(w,rows,sequencer.COLS,diodes,10*G+cols*w.CELL_W+6*G,66*G,(MX,22.0))
+    mh,(mxe,mye)=ksch.matrix(w,rows,[f'{c}_m' for c in sequencer.COLS],diodes,10*G+cols*w.CELL_W+6*G,66*G,(MX,22.0),caption=lambda c:c[:-2])   # columns are the diode nodes; the buffers (D041) drive the lines
     BW=max(mxe,w.pcb_extent[0])+4; BH=max(mye,w.pcb_extent[1])+4
     ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(BW,BH),extra=dict(silk_big=[("NIBBLE SEQUENCER",BW-40,3,1.8)],hide_refs=['Q','R','D'],rules=dict(track=0.2,clearance=0.15)))
     W=10*G+cols*w.CELL_W+6*G+(len(sequencer.COLS)+10)*5*G+10*G; H=max(yend,66*G+mh)+10*G

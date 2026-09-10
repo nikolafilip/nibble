@@ -48,7 +48,7 @@ class Writer:
     LED_FOOT="LED_THT:LED_D3.0mm"
     C_FOOT="Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm"
     CP_FOOT="Capacitor_THT:CP_Radial_D5.0mm_P2.00mm"
-    J_FOOT="Connector_IDC:IDC-Header_2x25_P2.54mm_Vertical"
+    J_FOOT="Connector_IDC:IDC-Header_2x32_P2.54mm_Vertical"
     H_FOOT="MountingHole:MountingHole_3.2mm_M3_Pad"
     LIB_PREFIX="${KIPRJMOD}/../../lib"      # boards/<name>/ -> repo lib/; builders one level up set "${KIPRJMOD}/../lib"
     @property
@@ -76,8 +76,8 @@ class Writer:
     def pwr_flag(self,x,y):
         return self.symbol("power","PWR_FLAG",self.ref('#FLG'),"PWR_FLAG",x,y,0,('1',),"",[("Description","Special symbol for telling ERC where power comes from",True)])
     def header(self,x,y):
-        """2x25 header; odd pins at x-5.08, even at x+7.62; pin1 at y-30.48, step 2.54 down."""
-        return self.symbol("Connector_Generic","Conn_02x25_Odd_Even",self.ref('J'),"BUS",x,y,0,tuple(str(i) for i in range(1,51)),self.J_FOOT,[("Description","Nibble bus header",True)],sim=False)
+        """2x32 header; odd pins at x-5.08, even at x+7.62; pin1 at y-38.1, step 2.54 down."""
+        return self.symbol("Connector_Generic","Conn_02x32_Odd_Even",self.ref('J'),"BUS",x,y,0,tuple(str(i) for i in range(1,65)),self.J_FOOT,[("Description","Nibble bus header",True)],sim=False)
     TP_FOOT="TestPoint:TestPoint_Loop_D2.50mm_Drill1.0mm"
     def testpoint(self,name,x,y):
         """pin 1 at (x, y+2.54)?? -> Connector:TestPoint pin is at (0,-2.54) symbol coords = (x, y+2.54)?? see libsym"""

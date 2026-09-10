@@ -11,7 +11,7 @@ def board_frame(w,used):
     x,y=30*G,40*G
     j=frame.bus_header(w,x,y,used); w.at(j,26,8,90); w.label("BUS  (pin 1 left)",28,3,1.2); frame.header_gnd(w,26,8,-1,y_gnd_trunk=16)
     frame.power_flags(w,x+8*G,y-8*G)
-    c1,c2=frame.decoupling(w,x+16*G,y-8*G); w.at(c1,110,6,270); w.at(c2,116,6,270); frame.cap_gnd(w,110,6,2.5); frame.cap_gnd(w,116,6,2.0)
+    c1,c2=frame.decoupling(w,x+16*G,y-8*G); w.at(c1,118,6,270); w.at(c2,124,6,270); frame.cap_gnd(w,118,6,2.5); frame.cap_gnd(w,124,6,2.0)
     frame.holes(w,x+46*G,y-8*G,4)
 
 def main():
@@ -29,7 +29,7 @@ def main():
     # header outputs: CF/ZF labels are outputs of gates; the header side uses the same global label
     cols=14; w.PCB_COL=12.7
     yend=w.layout(d.gates,alu.GROUP_TITLES,10*G,60*G,cols,pcb_origin=(8.0,22.0),pcb_cols=11)
-    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(156,w.pcb_extent[1]+4),extra=dict(silk_big=[("NIBBLE ALU",126,3,1.8)],hide_refs=['Q','R']))
+    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(156,w.pcb_extent[1]+4),extra=dict(silk_big=[("NIBBLE ALU",131,3,1.8)],hide_refs=['Q','R']))
     w.sheet("TESTBENCH",f"{PROJECT}-testbench.kicad_sch",x=10*G+cols*w.CELL_W+4*G,y=40*G,w=20*G,h=10*G,page="2",sheet_uuid=tb_uuid)
     W=10*G+cols*w.CELL_W+30*G; H=yend+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))

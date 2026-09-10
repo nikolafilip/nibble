@@ -4,10 +4,12 @@
 |---|---|
 | `nmos.py` | The cell family: INV/NAND/NOR/BUS/LED cells, XOR and D flip-flop macros, fan-out and floating-input checks, SPICE emitter |
 | `ksch.py` | KiCad 10 schematic writer: draws a gate list as cells, plus header, decoupling, indicators, testbench sources |
-| `bus.py` | The 50-pin header pinout |
+| `bus.py` | The 64-pin header pinout (docs/bus-header.md) |
 | `alu.py` | Board 01 logic. `build_alu.py` turns it into `boards/01-alu/` |
 | `tb_alu.py` | Board 01 testbench: demo or exhaustive cases, any threshold corner, on the dev netlist or a kicad-cli export |
 | `plots_alu.py` | Transient plots from a testbench run |
+| `emu.py` | Tick-accurate ISA emulator; the reference for the whole-machine simulation |
+| `asm.py` | Assembler; `programs/*.asm` are the reference programs, `test_emu.py` runs them |
 | `out/` | Scratch (ignored by git). `out/cell.cir` characterises one cell |
 
 Needs ngspice (`brew install ngspice`), numpy, matplotlib, and KiCad 10 for

@@ -38,14 +38,17 @@ class Design:
         p=out+'_'
         self.nor(p+'n',a,b); self.nand(p+'a',a,b); self.inv(p+'d',p+'a')
         return self.nor(out,p+'n',p+'d',pu=pu)
-    def ff(self,q,d,clk,qpu=PU_DEFAULT):
-        """Positive-edge master-slave D flip-flop from NANDs (20 transistors)."""
+    def ff(self,q,d,clk=None,qpu=PU_DEFAULT,ckn=None,ckb=None):
+        """Positive-edge master-slave D flip-flop from NANDs (20 transistors, 18 when the clock pair ckn/ckb is shared).
+        Master is transparent while clk is low, slave copies it on the rising edge."""
         p=q+'_'
-        self.inv(p+'ckn',clk); self.inv(p+'ckb',p+'ckn'); self.inv(p+'dn',d)
-        self.nand(p+'m1',d,p+'ckn'); self.nand(p+'m2',p+'ckn',p+'dn')
+        if ckn is None: self.inv(p+'ckn',clk); ckn=p+'ckn'
+        if ckb is None: self.inv(p+'ckb',ckn); ckb=p+'ckb'
+        self.inv(p+'dn',d)
+        self.nand(p+'m1',d,ckn); self.nand(p+'m2',ckn,p+'dn')
         self.nand(p+'mq',p+'m1',p+'mqn'); self.nand(p+'mqn',p+'mq',p+'m2')
         self.inv(p+'mqi',p+'mq')
-        self.nand(p+'s1',p+'mq',p+'ckb'); self.nand(p+'s2',p+'ckb',p+'mqi')
+        self.nand(p+'s1',p+'mq',ckb); self.nand(p+'s2',ckb,p+'mqi')
         self.nand(q,p+'s1',p+'qn',pu=qpu); self.nand(p+'qn',q,p+'s2')
         return q
     # ---- checks ----

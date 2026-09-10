@@ -84,6 +84,7 @@ def build(projdir,name,route=True,passes=40):
             v=pcbnew.PCB_VIA(board); v.SetPosition(V(x,y)); v.SetDrill(mm(0.4)); v.SetWidth(mm(0.8)); v.SetLayerPair(pcbnew.F_Cu,pcbnew.B_Cu); v.SetNet(netobj[net]); board.Add(v)
     add_rails()
     pcb=os.path.join(projdir,f'{name}.kicad_pcb'); pcbnew.SaveBoard(pcb,board)
+    sync_project(projdir,name,tw,cl)
     print(f'{name}: {len(comps)} parts, {len(nets)} nets, board {W}x{H} mm')
     gnd_pour(); pcbnew.SaveBoard(pcb,board)     # before routing: the router sees GND as a plane and leaves it alone
     if route:
@@ -185,6 +186,17 @@ def unconnected(pcb):
     rep=pcb.replace('.kicad_pcb','.drc.json')
     subprocess.run([K,'pcb','drc','--format','json','-o',rep,pcb],capture_output=True)
     n=len(json.load(open(rep)).get('unconnected_items',[])); print('   DRC unconnected:',n); return n
+
+def sync_project(projdir,name,tw,cl):
+    """kicad-cli reads design rules from <name>.kicad_pro, which ERC or KiCad may have filled with defaults (0.2 mm clearance):
+    write the board's rules into it so DRC judges the board by the rules it was routed with."""
+    pro=os.path.join(projdir,f'{name}.kicad_pro'); j=json.load(open(pro)) if os.path.exists(pro) else {}
+    ds=j.setdefault('board',{}).setdefault('design_settings',{}); r=ds.setdefault('rules',{})
+    r.update({'min_clearance':min(cl,0.2),'min_track_width':min(tw,0.25),'min_via_diameter':0.6,'min_through_hole_diameter':0.3,'min_resolved_spokes':1})
+    ns=j.setdefault('net_settings',{}); cls=ns.setdefault('classes',[])
+    if not cls: cls.append({'name':'Default'})
+    cls[0].update({'clearance':cl,'track_width':tw,'via_diameter':0.8,'via_drill':0.4})
+    json.dump(j,open(pro,'w'),indent=2)
 
 def drc(pcb):
     rep=pcb.replace('.kicad_pcb','.drc.json')

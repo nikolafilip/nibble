@@ -3,10 +3,10 @@ import ksch, bus
 G=ksch.G
 
 def bus_header(w,x,y,used):
-    """50-pin header at (x,y); `used` = signals this board connects. Unused pins get no-connect flags. Returns ref."""
+    """64-pin header at (x,y); `used` = signals this board connects. Unused pins get no-connect flags. Returns ref."""
     ref=w.header(x,y)
     for pin,sig in bus.PINS.items():
-        odd=pin%2==1; px=x-2*G if odd else x+3*G; py=y-12*G+((pin-1)//2)*G
+        odd=pin%2==1; px=x-2*G if odd else x+3*G; py=y-15*G+((pin-1)//2)*G
         if sig in ('+5V','GND'):
             ex=px-3*G if odd else px+3*G
             w.W(px,py,ex,py); w.PW(sig,ex,py)
@@ -46,10 +46,10 @@ def pulldown(w,net,x,y,value='1Meg'):
     w.L(net,x,y,90,'input'); w.W(x,y,x,y+G); r=w.R(value,x,y+2.5*G); w.W(x,y+4*G,x,y+5*G); w.PW('GND',x,y+5*G); return r
 
 def header_gnd(w,hx,hy,outward,y_gnd_trunk=None):
-    """Pre-route the bus header's GND pins (3,4,6,8,50) for a header placed at (hx,hy) rot 90.
+    """Pre-route the bus header's GND pins (3,4,6,8,64) for a header placed at (hx,hy) rot 90.
     Pads: pin n at (hx+((n-1)//2)*2.54, hy-((n-1)%2)*2.54). outward=-1 if the header is at the top edge, +1 at the bottom."""
     P=lambda n:(hx+((n-1)//2)*2.54, hy-((n-1)%2)*2.54)
-    (x4,y4),(x8,y8),(x3,y3),(x50,y50)=P(4),P(8),P(3),P(50)
+    (x4,y4),(x8,y8),(x3,y3),(x50,y50)=P(4),P(8),P(3),P(bus.N)
     w.rails.append(('GND','F.Cu',x4,y4,x8,y8,0.5))        # 4-6-8 along the upper row
     w.rails.append(('GND','F.Cu',x3,y3,x4,y4,0.5))        # 3-4
     if outward<0:

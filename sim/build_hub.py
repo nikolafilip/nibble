@@ -1,13 +1,14 @@
-"""Board 07: bus hub. Power entry, bus pull-ups, eight identical headers, no logic."""
+"""Board 07: bus hub. Power entry, bus pull-ups, M-line pull-downs, eight identical 64-pin headers, no logic."""
 import os, ksch, frame, bus
 G=ksch.G; OUT=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','boards','07-hub'); PROJECT='hub'
 N_HEADERS=8
 def main():
     os.makedirs(OUT,exist_ok=True); root=ksch.U()
     w=ksch.Writer(PROJECT,root)
-    w.T("NIBBLE BOARD 07 - BUS HUB: power entry, the four bus pull-ups, and one 50-pin header per board",10*G,6*G,3.5,True)
-    w.T(f"No logic on this board.  {N_HEADERS} identical headers wired pin-for-pin; every board plugs in with a straight 50-way ribbon cable.\n"
+    w.T("NIBBLE BOARD 07 - BUS HUB: power entry, the four bus pull-ups, the eight M-line pull-downs, and one 64-pin header per board",10*G,6*G,3.5,True)
+    w.T(f"No logic on this board.  {N_HEADERS} identical headers wired pin-for-pin; every board plugs in with a straight 64-way ribbon cable (docs/bus-header.md).\n"
         "Power: USB-B 5 V through a 750 mA polyfuse (the USB plug is the power switch).  The BUS0#..BUS3# pull-ups (10k) live here and nowhere else.\n"
+        "The M0..M7 pull-downs (1Meg) also live here: the program memory boards diode-OR onto the M lines, so an unselected page leaves them floating and the hub reads them as 0 (D019, D021).\n"
         "Bulk capacitance for the whole machine, a power LED, and test loops on every bus line for a logic analyser.",10*G,14*G,1.6)
     # power entry: USB_B -> polyfuse -> switch -> +5V
     x,y=16*G,30*G
@@ -32,22 +33,29 @@ def main():
     for i in range(4):
         xx=px+i*5*G; w.PW('+5V',xx,y-4*G); w.W(xx,y-4*G,xx,y-3*G); w.at(w.R('10k',xx,y-1.5*G),68+i*4,6,270); w.W(xx,y,xx,y+2*G); w.L(f'BUS{i}#',xx,y+2*G,270,'bidirectional')
     w.label("BUS PULL-UPS",66,3,1.0)
+    # M-line pull-downs (1Meg): the memory boards drive M through diodes and only ever pull high
+    mx=px+24*G
+    w.T("M-line pull-downs (the memory boards only pull high)",mx-2*G,y-6*G,1.27)
+    for i in range(8):
+        xx=mx+i*4*G; w.L(f'M{i}',xx,y-4*G,90,'input'); w.W(xx,y-4*G,xx,y-3*G); w.at(w.R('1Meg',xx,y-1.5*G),86+i*4,6,270); w.W(xx,y,xx,y+2*G); w.PW('GND',xx,y+2*G)
+    w.label("M PULL-DOWNS 1Meg",84,3,1.0)
+    frame.gnd_bar(w,86,86+7*4,6+5.08,join=(114,13.6)); w.vias.append(('GND',114,13.6))
     # test loops on bus lines + CLK
-    tx=px+24*G
+    tx=mx+36*G
     w.T("Test loops",tx-2*G,y-6*G,1.27)
     for k,n in enumerate(['BUS0#','BUS1#','BUS2#','BUS3#','CLK','RST']):
-        xx=tx+k*5*G; w.at(w.testpoint(n,xx,y),90+k*6,6,0); w.label(n.replace('#',''),87+k*6,10.5,0.9); w.W(xx,y,xx,y+2*G); w.L(n,xx,y+2*G,270,'input')
+        xx=tx+k*5*G; w.at(w.testpoint(n,xx,y),116+(k%3)*6,9+(k//3)*6,0); w.label(n.replace('#',''),113+(k%3)*6,13.5+(k//3)*6,0.9); w.W(xx,y,xx,y+2*G); w.L(n,xx,y+2*G,270,'input')
     frame.holes(w,tx+34*G,y,4)
     # headers: all signals connected
     used=set(s for s in bus.PINS.values() if s not in ('+5V','GND'))
-    hy=70*G
+    hy=70*G; BW,BH=136,22+31*2.54+14   # headers run from y=22 to the last pin row at y=22+78.74; labels and margin below
     for k in range(N_HEADERS):
         hx=16*G+k*22*G
         w.T(f"slot {k+1}",hx-4*G,hy-16*G,1.6,True)
-        j=frame.bus_header(w,hx,hy,used); w.at(j,12+k*15,22,0); w.label(f"SLOT {k+1}",9+k*15,90,1.2)
-    W=16*G+N_HEADERS*22*G+10*G; H=hy+20*G
+        j=frame.bus_header(w,hx,hy,used); w.at(j,12+k*15,22,0); w.label(f"SLOT {k+1}",9+k*15,107,1.2)
+    W=16*G+N_HEADERS*22*G+10*G; H=hy+24*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
-    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(130,98),extra=dict(silk_big=[("NIBBLE BUS HUB",96,3,1.5)],rules=dict(track=0.2,clearance=0.15)))
+    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(BW,BH),extra=dict(silk_big=[("NIBBLE BUS HUB",BW-44,BH-3.2,1.5)],rules=dict(track=0.2,clearance=0.15)))
     open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))
     print("wrote",OUT)
 if __name__=='__main__': main()

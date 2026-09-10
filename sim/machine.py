@@ -231,10 +231,14 @@ def run_trace(words,trace,boards,corner='TYP',tag='machine',seed=1):
     os.makedirs(OUT,exist_ok=True); cir=os.path.join(OUT,tag+'.cir'); dat=os.path.join(OUT,tag+'.dat')
     if os.path.exists(dat): os.remove(dat)
     text,probes,edges=deck(words,boards,corner,trace,dat,seed); open(cir,'w').write(text)
-    r=subprocess.run(['ngspice','-b',cir],capture_output=True,text=True,cwd=HERE)
-    if not os.path.exists(dat): print(r.stdout[-4000:],r.stderr[-4000:]); raise SystemExit('ngspice failed')
-    if 'aborted' in r.stdout+r.stderr:
-        print("\n".join(l for l in (r.stdout+r.stderr).splitlines() if 'Timestep' in l or 'aborted' in l)); raise SystemExit('ngspice aborted the transient')
+    for attempt,opts in enumerate(("cshunt=1e-12 abstol=1e-10 chgtol=1e-12","cshunt=1e-11 abstol=1e-9 chgtol=1e-11")):
+        # a deck that aborts with "timestep too small" at a clock edge usually runs with ten times the shunt capacitance
+        if attempt: open(cir,'w').write(text.replace("cshunt=1e-12 abstol=1e-10 chgtol=1e-12",opts)); print(f"  ngspice aborted; retrying with {opts}")
+        r=subprocess.run(['ngspice','-b',cir],capture_output=True,text=True,cwd=HERE)
+        if not os.path.exists(dat): print(r.stdout[-4000:],r.stderr[-4000:]); raise SystemExit('ngspice failed')
+        if 'aborted' not in r.stdout+r.stderr: break
+        print("\n".join(l for l in (r.stdout+r.stderr).splitlines() if 'Timestep' in l or 'aborted' in l))
+    else: raise SystemExit('ngspice aborted the transient')
     tend=float(text.split('.tran 1u ')[1].split()[0])
     rows,det=sample(dat,probes,len(trace),tend); bad=compare(rows,trace,[b.partition('@')[0] for b in boards])
     if trace[-1]['halted'] or 'HLT' in trace[-1]['ctl']:

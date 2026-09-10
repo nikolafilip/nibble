@@ -10,11 +10,11 @@ add one to the program counter. Jumps overwrite the program counter instead.
 |---|---|---|
 | ALU | Adds or subtracts A and B in two's complement, or ands, ors, xors them; can use 1 in place of B. Produces a 4-bit result, a carry flag and a zero flag. | `01-alu` |
 | Registers A, B, OUT | A is the accumulator: every result lands here. B is the second operand and can drive the bus (BO) so it can serve as a memory pointer. OUT drives the display LEDs. | `02-registers` |
-| Program counter, return register | 8-bit counter, loaded from the operand register for jumps and calls, or from the 8-bit return register for RET. | `03-sequencer` |
-| Instruction register, operand register, control | Holds the current instruction and its 8-bit operand; a five-state step counter, two decoders (opcode, and the operand nibble for the 0000 family) and a diode matrix (31 instructions x 2 execute steps) turn them into control-line pulses. New instructions are diodes. | `03-sequencer` |
-| Program memory | 16 words of 8 bits per board as DIP switches with a diode per bit, selected by PC0..3; PC4..7 select the board (page jumpers). Build more copies for longer programs. | `04-memory` |
-| Data memory | 16 slots of 4 bits with its own address register (MAI) and MI/MO lines, addressed by an instruction operand or by B. Gives programs variables, lists and tables. | `08-ram` |
-| Clock and reset | Debounced pushbutton for single-step, two-transistor astable for run, reset line, halt. | `05-clock` |
+| Program counter, return register | 8-bit counter, loaded from the operand register for jumps and calls, or from the 8-bit return register for RET. Takes the operand and its load lines from the sequencer over a 12-pin link cable (D035). | `09-counter` |
+| Instruction register, operand register, control | Holds the current instruction and its 8-bit operand; a five-state step counter, two decoders (opcode, and the operand nibble for the 0000 family) and a diode matrix (37 rows: every instruction's first execute step, the second step of the four memory accesses, the two conditional jumps) turn them into control-line pulses. New instructions are diodes. | `03-sequencer` |
+| Program memory | 16 words of 8 bits per board as DIP switches with a diode per bit, selected by PC0..3; PC4..7 select the board (page jumpers). Build more copies for longer programs. | `04-program` |
+| Data memory | 16 slots of 4 bits with its own address register (MAI) and MI/MO lines, addressed by an instruction operand or by B. Gives programs variables, lists and tables. | `08-memory` |
+| Clock and reset | Schmitt-trigger RC oscillator with a speed pot, RUN/STEP switch, halt gate, power-on reset; single-step comes from the panel button. | `05-clock` |
 | Front panel | Switches to force A, B and control lines by hand; LEDs on every bus line; the data switches double as the machine's input port (IN). Test fixture for every other board. | `06-panel` |
 | Bus hub | Pull-ups for the bus, pull-downs for the M lines, power distribution, one 64-way header per board. | `07-hub` |
 

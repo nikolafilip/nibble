@@ -45,10 +45,11 @@ Boards that do not exist yet are absent from the deck; the front panel model
 drives their lines to 0. As each board is designed, it is added and the
 programs that need it are enabled.
 
-Speed: the ALU settles in 73 us worst case; the machine deck runs its clock at
-2 ms per tick, so a 60-tick program is a 120 ms transient. With about 1,300
-transistors that is on the order of an hour of ngspice per corner. Acceptable,
-run in the background, three corners in parallel.
+Speed: the ALU settles in 89 us worst case; the machine deck runs its clock at
+1 ms per tick. Measured: about 10 s of ngspice per tick with 1,600 transistors
+in the deck, so the nine programs (4,400 ticks) are half a day per corner.
+`sim/gate.py` runs them as a batch, four corners in parallel; during design,
+`--ticks` runs the first part of a program in minutes.
 
 ## Order of work
 
@@ -57,10 +58,10 @@ run in the background, three corners in parallel.
 | 1 | Regenerate ALU, panel, hub, coupon with the 64-pin header (D017) and the D031 lines | schematic + board gates | hub gains M pull-downs (D021); panel gains the control switches and LEDs for every line and the input port (IN); ALU gains ONE, F0, F1 |
 | 2 | `emu.py`, `asm.py`, reference programs | emulator runs all programs with the expected output | pure Python, no hardware |
 | 3 | Register board (A, B, OUT, with BO, BA, AB) | all three gates: the ALU and registers run `fib.asm` with the emulator playing the sequencer | about 370 transistors |
-| 4 | Sequencer board (8-bit PC, IR, 8-bit operand register, return register, 5-state counter, two decoders, diode matrix, flags) | all three gates: every program that needs no memory passes on the machine deck | about 1,000 transistors; the diode matrix is diodes, not transistors |
-| 5 | Data memory board (16 x 4, address register, MAI, MI, MO) | machine gate: `mul.asm`, `list.asm`, `sort.asm`, `lfsr.asm`, `calc.asm` | about 700 transistors |
+| 4 | Sequencer board (IR, 8-bit operand register, 5-state counter, two decoders, diode matrix, flags) and the counter board (8-bit PC, return register) joined by a link cable (D035) | all three gates: every program that needs no memory passes on the machine deck | 524 + 416 transistors; the diode matrix is diodes, not transistors |
+| 5 | Data memory board (16 x 4, address register, MAI, MI, MO) | machine gate: `mul.asm`, `list.asm`, `sort.asm`, `lfsr.asm`, `calc.asm` | 746 transistors, one LED per cell |
 | 6 | Program memory board (16 words, page jumpers, diode-OR outputs) | machine gate with the program held in the switch model replaced by the real board netlist | zero transistors plus page compare |
-| 7 | Clock board (astable, single-step, reset, halt) | machine gate with the real clock instead of the pulse source | about 20 transistors |
+| 7 | Clock board (Schmitt RC oscillator, RUN/STEP, power-on reset, halt) | machine gate with the real clock instead of the pulse source, on programs that take no input (the switch stimulus is timed to the pulse clock) | 16 transistors |
 | 8 | Fab: every board in one order | Nikola's review: renders, bring-up doc, order doc | one order (D032); the coupon is on the same order, so the corner and mixed-threshold simulations are what stands in for its measurements |
 | 9 | Bring-up per `bring-up.md`, one board at a time on the panel; measured gate delay replaces the simulated one in every testbench | physical | first program runs on hardware |
 

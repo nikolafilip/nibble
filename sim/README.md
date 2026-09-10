@@ -15,6 +15,7 @@
 | `machine.py` | The whole-machine deck: every existing board's export plus emulator stand-ins for the rest, one program, compared tick for tick |
 | `gate.py` | The machine gate: every program, every corner, one summary table (`out/gate_<boards>.md`) |
 | `pcb.py` | Placement, power rails, freerouting, DRC, fab outputs (run with KiCad's python) |
+| `bom.py` | Sums the fab BOMs of every routed board into one parts table (`--per` for a column per board); `docs/order-1.md` quotes it |
 | `spicedat.py` | Fast reader for ngspice `wrdata` files |
 | `out/` | Scratch (ignored by git). `out/cell.cir` characterises one cell |
 

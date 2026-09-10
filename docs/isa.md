@@ -1,49 +1,72 @@
-# Instruction set
+# Instruction set (v2)
 
-Each instruction is one 8-bit word: 4 bits of opcode, 4 bits of operand.
-Program memory holds 16 words, addressed 0 to 15 by the program counter.
-A program is up to 16 instructions long; each is one of the ten below.
+An instruction is one or two 8-bit words. The first word is 4 bits of opcode
+and 4 bits of operand. Jumps carry a second word holding an 8-bit address.
+Program memory is 256 words, addressed by the 8-bit program counter; today's
+switch boards provide 16 words each, one per page.
 
-| Opcode | Name | Operand | Effect |
+| Opcode | Name | Words | Effect |
 |---|---|---|---|
-| 0000 | NOP | | Nothing |
-| 0001 | LDI n | 4-bit number | A = n |
-| 0010 | MOV B,A | | B = A |
-| 0011 | XCH | | Swap A and B |
-| 0100 | ADD | | A = A + B. C = carry out. Z = result is zero |
-| 0101 | SUB | | A = A - B. C = no borrow (A >= B). Z = result is zero |
-| 0110 | OUT | | OUT = A (the display LEDs) |
-| 0111 | JMP a | 4-bit address | PC = a |
-| 1000 | JC a | address | PC = a if C is set |
-| 1001 | JZ a | address | PC = a if Z is set |
-| 1010 | HLT | | Stop the clock |
-| 1011 to 1111 | | | Unused. Room for AND, OR, shifts later |
+| 0000 | NOP | 1 | Nothing |
+| 0001 | LDI n | 1 | A = n |
+| 0010 | MOV B,A | 1 | B = A |
+| 0011 | XCH | 1 | Swap A and B |
+| 0100 | ADD | 1 | A = A + B. C = carry out. Z = result is zero |
+| 0101 | SUB | 1 | A = A - B. C = no borrow (A >= B). Z = result is zero |
+| 0110 | OUT | 1 | OUT = A (the display LEDs) |
+| 0111 | JMP a | 2 | PC = a (8-bit address in the second word) |
+| 1000 | JC a | 2 | PC = a if C is set |
+| 1001 | JZ a | 2 | PC = a if Z is set |
+| 1010 | HLT | 1 | Stop the clock |
+| 1011 | LOAD n | 1 | A = data memory slot n (reserved; needs the data memory board) |
+| 1100 | STORE n | 1 | data memory slot n = A (reserved; needs the data memory board) |
+| 1101 to 1111 | | | Unused. Candidates: LOAD from the address in B, STORE to the address in B, subtract 1 |
 
 Numbers are 4-bit two's complement when it suits the program (-8 to 7) or
-unsigned (0 to 15); the hardware does not care, only the flags differ in meaning.
+unsigned (0 to 15); the hardware does not care, only the flags differ in
+meaning. Wider results are built from nibbles with the carry flag and JC.
 
 ## Control steps
 
-Every instruction takes three clock steps. Steps 0 and 1 are the same for all:
+The sequencer has five states. Every instruction runs S0 and S1; two-word
+instructions run S2; every instruction runs S3; memory instructions run S4.
+A "done" column in the control matrix returns the sequencer to S0 early, so
+one-word instructions take 3 ticks, memory instructions 4, jumps 5.
 
 | Step | Lines | Effect |
 |---|---|---|
-| 0 | `II` | Instruction register loads the memory word the program counter points at |
-| 1 | `PCE` | Program counter increments |
-| 2 | depends on opcode | Execute (see below) |
+| S0 | `II` | Instruction register loads the memory word the program counter points at |
+| S1 | `PCE` | Program counter increments |
+| S2 | `OPI` `PCE` | (two-word only) operand register loads the next word, counter increments |
+| S3 | matrix row 1 | Execute, first tick |
+| S4 | matrix row 2 | Execute, second tick (memory instructions) |
 
-| Instruction | Step 2 lines |
-|---|---|
-| LDI | `IO` `AI` |
-| MOV B,A | `BA` |
-| XCH | `AB` `BA` |
-| ADD | `EO` `AI` `FI` |
-| SUB | `SUB` `EO` `AI` `FI` |
-| OUT | `AO` `OI` |
-| JMP | `IO` `PCL` |
-| JC | `IO` `PCL` if C |
-| JZ | `IO` `PCL` if Z |
-| HLT | `HLT` |
+| Instruction | S3 | S4 |
+|---|---|---|
+| LDI | `IO` `AI` `DONE` | |
+| MOV B,A | `BA` `DONE` | |
+| XCH | `AB` `BA` `DONE` | |
+| ADD | `EO` `AI` `FI` `DONE` | |
+| SUB | `SUB` `EO` `AI` `FI` `DONE` | |
+| OUT | `AO` `OI` `DONE` | |
+| JMP | `PCL` `DONE` | |
+| JC | `PCL` if C, `DONE` | |
+| JZ | `PCL` if Z, `DONE` | |
+| HLT | `HLT` | |
+| LOAD n | `IO` `MAI` | `MO` `AI` `DONE` |
+| STORE n | `IO` `MAI` | `AO` `MI` `DONE` |
+
+`PCL` copies the 8-bit operand register into the program counter over a path
+internal to the sequencer board; the 4-bit bus is not involved.
+
+## The control matrix
+
+The sequencer board decodes all sixteen opcodes and ANDs each with S3 and S4,
+giving 32 row wires. The control lines are columns. A diode soldered at a
+crossing pulls that column when that row is active. The ten instructions above
+are populated at assembly; LOAD and STORE are two diodes each, added when the
+data memory board exists; the free rows take any future instruction that can be
+expressed with the lines on the header. Columns have 1 Meg pull-downs.
 
 ## Worked program: Fibonacci on the LEDs
 
@@ -55,10 +78,12 @@ addr  word       instr      A   B   LEDs
 3     0110 0000  OUT        0   1   0
 4     0100 0000  ADD        1   1
 5     0011 0000  XCH        1   1
-6     1000 1000  JC 8
-7     0111 0011  JMP 3
-8     1010 0000  HLT
+6     1000 0000  JC         (second word follows)
+7     0000 1010    -> 10
+8     0111 0000  JMP
+9     0000 0011    -> 3
+10    1010 0000  HLT
 ```
 
-Slots 3 to 7 repeat. The LEDs show 0, 1, 1, 2, 3, 5, 8; the next add (8 + 13)
-overflows 4 bits, sets C, and `JC 8` halts the machine.
+Eleven words. Slots 3 to 9 repeat. The LEDs show 0, 1, 1, 2, 3, 5, 8; the
+next add (8 + 13) overflows 4 bits, sets C, and JC halts the machine.

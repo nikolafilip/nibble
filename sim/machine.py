@@ -31,14 +31,18 @@ T0=2e-3         # first rising edge
 STEP_DELAY=20e-6   # virtual sequencer: control lines change this long after the edge
 CONTROL=['SUB','EO','AI','AO','BI','BO','BA','AB','OI','IO','II','PCE','PCL','FI','HLT','MAI','MI','MO','ONE','F0','F1','INP']
 SW=[f'SW{i}' for i in range(4)]   # the panel's data switch levels, ports of the panel subcircuit so the deck can set them
+LINK=[f'OPR{i}' for i in range(8)]+['PCR','RAI']   # the sequencer-to-counter link header (D035); PCL is on the bus header
 PC=[f'PC{i}' for i in range(8)]; M=[f'M{i}' for i in range(8)]
 # per board: schematic path, the design module for a dev netlist (board@dev), and the internal nets to probe
 BOARD={'alu':('01-alu/alu.kicad_sch','alu',[]),
        'reg':('02-registers/registers.kicad_sch','registers',['OUT0','OUT1','OUT2','OUT3']),
        'seq':('03-sequencer/sequencer.kicad_sch','sequencer',['T0','T1','T2','T3','T4','CFQ','ZFQ']),
+       'ctr':('09-counter/counter.kicad_sch','counter',[]),
        'mem':('08-memory/memory.kicad_sch','memory',[]),
+       'prog':('04-program/program.kicad_sch','program',[]),
        'panel':('06-panel/panel.kicad_sch','panel',[]),
-       'hub':('07-hub/hub.kicad_sch',None,[])}
+       'hub':('07-hub/hub.kicad_sch',None,[]),
+       'clk':('05-clock/clock.kicad_sch','clock',[])}
 
 def export(board,dev=False):
     """A board's netlist: the kicad-cli SPICE export of its schematic, or (dev) the gate list's own flat netlist."""
@@ -64,7 +68,7 @@ def subckt(board,lines,corner,rng=None):
             l=l.replace(' 2N7000',' '+model)
         body.append(l)
     nodes=set(tok for l in body for tok in l.split()[1:])
-    ports=[s for s in bus.SIGNALS+SW if s in nodes]
+    ports=[s for s in bus.SIGNALS+SW+LINK if s in nodes]
     return ports, [f".subckt {board} "+" ".join(ports)]+body+[".ends"]
 
 def od(en,x,i,tag):
@@ -82,35 +86,67 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     import nmos
     L=["* Nibble whole-machine deck",'.include "../lib/2N7000.lib"','.include "../lib/led.lib"',nmos.SW_MODEL,'.global +5V','V5 +5V 0 5']
     probes=[]; rng=random.Random(seed)
+    real_clock=any(b.startswith('clk') for b in boards)
+    if real_clock:
+        missing=[b for b in ('alu','reg','seq','ctr') if not any(x.startswith(b) for x in boards)]
+        assert not missing, f"with the clock board every board the program needs must be real (no virtual timing): missing {missing}"
     for spec in boards:
         b,_,dev=spec.partition('@')
+        if b=='clk':       # the clock board: RUN switch closed, pot at minimum, timing capacitor empty at power-up
+            ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
+            body=["Rrun +5V RUNSW 1m","Rpot RT X 1m","Rj2 Net-_J2-Pin_2_ 0 1G"]
+            L+=sub[:-1]+body+[sub[-1]]; L.append(f"Xclk "+" ".join(ports)+" clk"); L.append(".ic V(xclk.X)=0 V(xclk.POR)=5")
+            probes+=['xclk.X','xclk.VD2']
+            continue
+        if b=='prog':      # one copy of the program memory board per 16-word page the program needs, switches set from the program
+            import json
+            npages=max(1,(len(program)+15)//16); mp=json.load(open(os.path.join(BOARDS,'04-program','program.map.json')))
+            for p in range(npages):
+                ports,sub=subckt(b,export(b,dev=='dev'),corner,rng); sub[0]=sub[0].replace('.subckt prog ',f'.subckt prog{p} ')
+                body=[]
+                for i in range(4): body.append(f"Rj{i} JS{i} {f'PC{i+4}' if (p>>i)&1 else f'PN{i}'} 1m")            # the page jumpers
+                for w in range(16):
+                    word=program[p*16+w] if p*16+w<len(program) else 0
+                    for bit in range(8):
+                        if not (word>>bit)&1: continue                                                           # open switch: nothing
+                        if dev=='dev': body.append(f"Dsw{w}_{bit} ROW{w} M{bit} D1N4148")                          # closed switch: the diode is in circuit
+                        else:
+                            ref=[r for r,(ww,bb) in mp['diodes'].items() if (ww,bb)==(w,bit)][0]
+                            body.append(f"Rsw{w}_{bit} ROW{w} Net-_{ref}-A_ 1m")                                   # close the switch: row to the diode's anode
+                nodes=set(tok for l in sub[1:-1]+body for tok in l.split()[1:]); ports=[x for x in bus.SIGNALS if x in nodes]
+                L+=[f".subckt prog{p} "+" ".join(ports)]+sub[1:-1]+body+[sub[-1]]; L.append(f"Xprog{p} "+" ".join(ports)+f" prog{p}")
+            continue
         ports,sub=subckt(b,export(b,dev=='dev'),corner,rng); L+=sub; L.append(f"X{b} "+" ".join(ports)+f" {b}")
         probes+=[f"x{b}.{n}" for n in BOARD[b][2]]
-    probes+=bus.SIGNALS+['CLK','RST']
+    probes+=bus.SIGNALS+LINK+['CLK','RST']
     # clock and reset (until the clock board exists): pulse gated by HLT
-    L.append(f"Vclk clkraw 0 PULSE(0 5 {T0:.6g} 1u 1u {T/2-1e-6:.6g} {T:.6g})")
-    # gate the clock with HLT through a smooth function (a ternary is a zero-time step: "timestep too small" at every edge)
-    L.append("Bclk clkb 0 V = V(clkraw)*pwl(V(HLT),0,1,2,1,3,0,5,0)"); L.append("Rclk clkb CLK 100")     # pwl() extrapolates outside its points: give it the whole 0..5 V range
+    if not real_clock:
+        L.append(f"Vclk clkraw 0 PULSE(0 5 {T0:.6g} 1u 1u {T/2-1e-6:.6g} {T:.6g})")
+        # gate the clock with HLT through a smooth function (a ternary is a zero-time step: "timestep too small" at every edge)
+        L.append("Bclk clkb 0 V = V(clkraw)*pwl(V(HLT),0,1,2,1,3,0,5,0)"); L.append("Rclk clkb CLK 100")     # pwl() extrapolates outside its points: give it the whole 0..5 V range
+    elif 'panel' not in [b.partition('@')[0] for b in boards]: L.append("Rclkpd CLK 0 1Meg")            # the panel's pull-down on CLK
     L.append(f"Vrst rstraw 0 PULSE(5 0 {T0*0.4:.6g} 1u 1u 1 2)"); L.append("Rrst rstraw RST 100")
-    # program memory model: M = mem[PC] through a diode (the hub pulls M down)
+    # program memory model (until the program memory board is in the deck): M = mem[PC] through a diode (the hub pulls M down)
     idx="+".join(f"{1<<i}*u(V(PC{i})-2.5)" for i in range(8))
-    for i in range(8):
+    for i in range(8) if not any(b.startswith('prog') for b in boards) else []:
         tbl=",".join(f"{a},{(w>>i)&1}" for a,w in enumerate(program))+(f",{len(program)},0,255,0" if len(program)<256 else "")   # pwl() extrapolates past its last point: pin it to 0 up to address 255
         L.append(f"Bm{i} mraw{i} 0 V = 5*pwl({idx},{tbl})"); L.append(f"Dm{i} mraw{i} M{i} D1N4148")
     # boards played by the emulator
     virt=[]
     boards=[b.partition('@')[0] for b in boards]
     if 'seq' not in boards:
-        for n in CONTROL: virt.append(n)
-        for n in PC: virt.append(n)
         for n in CONTROL:
             L.append(f"V{n} v{n} 0 "+pwl(starts,[int(n in s['ctl']) for s in trace],STEP_DELAY)); L.append(f"R{n} v{n} {n} 100")
-        for i,n in enumerate(PC):
-            L.append(f"V{n} v{n} 0 "+pwl(starts,[(s['pc']>>i)&1 for s in trace],STEP_DELAY)); L.append(f"R{n} v{n} {n} 100")
         # the virtual sequencer's operand register drives the bus when IO is high (ideal open-drain driver)
         for i in range(4):
             L.append(f"Vopr{i} opr{i} 0 "+pwl(starts,[(s['opr']>>i)&1 for s in trace],STEP_DELAY))
             L+=od('IO',f'opr{i}',i,'io')
+        if 'ctr' in boards:      # the link header: operand register and the counter's load lines
+            for i in range(8): L.append(f"Vlopr{i} vOPR{i} 0 "+pwl(starts,[(s['opr']>>i)&1 for s in trace],STEP_DELAY)); L.append(f"Rlopr{i} vOPR{i} OPR{i} 100")
+            for n in ('PCR','RAI'): L.append(f"Vl{n} v{n} 0 "+pwl(starts,[int(n in s['ctl']) for s in trace],STEP_DELAY)); L.append(f"Rl{n} v{n} {n} 100")
+    if 'ctr' not in boards:
+        for i,n in enumerate(PC):
+            L.append(f"V{n} v{n} 0 "+pwl(starts,[(s['pc']>>i)&1 for s in trace],STEP_DELAY)); L.append(f"R{n} v{n} {n} 100")
     if 'reg' not in boards:
         for i in range(4):
             for n,f in ((f'A{i}','a'),(f'B{i}','b')):
@@ -128,24 +164,35 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     if 'panel' not in boards:     # virtual input port
         for i in range(4):
             L+=od('INP',f'SW{i}',i,'in')
-    tend=edges[-1]+T/2
+    tend=edges[-1]+T/2 if not real_clock else T0+len(trace)*3.5e-3      # the real clock runs at 400 to 600 Hz at its fastest
     top=set(tok for l in L if l[0] not in '.*+' and not l.startswith(('.subckt','.ends')) for tok in l.split()[1:])
     probes=[p for p in probes if '.' in p or p in top]     # a bus line no board touches is not a node in the deck
-    L+=[f".tran 1u {tend:.6g}",".option method=gear",".control","run","set wr_singlescale","set wr_vecnames",
+    # tmax stays at the default (1 us): 10 us is a quarter faster but aborts with "timestep too small" on some decks.
+    # cshunt: 1 pF from every node to ground (less than the real stray capacitance), and abstol/chgtol a hundred times looser than
+    # the defaults (still far below any current or charge that matters here), keep ngspice's timestep from collapsing at clock edges
+    L+=[f".tran 1u {tend:.6g}",".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12",".control","run","set wr_singlescale","set wr_vecnames",
         f"wrdata {outfile} "+" ".join(f"v({p})" for p in probes),"quit",".endc",".end"]
     return "\n".join(L)+"\n", probes, edges
 
-def sample(dat,probes,edges):
+def sample(dat,probes,nticks,tend):
+    """One row of probe bits per tick, sampled 5 us before each rising CLK edge found in the waveform (so the same code
+    serves the pulse-source clock and the real clock board). The tick after the last edge, if any, is the halted state,
+    sampled at the end of the run. rows[k]['edge'] = 1 if an edge ended tick k."""
     names,a=spicedat.read(dat); t=a[:,0]; col={n.lower():a[:,k] for k,n in enumerate(names)}
     def bit(name,tt):
         v=col.get(f'v({name.lower()})')
         return 0 if v is None else int(np.interp(tt,t,v)>2.5)
+    clk=col['v(clk)']; hi=clk>3.5; lo=clk<1.5; state=0; det=[]
+    for k in range(len(t)):          # rising edges with hysteresis: low (<1.5 V) then high (>3.5 V)
+        if state==0 and hi[k]: state=1; det.append(t[k])
+        elif state==1 and lo[k]: state=0
+    det=[e for e in det if e>T0/2]   # the first edge comes after reset; anything earlier is power-up
     rows=[]
-    for e in edges:
-        tt=e-5e-6; rows.append({p:bit(p,tt) for p in probes})
-    # a rising edge really happened at e (CLK low before, high after) unless the clock was halted
-    for k,e in enumerate(edges): rows[k]['edge']=int(bit('CLK',e-5e-6)==0 and bit('CLK',e+5e-6)==1)
-    return rows
+    for k in range(nticks):
+        if k<len(det): tt=det[k]-5e-6; edge=1
+        else: tt=tend-5e-6; edge=0
+        r={p:bit(p,tt) for p in probes}; r['edge']=edge; r['t']=tt; rows.append(r)
+    return rows, det
 
 def compare(rows,trace,boards):
     """Returns a list of (tick, field, want, got) mismatches."""
@@ -174,7 +221,8 @@ def compare(rows,trace,boards):
         if 'OI' in c: known['out']=True
         if 'seq' in boards:
             chk['step']=(s['step'],[row[f'xseq.T{i}'] for i in range(5)].index(1) if 1 in [row[f'xseq.T{i}'] for i in range(5)] else -1)
-            chk['cf']=(s['cf'],row['xseq.CFQ']); chk['zf']=(s['zf'],row['xseq.ZFQ'])
+            if 'FI' not in s['ctl']:     # the flag latches are transparent while FI and PH1: during that tick they already show the new flags
+                chk['cf']=(s['cf'],row['xseq.CFQ']); chk['zf']=(s['zf'],row['xseq.ZFQ'])
         for f,(want,got) in chk.items():
             if want!=got: bad.append((k,f,want,got))
     return bad
@@ -187,7 +235,10 @@ def run_trace(words,trace,boards,corner='TYP',tag='machine',seed=1):
     if not os.path.exists(dat): print(r.stdout[-4000:],r.stderr[-4000:]); raise SystemExit('ngspice failed')
     if 'aborted' in r.stdout+r.stderr:
         print("\n".join(l for l in (r.stdout+r.stderr).splitlines() if 'Timestep' in l or 'aborted' in l)); raise SystemExit('ngspice aborted the transient')
-    rows=sample(dat,probes,edges); bad=compare(rows,trace,[b.partition('@')[0] for b in boards])
+    tend=float(text.split('.tran 1u ')[1].split()[0])
+    rows,det=sample(dat,probes,len(trace),tend); bad=compare(rows,trace,[b.partition('@')[0] for b in boards])
+    if trace[-1]['halted'] or 'HLT' in trace[-1]['ctl']:
+        if len(det)!=len(trace)-1: bad.append((len(trace),'edges',len(trace)-1,len(det)))      # the clock must stop exactly when the program halts
     return rows,bad
 
 def run(prog,boards,corner='TYP',ticks=None,tag=None,seed=1):

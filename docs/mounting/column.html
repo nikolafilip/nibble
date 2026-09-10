@@ -1,0 +1,346 @@
+<title>Nibble Column</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f3f1ec; --panel:#ffffff; --ink:#1f2320; --muted:#6b706a; --line:#d9d5cc;
+  --pcb:#1d5c3a; --pcb-edge:#12402a; --led:#ff3b2f; --alu:#c9ccd1; --alu-dark:#8d9298; --accent:#b5432a;
+  --grid:#e6e2d9;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181a; --panel:#1d2124; --ink:#e8e6e0; --muted:#9a9f9a; --line:#33393c;
+    --pcb:#2a7a4e; --pcb-edge:#1a4d31; --led:#ff4a3d; --alu:#a9adb3; --alu-dark:#6c7177; --accent:#e0664a; --grid:#262b2e;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181a; --panel:#1d2124; --ink:#e8e6e0; --muted:#9a9f9a; --line:#33393c;
+  --pcb:#2a7a4e; --pcb-edge:#1a4d31; --led:#ff4a3d; --alu:#a9adb3; --alu-dark:#6c7177; --accent:#e0664a; --grid:#262b2e;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.5;margin:0}
+main{max-width:1080px;margin:0 auto;padding:32px 20px 64px}
+h1{font-size:34px;font-weight:600;letter-spacing:-0.01em;margin:0 0 4px;text-wrap:balance}
+h2{font-size:20px;font-weight:600;margin:40px 0 8px}
+p{max-width:66ch;margin:8px 0}
+.lede{color:var(--muted);max-width:70ch;font-size:16px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0 6px}
+.kv div{border-top:2px solid var(--ink);padding-top:6px}
+.kv b{display:block;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.kv span{color:var(--muted);font-size:13px}
+.viewer{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:14px}
+.viewer canvas{display:block;width:100%;height:520px;cursor:grab}
+.viewer canvas:active{cursor:grabbing}
+.controls{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.controls label{display:flex;gap:8px;align-items:center;color:var(--ink)}
+.controls input[type=range]{width:140px}
+.controls button{font:inherit;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:4px 10px;cursor:pointer}
+.controls button:focus-visible,.controls input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{position:absolute;left:14px;top:12px;font-size:12px;color:var(--muted);background:color-mix(in srgb,var(--panel) 80%,transparent);padding:3px 8px;border-radius:4px;pointer-events:none}
+.faces{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:14px}
+.face{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px}
+.face h3{margin:0 0 6px;font-size:14px;font-weight:600}
+.face svg{width:100%;height:auto;display:block}
+.face .cap{font-size:12px;color:var(--muted);margin-top:6px}
+svg text{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:13px;color:var(--muted);letter-spacing:0.02em;text-transform:uppercase}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+ol{padding-left:22px;max-width:70ch}
+li{margin:6px 0}
+.note{border-left:3px solid var(--accent);padding:6px 14px;color:var(--muted);max-width:70ch;margin:14px 0}
+.section-detail{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media (max-width:720px){.section-detail{grid-template-columns:1fr}}
+@media (prefers-reduced-motion: reduce){.spin{display:none}}
+</style>
+
+<main>
+<h1>Nibble Column</h1>
+<p class="lede">The nine boards standing on the four faces of a square aluminium column, LEDs facing out, hub and ribbons inside. Drawn from the real board outlines in the repo. Drag the model to walk around it.</p>
+
+<div class="kv">
+  <div><b>57 × 57 cm</b><span>floor footprint, boards included</span></div>
+  <div><b>95 cm</b><span>tall, on the floor or a low table</span></div>
+  <div><b>14 m</b><span>of 2020 extrusion</span></div>
+  <div><b>0 mm</b><span>of board redesign</span></div>
+</div>
+
+<div class="viewer">
+  <canvas id="c3d" aria-label="3D model of the column with the boards on its four faces"></canvas>
+  <div class="hint">drag to rotate · scroll to zoom</div>
+  <div class="controls">
+    <label>Program pages <input id="pages" type="range" min="1" max="6" value="2"> <span id="pagesv" class="mono">2</span></label>
+    <label><input id="ribbons" type="checkbox" checked> ribbons</label>
+    <label><input id="labels" type="checkbox" checked> labels</label>
+    <label class="spin"><input id="spin" type="checkbox" checked> slow turn</label>
+    <button id="reset" type="button">Front view</button>
+    <span>LED counts are the real ones per board; their placement is schematic.</span>
+  </div>
+</div>
+
+<h2>The four faces, to scale</h2>
+<p>Each face is 460 mm between the uprights. A board sits on two horizontal rails, one under its top holes and one under its bottom holes, so a board of any width mounts anywhere on a face. The left face is empty until you need a third program page.</p>
+<div class="faces" id="faces"></div>
+
+<h2>How a board mounts</h2>
+<div class="section-detail">
+  <div>
+    <svg id="xs" viewBox="0 0 420 260" role="img" aria-label="Cross-section of a rail, T-nut, standoff and board"></svg>
+    <p class="cap mono" style="font-size:12px;color:var(--muted)">Cross-section through one rail, looking along it.</p>
+  </div>
+  <div>
+    <ol>
+      <li><b>Frame.</b> Four 900 mm uprights of 2020 extrusion at the corners of a 500 mm square, joined top and bottom by 460 mm rails with corner brackets. Rubber feet or a 500 mm plywood square underneath.</li>
+      <li><b>Rails.</b> Two 460 mm rails per board, clamped to the uprights with corner brackets at the height of the board's top and bottom hole rows. The 3D model has them at the heights in the table below.</li>
+      <li><b>Boards.</b> An M3 T-nut slides into the rail slot at each hole. A 12 mm M3 standoff screws into the T-nut; the board screws onto the standoff. Nothing is drilled, so a board moves with an Allen key.</li>
+      <li><b>Hub.</b> Two rails at 450 mm on the left and right faces carry two cross rails 107 mm apart, the hub's hole pitch. The hub lies flat on them on standoffs, headers up, USB socket toward the back, so every ribbon drops onto it from above and its power LED is visible from the top.</li>
+      <li><b>Cables.</b> Every board's 64-way header is a shrouded IDC socket 8 mm from its top edge (the panel's is on its bottom edge). The ribbon leaves it straight out of the face, folds 90° up over the board's top edge, and runs down inside to the hub. Two folds and one slack loop per cable, no tight angles, the way a floppy cable was routed. A second and later program page hangs off the same hub slot on a ribbon with extra connectors crimped along it.</li>
+      <li><b>Power.</b> One USB cable out of the bottom of the column to a phone charger.</li>
+    </ol>
+  </div>
+</div>
+
+<h2>Rail heights and ribbon lengths</h2>
+<p>Rails measured from the floor to the rail centre. Ribbon length is the path from the board's header, out and over its edge, inside to the hub at 450 mm, plus 100 mm of slack. Boards are centred on their face; the counter and the sequencer share the front; the two program pages sit side by side.</p>
+<div class="scroll"><table id="rails"><thead><tr><th>Face</th><th>Board</th><th class="n">Size (mm)</th><th class="n">Lower rail</th><th class="n">Upper rail</th><th class="n">Ribbon</th><th class="n">LEDs</th></tr></thead><tbody></tbody></table></div>
+<p>Stock 64-way IDC cables come in 30, 50 and 100 cm; or 3 m of 64-way ribbon and 16 IDC sockets, crimped in a bench vice, make every cable the exact length. Eight cables of half a metre add about 0.3 nF to each bus line; with the hub's 10k pull-ups that is 3 µs of rise time on a 1 ms tick, and the machine deck now includes it.</p>
+
+<h2>Frame parts</h2>
+<div class="scroll"><table>
+<thead><tr><th>Part</th><th class="n">Qty</th><th>Note</th><th class="n">About</th></tr></thead>
+<tbody>
+<tr><td>2020 aluminium extrusion, 900 mm</td><td class="n">4</td><td>uprights; sold cut to length</td><td class="n">$24</td></tr>
+<tr><td>2020 aluminium extrusion, 460 mm</td><td class="n">30</td><td>18 board rails, 8 frame rails, 4 for the hub; 14 m total</td><td class="n">$34</td></tr>
+<tr><td>2020 corner brackets with screws</td><td class="n">68</td><td>two per rail end</td><td class="n">$18</td></tr>
+<tr><td>M3 T-nuts for 2020 (6 mm slot)</td><td class="n">50</td><td>four per board plus spares</td><td class="n">$8</td></tr>
+<tr><td>M3 × 12 mm male-female standoffs</td><td class="n">50</td><td>brass or nylon</td><td class="n">$9</td></tr>
+<tr><td>M3 × 6 mm screws</td><td class="n">100</td><td>board to standoff, standoff to T-nut</td><td class="n">$5</td></tr>
+<tr><td>Rubber feet or 500 mm plywood base</td><td class="n">1</td><td></td><td class="n">$8</td></tr>
+<tr><td colspan="3"><b>Total</b></td><td class="n"><b>about $100</b></td></tr>
+</tbody></table></div>
+
+<div class="note">The extrusion is the same 2020 profile that 3D printers use, so every part here is a stock Amazon item and arrives in two days. It also means a sixth program page or a whole new board is two rails and four T-nuts, no new frame.</div>
+
+<h2>What it does not do</h2>
+<p>The ribbons show: each one leaves its socket toward you, folds up over the board's edge and disappears inside. They are the visible wiring of the machine. It does not put the panel at standing height: on the floor the switches are at 65 to 90 cm, on a 40 cm table they are at chest height. And the column has a back: the two program pages and the ALU face away from wherever you put it, so it wants a spot you can walk around, not a corner.</p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+// ---- board data (outlines from boards/*/*.plan.json, LED counts from the gate lists) ----
+const BOARDS={
+  seq:{name:'03 sequencer',w:454,h:356,leds:19},
+  ctr:{name:'09 counter',w:241,h:346,leds:16},
+  mem:{name:'08 data memory',w:368,h:377,leds:68},
+  reg:{name:'02 registers',w:266,h:285,leds:12},
+  alu:{name:'01 ALU',w:190,h:270,leds:6},
+  clk:{name:'05 clock',w:136,h:160,leds:2},
+  pan:{name:'06 panel',w:246,h:250,leds:56},
+  hub:{name:'07 hub',w:142,h:115,leds:1},
+  prg:{name:'04 program page',w:204,h:250,leds:17},
+};
+const FACE=460, UP=20, OUTER=500, BASE=40, GAP=30, Z0=BASE+GAP;   // mm
+// placement per face: x = offset from the face's left upright (mm), z = bottom edge height (mm)
+function layout(pages){
+  const F={front:[],right:[],back:[],left:[]};
+  let z=Z0;
+  F.front.push({b:'ctr',x:(FACE-241)/2,z}); z+=346+GAP;
+  F.front.push({b:'seq',x:(FACE-454)/2,z});
+  z=Z0;
+  F.right.push({b:'reg',x:(FACE-266)/2,z}); z+=285+GAP;
+  F.right.push({b:'mem',x:(FACE-368)/2,z});
+  z=Z0;
+  const p2=Math.min(pages,2);
+  for(let i=0;i<p2;i++) F.back.push({b:'prg',x:(FACE-(p2*204+(p2-1)*GAP))/2+i*(204+GAP),z,tag:'page '+(i+1)});
+  z+=250+GAP;
+  F.back.push({b:'alu',x:(FACE-(190+GAP+136))/2,z}); F.back.push({b:'clk',x:(FACE-(190+GAP+136))/2+190+GAP,z});
+  z+=270+GAP;
+  F.back.push({b:'pan',x:(FACE-246)/2,z});
+  z=Z0;
+  for(let i=2;i<pages;i++){ const k=i-2; const col=k%2,row=Math.floor(k/2); F.left.push({b:'prg',x:(FACE-(2*204+GAP))/2+col*(204+GAP),z:Z0+row*(250+GAP),tag:'page '+(i+1)}); }
+  return F;
+}
+const HEIGHT=950, HUBZ=450;   // mm: hub cross rails at mid height, so no ribbon is longer than 60 cm
+
+// ---- 3D ----
+const canvas=document.getElementById('c3d');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();
+const css=getComputedStyle(document.documentElement);
+const col=v=>new THREE.Color(css.getPropertyValue(v).trim());
+scene.background=col('--panel');
+const camera=new THREE.PerspectiveCamera(32,1,10,10000);
+const light=new THREE.DirectionalLight(0xffffff,0.9); light.position.set(600,1200,900); scene.add(light);
+const light2=new THREE.DirectionalLight(0xffffff,0.35); light2.position.set(-800,400,-600); scene.add(light2);
+scene.add(new THREE.AmbientLight(0xffffff,0.55));
+const group=new THREE.Group(); scene.add(group);
+const matAlu=new THREE.MeshStandardMaterial({color:col('--alu'),metalness:0.6,roughness:0.45});
+const matPcb=new THREE.MeshStandardMaterial({color:col('--pcb'),roughness:0.7});
+const matLed=new THREE.MeshBasicMaterial({color:col('--led')});
+const matRib=new THREE.MeshStandardMaterial({color:0x8a8f96,roughness:0.9,side:THREE.DoubleSide});
+const matDark=new THREE.MeshStandardMaterial({color:0x2b2f33,roughness:0.9});
+function box(w,h,d,m){return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);}
+// world: x right, y up, z toward viewer. Column centred at origin, faces at ±OUTER/2.
+// face transforms: local (u along the face to the right when viewed from outside, v up, n outward)
+const FACES={
+  front:{rot:0},            // n = +z
+  right:{rot:-Math.PI/2},   // n = +x
+  back:{rot:Math.PI},       // n = -z
+  left:{rot:Math.PI/2},     // n = -x
+};
+function faceGroup(name){ const g=new THREE.Group(); g.rotation.y=FACES[name].rot; g.position.set(0,0,0); return g; }
+let dyn=new THREE.Group(); group.add(dyn);
+function buildStatic(){
+  // uprights
+  for(const [sx,sz] of [[1,1],[1,-1],[-1,1],[-1,-1]]){ const u=box(UP,HEIGHT,UP,matAlu); u.position.set(sx*(OUTER/2-UP/2),HEIGHT/2,sz*(OUTER/2-UP/2)); group.add(u); }
+  // top and bottom frame rails on every face
+  for(const f of Object.keys(FACES)){ const g=faceGroup(f); for(const y of [BASE+UP/2,HEIGHT-UP/2]){ const r=box(FACE,UP,UP,matAlu); r.position.set(0,y,OUTER/2-UP/2); g.add(r);} group.add(g); }
+  // base plate
+  const base=box(OUTER,BASE,OUTER,matDark); base.position.y=BASE/2; group.add(base);
+  // hub inside: a rail on the left and right faces at HUBZ, two cross rails between them 107 mm apart (the hub's hole pitch),
+  // the hub lying flat on standoffs, headers up, so every ribbon comes down onto it
+  for(const f of ['left','right']){ const g=faceGroup(f); const r=box(FACE,UP,UP,matAlu); r.position.set(0,HUBZ,OUTER/2-UP/2); g.add(r); group.add(g); }
+  for(const dz of [-53.5,53.5]){ const cr=box(OUTER-2*UP,UP,UP,matAlu); cr.position.set(0,HUBZ,dz); group.add(cr); }
+  const hub=box(BOARDS.hub.w,1.6,BOARDS.hub.h,matPcb); hub.position.set(0,HUBZ+UP/2+12,0); group.add(hub);
+  for(let k=0;k<8;k++){ const h=box(6,9,80,matDark); h.position.set(-52+k*15,HUBZ+UP/2+12+5,0); group.add(h); }
+  const hl=box(5,3,5,matLed); hl.position.set(-60,HUBZ+UP/2+14,-50); group.add(hl);
+  const usb=box(12,11,16,matDark); usb.position.set(-52,HUBZ+UP/2+18,44); group.add(usb);
+}
+const labelSprites=[];
+function makeLabel(text){
+  const c=document.createElement('canvas'); c.width=512; c.height=96; const g=c.getContext('2d');
+  g.font='500 34px "IBM Plex Mono", monospace'; g.fillStyle='rgba(255,255,255,0.92)';
+  const w=g.measureText(text).width+28; g.fillRect((512-w)/2,20,w,58);
+  g.fillStyle='#1f2320'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(text,256,49);
+  const t=new THREE.CanvasTexture(c); const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false})); s.scale.set(220,41,1); return s;
+}
+function buildDynamic(pages){
+  group.remove(dyn); dyn=new THREE.Group(); group.add(dyn); labelSprites.length=0;
+  const L=layout(pages); let slot=0;
+  for(const f of Object.keys(L)){
+    const g=faceGroup(f);
+    for(const p of L[f]){
+      const b=BOARDS[p.b]; const cx=p.x+b.w/2-FACE/2; const cy=p.z+b.h/2;
+      // rails under top and bottom holes
+      for(const y of [p.z+4,p.z+b.h-4]){ const r=box(FACE,UP,UP,matAlu); r.position.set(0,y,OUTER/2-UP/2); g.add(r); }
+      const plate=box(b.w,b.h,1.6,matPcb); plate.position.set(cx,cy,OUTER/2+12); g.add(plate);
+      // standoffs
+      for(const [sx,sy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ const s=new THREE.Mesh(new THREE.CylinderGeometry(2.5,2.5,12,8),matAlu); s.rotation.x=Math.PI/2; s.position.set(cx+sx*(b.w/2-4),cy+sy*(b.h/2-4),OUTER/2+6); g.add(s); }
+      // header bar along the top edge
+      const hdr=box(84,9,9,matDark); hdr.position.set(cx-b.w/2+26+39,p.b==='pan'?cy-b.h/2+8:cy+b.h/2-8,OUTER/2+12+5); g.add(hdr);
+      // LEDs in rows near the top
+      const n=p.b==='mem'?4:b.leds; const perRow=Math.min(n,Math.max(4,Math.floor((b.w-30)/12)));
+      for(let i=0;i<n;i++){ const r=Math.floor(i/perRow), c=i%perRow; const rowN=Math.min(perRow,n-r*perRow); const lx=cx-(rowN-1)*6+c*12; const ly=cy+b.h/2-(p.b==='pan'?14:34)-r*12; if(ly<cy-b.h/2+10) continue; const l=new THREE.Mesh(new THREE.SphereGeometry(2.6,8,6),matLed); l.position.set(lx,ly,OUTER/2+14); g.add(l); }
+      if(p.b==='mem'){ /* memory: a 16x4 grid of cell LEDs lower down */ for(let r=0;r<16;r++)for(let c=0;c<4;c++){ const l=new THREE.Mesh(new THREE.SphereGeometry(2.4,8,6),matLed); l.position.set(cx-90+c*60,cy+b.h/2-90-r*16,OUTER/2+14); g.add(l);} }
+      // ribbon: leaves the IDC header perpendicular to the face, folds over the board's edge, runs inside to the hub
+      const rib=new THREE.Group(); rib.name='ribbon';
+      const hx=cx-b.w/2+26+39;                                   // header centre: J1 at x=26 rot 90 spans 79 mm along the edge
+      const top=p.b!=='pan';                                     // the panel's header is on its bottom edge
+      const hy=top?cy+b.h/2-8:cy-b.h/2+8, edge=top?cy+b.h/2:cy-b.h/2, dir=top?1:-1;
+      const face=OUTER/2+12;                                     // board plane
+      const hubLocal=new THREE.Vector3(-52+slot*15,HUBZ+UP/2+12+9,0).applyAxisAngle(new THREE.Vector3(0,1,0),-FACES[f].rot); slot++;
+      const inside=OUTER/2-UP-16;
+      const pts=[new THREE.Vector3(hx,hy,face+8),               // in the socket
+                 new THREE.Vector3(hx,hy,face+26),              // straight out of the face
+                 new THREE.Vector3(hx,edge+dir*18,face+26),     // fold: up (down for the panel) past the board's edge
+                 new THREE.Vector3(hx,edge+dir*18,inside),      // fold: back over the edge and the rail, inside
+                 new THREE.Vector3((hx+hubLocal.x)/2,(edge+dir*18+hubLocal.y)/2,(inside+hubLocal.z)/2),   // slack loop
+                 hubLocal];                                     // down onto the hub's header row
+      const curve=new THREE.CatmullRomCurve3(pts,false,'catmullrom',0.15);
+      const shape=new THREE.Shape(); shape.moveTo(-40,-0.8); shape.lineTo(40,-0.8); shape.lineTo(40,0.8); shape.lineTo(-40,0.8); shape.closePath();
+      const geo=new THREE.ExtrudeGeometry(shape,{extrudePath:curve,steps:80,bevelEnabled:false});
+      rib.add(new THREE.Mesh(geo,matRib));
+      const idc=box(84,10,10,matDark); idc.position.set(hx,hy,face+5); rib.add(idc);   // the IDC socket on the header
+      g.add(rib);
+      const lab=makeLabel(b.name+(p.tag?' · '+p.tag:'')); lab.position.set(cx,p.z-14,OUTER/2+20); lab.name='label'; g.add(lab); labelSprites.push(lab);
+    }
+    dyn.add(g);
+  }
+  applyToggles();
+}
+function applyToggles(){
+  const rib=document.getElementById('ribbons').checked, lab=document.getElementById('labels').checked;
+  dyn.traverse(o=>{ if(o.name==='ribbon') o.visible=rib; if(o.name==='label') o.visible=lab; });
+}
+buildStatic(); buildDynamic(2);
+
+// camera orbit
+let theta=0.55, phi=1.15, dist=2300, target=new THREE.Vector3(0,HEIGHT/2,0);
+function place(){ camera.position.set(target.x+dist*Math.sin(phi)*Math.sin(theta),target.y+dist*Math.cos(phi),target.z+dist*Math.sin(phi)*Math.cos(theta)); camera.lookAt(target); }
+let drag=null;
+canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY}; canvas.setPointerCapture(e.pointerId); document.getElementById('spin').checked=false;});
+canvas.addEventListener('pointermove',e=>{ if(!drag) return; theta-= (e.clientX-drag.x)*0.006; phi=Math.min(1.5,Math.max(0.35,phi-(e.clientY-drag.y)*0.005)); drag={x:e.clientX,y:e.clientY}; });
+canvas.addEventListener('pointerup',()=>drag=null);
+canvas.addEventListener('wheel',e=>{ e.preventDefault(); dist=Math.min(5000,Math.max(900,dist*(1+e.deltaY*0.001))); },{passive:false});
+document.getElementById('reset').addEventListener('click',()=>{theta=0.55;phi=1.15;dist=2300;});
+document.getElementById('pages').addEventListener('input',e=>{ document.getElementById('pagesv').textContent=e.target.value; buildDynamic(+e.target.value); renderFaces(+e.target.value); });
+document.getElementById('ribbons').addEventListener('change',applyToggles);
+document.getElementById('labels').addEventListener('change',applyToggles);
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches; if(reduced) document.getElementById('spin').checked=false;
+function resize(){ const w=canvas.clientWidth, h=canvas.clientHeight; if(canvas.width!==w*renderer.getPixelRatio()||canvas.height!==h*renderer.getPixelRatio()){ renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); } }
+function frame(){ resize(); if(document.getElementById('spin').checked && !drag) theta+=0.0025; place(); renderer.render(scene,camera); requestAnimationFrame(frame); }
+frame();
+
+// ---- elevations (SVG) ----
+const S=0.5; // px per mm
+function renderFaces(pages){
+  const L=layout(pages); const host=document.getElementById('faces'); host.innerHTML='';
+  const order=[['front','Front: control'],['right','Right: memory and registers'],['back','Back: program, ALU, clock, panel'],['left','Left: more program pages']];
+  for(const [f,title] of order){
+    const W=(FACE+2*UP)*S, H=HEIGHT*S;
+    let s=`<svg viewBox="0 0 ${W+10} ${H+16}" role="img" aria-label="${title}">`;
+    s+=`<rect x="5" y="8" width="${W}" height="${H}" fill="var(--grid)"/>`;
+    s+=`<rect x="5" y="8" width="${UP*S}" height="${H}" fill="var(--alu-dark)"/><rect x="${5+W-UP*S}" y="8" width="${UP*S}" height="${H}" fill="var(--alu-dark)"/>`;
+    const yOf=z=>8+H-z*S;
+    for(const y of [BASE+UP/2,HEIGHT-UP/2]) s+=`<rect x="5" y="${yOf(y+UP/2)}" width="${W}" height="${UP*S}" fill="var(--alu)"/>`;
+    for(const p of L[f]){ const b=BOARDS[p.b]; const x=5+(UP+p.x)*S;
+      for(const yy of [p.z+4,p.z+b.h-4]) s+=`<rect x="5" y="${yOf(yy+UP/2)}" width="${W}" height="${UP*S}" fill="var(--alu)"/>`;
+      s+=`<rect x="${x}" y="${yOf(p.z+b.h)}" width="${b.w*S}" height="${b.h*S}" fill="var(--pcb)" stroke="var(--pcb-edge)"/>`;
+      s+=`<text x="${x+6}" y="${yOf(p.z+b.h)+14}" font-size="10" fill="#fff">${b.name}${p.tag?' · '+p.tag:''}</text>`;
+      s+=`<text x="${x+6}" y="${yOf(p.z)-6}" font-size="9" fill="#dfe8e0">${b.w} × ${b.h}</text>`;
+      const n=p.b==='mem'?4:b.leds, per=Math.max(4,Math.floor((b.w-30)/12));
+      if(p.b==='mem') for(let r=0;r<16;r++)for(let c=0;c<4;c++) s+=`<circle cx="${x+(b.w/2-90+c*60)*S}" cy="${yOf(p.z+b.h-90-r*16)}" r="1.3" fill="var(--led)"/>`;
+      for(let i=0;i<Math.min(n,per*3);i++){ const r=Math.floor(i/per),c=i%per; s+=`<circle cx="${x+15*S+c*12*S}" cy="${yOf(p.z+b.h-34-r*12)}" r="1.4" fill="var(--led)"/>`; }
+    }
+    if(!L[f].length) s+=`<text x="${5+W/2}" y="${8+H/2}" font-size="11" fill="var(--muted)" text-anchor="middle">empty until page 3</text>`;
+    s+=`<text x="5" y="${H+16}" font-size="9" fill="var(--muted)">0</text><text x="${5+W}" y="${H+16}" font-size="9" fill="var(--muted)" text-anchor="end">${OUTER} mm</text>`;
+    s+='</svg>';
+    host.insertAdjacentHTML('beforeend',`<div class="face"><h3>${title}</h3>${s}<div class="cap">${L[f].map(p=>BOARDS[p.b].name.replace(/^\d+ /,'')+(p.tag?' ('+p.tag+')':'')).join(', ')||'nothing yet'}</div></div>`);
+  }
+  // rail table
+  const tb=document.querySelector('#rails tbody'); tb.innerHTML='';
+  for(const [f] of order) for(const p of L[f]){ const b=BOARDS[p.b]; const top=p.b!=='pan'; const edge=top?p.z+b.h:p.z; const hx=p.x+26+39-FACE/2;
+    const len=26+18+16+Math.hypot(hx,edge-(HUBZ+32),OUTER/2-UP-16)+100;   // out of the socket, over the edge, inside, diagonal to the hub, slack
+    tb.insertAdjacentHTML('beforeend',`<tr><td>${f}</td><td>${b.name}${p.tag?' · '+p.tag:''}</td><td class="n">${b.w} × ${b.h}</td><td class="n">${p.z+4}</td><td class="n">${p.z+b.h-4}</td><td class="n">${Math.ceil(len/50)*5} cm</td><td class="n">${b.leds}</td></tr>`); }
+  tb.insertAdjacentHTML('beforeend',`<tr><td>inside</td><td>07 hub, flat on two cross rails</td><td class="n">142 × 115</td><td class="n">450</td><td class="n">—</td><td class="n">—</td><td class="n">1</td></tr>`);
+}
+renderFaces(2);
+
+// ---- cross-section ----
+(function(){
+  const s=document.getElementById('xs'); const k=6; // px per mm
+  const ox=60, oy=200; // rail bottom-left
+  const rail=`<rect x="${ox}" y="${oy-20*k}" width="${20*k}" height="${20*k}" fill="var(--alu)" stroke="var(--alu-dark)"/>`+
+    `<rect x="${ox+7*k}" y="${oy-20*k}" width="${6*k}" height="${5*k}" fill="var(--panel)" stroke="var(--alu-dark)"/>`+   // slot opening (top face)
+    `<rect x="${ox+3*k}" y="${oy-15*k}" width="${14*k}" height="${7*k}" fill="var(--panel)" stroke="var(--alu-dark)"/>`; // slot cavity
+  const tnut=`<rect x="${ox+4*k}" y="${oy-14*k}" width="${12*k}" height="${5*k}" fill="var(--alu-dark)"/>`+`<rect x="${ox+8.5*k}" y="${oy-20*k}" width="${3*k}" height="${6*k}" fill="var(--alu-dark)"/>`;
+  const standoff=`<rect x="${ox+7.5*k}" y="${oy-32*k}" width="${5*k}" height="${12*k}" fill="#b08a3e"/>`;
+  const board=`<rect x="${ox-30*k}" y="${oy-33.6*k}" width="${70*k}" height="${1.6*k}" fill="var(--pcb)"/>`;
+  const screw=`<rect x="${ox+9*k}" y="${oy-36*k}" width="${2*k}" height="${3*k}" fill="#333"/><rect x="${ox+7.5*k}" y="${oy-37.5*k}" width="${5*k}" height="${1.5*k}" fill="#333"/>`;
+  const led=`<rect x="${ox-14*k}" y="${oy-38*k}" width="${3*k}" height="${4.4*k}" fill="var(--led)"/><rect x="${ox+22*k}" y="${oy-38*k}" width="${3*k}" height="${4.4*k}" fill="var(--led)"/>`;
+  const fet=`<rect x="${ox-24*k}" y="${oy-39*k}" width="${4.5*k}" height="${5.4*k}" fill="#222"/>`;
+  const lab=(x,y,t,a)=>`<text x="${x}" y="${y}" font-size="11" fill="var(--ink)" text-anchor="${a||'start'}">${t}</text>`;
+  const line=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--muted)" stroke-width="1"/>`;
+  s.innerHTML=rail+tnut+standoff+board+screw+led+fet+
+    line(ox+20*k+6,oy-10*k,ox+20*k+40,oy-10*k)+lab(ox+20*k+44,oy-10*k+4,'2020 rail, 20 × 20 mm')+
+    line(ox+16*k,oy-11*k,ox+20*k+40,oy-1*k)+lab(ox+20*k+44,oy-1*k+4,'M3 T-nut in the slot')+
+    line(ox+12.5*k,oy-26*k,ox+20*k+40,oy-26*k)+lab(ox+20*k+44,oy-26*k+4,'M3 × 12 standoff')+
+    line(ox+40*k,oy-32.8*k,ox+20*k+40,oy-40*k)+lab(ox+20*k+44,oy-40*k+4,'board, 1.6 mm, LEDs out')+
+    lab(ox-30*k,oy-46*k,'↑ outside: the face you look at')+lab(ox-30*k,oy+18,'↓ inside the column: hub and ribbons');
+})();
+})();
+</script>

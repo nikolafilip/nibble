@@ -1,0 +1,12 @@
+{
+ "tag": "kicad_exhaustive_MIX1",
+ "corner": "MIX",
+ "seed": 1,
+ "cases": 2304,
+ "fails": [],
+ "worst": {
+  "high": 4.99999101,
+  "low": 0.000745823805,
+  "settle": 6.7438000000003e-05
+ }
+}

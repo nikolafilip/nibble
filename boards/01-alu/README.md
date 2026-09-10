@@ -1,20 +1,25 @@
 # Board 01: ALU
 
-4-bit two's-complement adder/subtractor with carry and zero flags. The first
-board of Nibble to be fabricated, and the redesign of the origin calculator's
-arithmetic (issues #1 to #4).
+4-bit ALU: two's-complement adder/subtractor, AND, OR and XOR, with carry and
+zero flags. The redesign of the origin calculator's arithmetic (issues #1 to
+#4), extended for design v2 (D031) with ONE (B replaced by 0001 for INC and
+DEC) and the function lines F1 F0.
 
 | | |
 |---|---|
-| Transistors | 137 × 2N7000 |
-| Resistors | 78 (72 × 47k pull-ups, 6 × 1k for LEDs) |
-| LEDs | 6 (S3..S0, CF, ZF) |
-| Other | 50-pin bus header, 100 nF + 10 µF decoupling, 4 × M3 holes |
-| Bus signals used | in: A0..3, B0..3, SUB, EO. out: CF, ZF, BUS0#..BUS3# |
+| Transistors | 233 × 2N7000 |
+| Resistors | 133 (127 × 47k pull-ups, 6 × 1k for LEDs) |
+| LEDs | 6 (R3..R0, CF, ZF) |
+| Other | 64-pin bus header, 100 nF + 10 µF decoupling, 4 × M3 holes |
+| Bus signals used | in: A0..3, B0..3, SUB, ONE, F0, F1, EO. out: CF, ZF, BUS0#..BUS3# |
 
-Result `S = A + (B xor SUB) + SUB`. `CF` is the carry out of bit 3 (for a
-subtraction, 1 means no borrow). `ZF` is 1 when the result is zero. When `EO`
-is 1 the result is pulled onto the bus (active-low, open-drain).
+With F1 F0 = 00 the result is `R = A + (B xor SUB) + SUB` and `CF` is the carry
+out of bit 3 (for a subtraction, 1 means no borrow). F1 F0 = 01, 10, 11 give
+A and B, A or B, A xor B, with `CF` = 0. `ONE` replaces B by 0001 first. `ZF`
+is 1 when the result is zero. When `EO` is 1 the result is pulled onto the bus
+(active-low, open-drain). The logic functions fall out of the adder: the NAND
+that makes the generate term is NOT(A and B), the propagate XOR is A xor B, and
+A or B is one more NAND of those two.
 
 ## Files
 
@@ -23,18 +28,23 @@ is 1 the result is pulled onto the bus (active-low, open-drain).
 - `sim_results/` — proof, produced from the kicad-cli export of this exact schematic:
   - `tran_alu_demo.png` — 13 operations, every input and output.
   - `tran_alu_zoom.png` — the carry rippling through all four bits, and 7 − 5.
-  - `kicad_exhaustive_{TYP,LO,HI}.json` — all 512 (A, B, SUB) cases at typical, 0.8 V and 3.0 V threshold corners.
+  - `kicad_exhaustive_{TYP,LO,HI,MIX1}.json` — all 2304 cases at typical, 0.8 V, 3.0 V and mixed threshold corners.
   - `alu_kicad.cir` — the exported netlist that was simulated.
 
-## Verification (2026-09-09)
+## Verification (2026-09-10, design v2)
 
 | Netlist | Cases | Corner | Result | Worst settle |
 |---|---|---|---|---|
-| kicad-cli export | 512 | typical Vth 2.0 V | 512 / 512 | 44 µs |
-| kicad-cli export | 512 | Vth 0.8 V | 512 / 512 | 23 µs |
-| kicad-cli export | 512 | Vth 3.0 V | 512 / 512 | 73 µs |
+| kicad-cli export | 2304 | typical Vth 2.0 V | 2304 / 2304 | 54 µs |
+| kicad-cli export | 2304 | Vth 0.8 V | 2304 / 2304 | 28 µs |
+| kicad-cli export | 2304 | Vth 3.0 V | 2304 / 2304 | 89 µs |
+| kicad-cli export | 2304 | MIX (random threshold per transistor, seed 1) | 2304 / 2304 | 67 µs |
 
-ERC: 0 violations. Logic levels: high 5.00 V, low under 1 mV on every output.
+The 2304 cases are every A, B, SUB and function (2048) plus every A with ONE
+for both SUB values and all four functions with B = 0 and 15 (256). ERC: 0
+violations. Logic levels: high 5.00 V, low under 1 mV on every output.
+`sim_results/kicad_exhaustive_*.json` hold the runs; `alu_kicad.cir` is the
+netlist that was simulated.
 
 Reproduce from `sim/`:
 
@@ -42,10 +52,11 @@ Reproduce from `sim/`:
 python3 build_alu.py
 kicad-cli sch export netlist --format spice -o out/alu_kicad.cir ../boards/01-alu/alu.kicad_sch
 python3 tb_alu.py out/alu_kicad.cir out --cases exhaustive --corner HI
+python3 tb_alu.py out/alu_kicad.cir out --cases exhaustive --corner MIX --seed 1
 python3 tb_alu.py out/alu_kicad.cir out --cases demo && python3 plots_alu.py out/kicad_demo_TYP.dat ../boards/01-alu/sim_results
 ```
 
 ## Not yet done
 
-- PCB layout (after the gate coupon confirms the cell in copper).
-- Front panel board to drive A, B, SUB, EO by hand and show the bus.
+- PCB re-route for the v2 schematic (the routed `alu.kicad_pcb` in this
+  commit is the 137-transistor v1 board).

@@ -19,17 +19,17 @@ def main():
     os.makedirs(OUT,exist_ok=True)
     root_uuid=ksch.U(); tb_uuid=ksch.U()
     w=ksch.Writer(PROJECT,root_uuid)
-    w.T("NIBBLE BOARD 01 - ALU: 4-bit two's-complement adder/subtractor with carry and zero flags",10*G,6*G,3.5,True)
+    w.T("NIBBLE BOARD 01 - ALU: 4-bit adder/subtractor, AND, OR, XOR, with carry and zero flags",10*G,6*G,3.5,True)
     w.T(f"Cell: 2N7000 + 47k pull-up (NMOS, see docs/gate-cell.md).  {d.ntransistors()} transistors, {d.nresistors()} resistors, {d.nleds()} LEDs.\n"
-        "Inputs from the bus header: A3..A0, B3..B0 (register contents), SUB (1 = subtract), EO (1 = drive the result onto the bus).\n"
-        "Outputs: CF (carry out; for SUB, 1 = no borrow), ZF (result is zero), BUS3#..BUS0# (open-drain, active-low: pulled low where the result bit is 1 and EO = 1).\n"
-        "Result S = A + (B xor SUB) + SUB.  Gates read left to right, top to bottom: input labels on the left of each cell, output label on the right.\n"
+        "Inputs from the bus header: A3..A0, B3..B0 (register contents), SUB (1 = subtract), ONE (B input replaced by 0001: INC, DEC), F1 F0 (function), EO (1 = drive the result onto the bus).\n"
+        "Outputs: CF (carry out; for SUB, 1 = no borrow; 0 for the logic functions), ZF (result is zero), BUS3#..BUS0# (open-drain, active-low: pulled low where the result bit is 1 and EO = 1).\n"
+        "F1 F0 = 00: R = A + (B xor SUB) + SUB.   01: R = A and B.   10: R = A or B.   11: R = A xor B.   Gates read left to right, top to bottom: input labels on the left of each cell, output label on the right.\n"
         "Sheet 2 (TESTBENCH) holds the stimulus sources and the hub pull-ups; they are excluded from the board.",10*G,16*G,1.6)
-    board_frame(w,{'A0','A1','A2','A3','B0','B1','B2','B3','SUB','EO','CF','ZF','BUS0#','BUS1#','BUS2#','BUS3#'})
+    board_frame(w,{'A0','A1','A2','A3','B0','B1','B2','B3','SUB','ONE','F0','F1','EO','CF','ZF','BUS0#','BUS1#','BUS2#','BUS3#'})
     # header outputs: CF/ZF labels are outputs of gates; the header side uses the same global label
     cols=14; w.PCB_COL=12.7
-    yend=w.layout(d.gates,alu.GROUP_TITLES,10*G,60*G,cols,pcb_origin=(8.0,22.0),pcb_cols=11)
-    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(156,w.pcb_extent[1]+4),extra=dict(silk_big=[("NIBBLE ALU",131,3,1.8)],hide_refs=['Q','R']))
+    yend=w.layout(d.gates,alu.GROUP_TITLES,10*G,60*G,cols,pcb_origin=(8.0,22.0),pcb_cols=14)
+    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(8+14*12.7+4,w.pcb_extent[1]+4),extra=dict(silk_big=[("NIBBLE ALU",8+14*12.7-30,3,1.8)],hide_refs=['Q','R']))
     w.sheet("TESTBENCH",f"{PROJECT}-testbench.kicad_sch",x=10*G+cols*w.CELL_W+4*G,y=40*G,w=20*G,h=10*G,page="2",sheet_uuid=tb_uuid)
     W=10*G+cols*w.CELL_W+30*G; H=yend+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
@@ -37,11 +37,11 @@ def main():
     t=ksch.Writer(PROJECT,root_uuid,tb_uuid)
     for k in t.n: t.n[k]=9001
     cases=tb_alu.demo_cases(); tend=len(cases)*tb_alu.T
-    t.T("TESTBENCH for board 01.  Excluded from the board and the BOM.  Run the simulator (Inspect > Simulator) and plot S3..S0, CF, ZF, BUS3#..BUS0#.",10*G,6*G,2.5,True)
-    txt="Case  A   B  SUB EO ->  S  CF ZF   (S = 4-bit result; bus lines go low where S has a 1 and EO=1)\n"
-    for k,(a,b,s,eo) in enumerate(cases):
-        S,cf,zf=tb_alu.expected(a,b,s)
-        txt+=f"{k:2d}  {k*tb_alu.T*1e3:5.2f}..{(k+1)*tb_alu.T*1e3:5.2f} ms   A={a:2d} B={b:2d} {'SUB' if s else 'ADD'} EO={eo} -> S={S:2d} CF={cf} ZF={zf}\n"
+    t.T("TESTBENCH for board 01.  Excluded from the board and the BOM.  Run the simulator (Inspect > Simulator) and plot R3..R0, CF, ZF, BUS3#..BUS0#.",10*G,6*G,2.5,True)
+    txt="Case  A   B  controls  EO ->  R  CF ZF   (R = 4-bit result; bus lines go low where R has a 1 and EO=1)\n"
+    for k,(a,b,ctl,eo) in enumerate(cases):
+        S,cf,zf=tb_alu.expected(a,b,ctl)
+        txt+=f"{k:2d}  {k*tb_alu.T*1e3:5.2f}..{(k+1)*tb_alu.T*1e3:5.2f} ms   A={a:2d} B={b:2d} {' '.join(ctl) or 'ADD':10s} EO={eo} -> R={S:2d} CF={cf} ZF={zf}\n"
     t.T(txt,10*G,40*G,1.5)
     t.T(f".tran 2u {tend:.4g}",10*G,44*G,1.6)
     x=12*G; y=24*G

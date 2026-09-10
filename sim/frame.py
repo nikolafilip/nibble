@@ -2,17 +2,19 @@
 import ksch, bus
 G=ksch.G
 
-def bus_header(w,x,y,used):
-    """64-pin header at (x,y); `used` = signals this board connects. Unused pins get no-connect flags. Returns ref."""
+def bus_header(w,x,y,used,through=False):
+    """64-pin header at (x,y); `used` = signals this board connects. Unused pins get no-connect flags, or with
+    `through` a passive label so a second header on the same board carries every line in parallel (D039). Returns ref."""
     ref=w.header(x,y)
     for pin,sig in bus.PINS.items():
         odd=pin%2==1; px=x-2*G if odd else x+3*G; py=y-15*G+((pin-1)//2)*G
         if sig in ('+5V','GND'):
             ex=px-3*G if odd else px+3*G
             w.W(px,py,ex,py); w.PW(sig,ex,py)
-        elif sig in used:
+        elif sig in used or through:
             ex=px-4*G if odd else px+4*G
-            w.W(px,py,ex,py); w.L(sig,ex,py,180 if odd else 0,'bidirectional' if sig.startswith('BUS') else 'input')
+            kind='bidirectional' if sig.startswith('BUS') else 'input' if sig in used else 'passive'
+            w.W(px,py,ex,py); w.L(sig,ex,py,180 if odd else 0,kind)
         else:
             w.body+=f'\t(no_connect\n\t\t(at {ksch.f(px)} {ksch.f(py)})\n\t\t(uuid "{ksch.U()}")\n\t)\n'
     return ref

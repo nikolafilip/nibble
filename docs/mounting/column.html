@@ -96,14 +96,14 @@ li{margin:6px 0}
       <li><b>Rails.</b> Two 460 mm rails per board, clamped to the uprights with corner brackets at the height of the board's top and bottom hole rows. The 3D model has them at the heights in the table below.</li>
       <li><b>Boards.</b> An M3 T-nut slides into the rail slot at each hole. A 12 mm M3 standoff screws into the T-nut; the board screws onto the standoff. Nothing is drilled, so a board moves with an Allen key.</li>
       <li><b>Hub.</b> Two rails at 450 mm on the left and right faces carry two cross rails 107 mm apart, the hub's hole pitch. The hub lies flat on them on standoffs, headers up, USB socket toward the back, so every ribbon drops onto it from above and its power LED is visible from the top.</li>
-      <li><b>Cables.</b> Every board's 64-way header is a shrouded IDC socket 8 mm from its top edge (the panel's is on its bottom edge). The ribbon leaves it straight out of the face, folds 90° up over the board's top edge, and runs down inside to the hub. Two folds and one slack loop per cable, no tight angles, the way a floppy cable was routed. A second and later program page hangs off the same hub slot on a ribbon with extra connectors crimped along it.</li>
+      <li><b>Cables.</b> Every board's 64-way header is a shrouded IDC socket 8 mm from its top edge (the panel's is on its bottom edge). The ribbon leaves it straight out of the face, folds 90° up over the board's top edge, and runs down inside to the hub. Two folds and one slack loop per cable, no tight angles, the way a floppy cable was routed. A second and later program page hangs off the page before it: the program board has two 64-way headers wired in parallel, hub in on the left, next page out on the right, so pages side by side are joined by a 10 cm loop.</li>
       <li><b>Power.</b> One USB cable out of the bottom of the column to a phone charger.</li>
     </ol>
   </div>
 </div>
 
 <h2>Rail heights and ribbon lengths</h2>
-<p>Rails measured from the floor to the rail centre. Ribbon length is the path from the board's header, out and over its edge, inside to the hub at 450 mm, plus 100 mm of slack. Boards are centred on their face; the counter and the sequencer share the front; the two program pages sit side by side.</p>
+<p>Rails measured from the floor to the rail centre. Ribbon length is the path from the board's header, out and over its edge, inside to the hub at 450 mm, plus 100 mm of slack. Boards are centred on their face; the counter and the sequencer share the front; the two program pages sit side by side. A program page after the first has no cable to the hub: its ribbon hops from the second header of the page before it (D039), and the length shown is that hop.</p>
 <div class="scroll"><table id="rails"><thead><tr><th>Face</th><th>Board</th><th class="n">Size (mm)</th><th class="n">Lower rail</th><th class="n">Upper rail</th><th class="n">Ribbon</th><th class="n">LEDs</th></tr></thead><tbody></tbody></table></div>
 <p>Stock 64-way IDC cables come in 30, 50 and 100 cm; or 3 m of 64-way ribbon and 16 IDC sockets, crimped in a bench vice, make every cable the exact length. Eight cables of half a metre add about 0.3 nF to each bus line; with the hub's 10k pull-ups that is 3 µs of rise time on a 1 ms tick, and the machine deck now includes it.</p>
 
@@ -140,7 +140,7 @@ const BOARDS={
   clk:{name:'05 clock',w:136,h:160,leds:2},
   pan:{name:'06 panel',w:246,h:250,leds:56},
   hub:{name:'07 hub',w:142,h:115,leds:1},
-  prg:{name:'04 program page',w:204,h:250,leds:17},
+  prg:{name:'04 program page',w:216,h:250,leds:17},
 };
 const FACE=460, UP=20, OUTER=500, BASE=40, GAP=30, Z0=BASE+GAP;   // mm
 // placement per face: x = offset from the face's left upright (mm), z = bottom edge height (mm)
@@ -154,13 +154,13 @@ function layout(pages){
   F.right.push({b:'mem',x:(FACE-368)/2,z});
   z=Z0;
   const p2=Math.min(pages,2);
-  for(let i=0;i<p2;i++) F.back.push({b:'prg',x:(FACE-(p2*204+(p2-1)*GAP))/2+i*(204+GAP),z,tag:'page '+(i+1)});
+  for(let i=0;i<p2;i++) F.back.push({b:'prg',x:(FACE-(p2*216+(p2-1)*GAP))/2+i*(216+GAP),z,tag:'page '+(i+1)});
   z+=250+GAP;
   F.back.push({b:'alu',x:(FACE-(190+GAP+136))/2,z}); F.back.push({b:'clk',x:(FACE-(190+GAP+136))/2+190+GAP,z});
   z+=270+GAP;
   F.back.push({b:'pan',x:(FACE-246)/2,z});
   z=Z0;
-  for(let i=2;i<pages;i++){ const k=i-2; const col=k%2,row=Math.floor(k/2); F.left.push({b:'prg',x:(FACE-(2*204+GAP))/2+col*(204+GAP),z:Z0+row*(250+GAP),tag:'page '+(i+1)}); }
+  for(let i=2;i<pages;i++){ const k=i-2; const col=k%2,row=Math.floor(k/2); F.left.push({b:'prg',x:(FACE-(2*216+GAP))/2+col*(216+GAP),z:Z0+row*(250+GAP),tag:'page '+(i+1)}); }
   return F;
 }
 const HEIGHT=950, HUBZ=450;   // mm: hub cross rails at mid height, so no ribbon is longer than 60 cm
@@ -220,7 +220,7 @@ function makeLabel(text){
 }
 function buildDynamic(pages){
   group.remove(dyn); dyn=new THREE.Group(); group.add(dyn); labelSprites.length=0;
-  const L=layout(pages); let slot=0;
+  const L=layout(pages); let slot=0, lastPage=null;
   for(const f of Object.keys(L)){
     const g=faceGroup(f);
     for(const p of L[f]){
@@ -232,6 +232,7 @@ function buildDynamic(pages){
       for(const [sx,sy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ const s=new THREE.Mesh(new THREE.CylinderGeometry(2.5,2.5,12,8),matAlu); s.rotation.x=Math.PI/2; s.position.set(cx+sx*(b.w/2-4),cy+sy*(b.h/2-4),OUTER/2+6); g.add(s); }
       // header bar along the top edge
       const hdr=box(84,9,9,matDark); hdr.position.set(cx-b.w/2+26+39,p.b==='pan'?cy-b.h/2+8:cy+b.h/2-8,OUTER/2+12+5); g.add(hdr);
+      if(p.b==='prg'){ const h2=box(84,9,9,matDark); h2.position.set(cx-b.w/2+118+39,cy+b.h/2-8,OUTER/2+12+5); g.add(h2); }   // the second header (D039): the next page's ribbon
       // LEDs in rows near the top
       const n=p.b==='mem'?4:b.leds; const perRow=Math.min(n,Math.max(4,Math.floor((b.w-30)/12)));
       for(let i=0;i<n;i++){ const r=Math.floor(i/perRow), c=i%perRow; const rowN=Math.min(perRow,n-r*perRow); const lx=cx-(rowN-1)*6+c*12; const ly=cy+b.h/2-(p.b==='pan'?14:34)-r*12; if(ly<cy-b.h/2+10) continue; const l=new THREE.Mesh(new THREE.SphereGeometry(2.6,8,6),matLed); l.position.set(lx,ly,OUTER/2+14); g.add(l); }
@@ -242,19 +243,32 @@ function buildDynamic(pages){
       const top=p.b!=='pan';                                     // the panel's header is on its bottom edge
       const hy=top?cy+b.h/2-8:cy-b.h/2+8, edge=top?cy+b.h/2:cy-b.h/2, dir=top?1:-1;
       const face=OUTER/2+12;                                     // board plane
-      const hubLocal=new THREE.Vector3(-52+slot*15,HUBZ+UP/2+12+9,0).applyAxisAngle(new THREE.Vector3(0,1,0),-FACES[f].rot); slot++;
       const inside=OUTER/2-UP-16;
-      const pts=[new THREE.Vector3(hx,hy,face+8),               // in the socket
-                 new THREE.Vector3(hx,hy,face+26),              // straight out of the face
-                 new THREE.Vector3(hx,edge+dir*18,face+26),     // fold: up (down for the panel) past the board's edge
-                 new THREE.Vector3(hx,edge+dir*18,inside),      // fold: back over the edge and the rail, inside
-                 new THREE.Vector3((hx+hubLocal.x)/2,(edge+dir*18+hubLocal.y)/2,(inside+hubLocal.z)/2),   // slack loop
-                 hubLocal];                                     // down onto the hub's header row
+      const Y=new THREE.Vector3(0,1,0), toLocal=v=>v.clone().applyAxisAngle(Y,-FACES[f].rot);
+      let pts, hop2=null;
+      if(p.b==='prg'&&lastPage){                                // D039: this page hangs off the previous page's second header
+        const q=lastPage, hx2=q.hx2;
+        if(q.f===f&&q.z===p.z) hop2={x:hx2,y:q.hy};
+        if(q.f===f&&q.z===p.z) pts=[new THREE.Vector3(hx2,q.hy,face+8),new THREE.Vector3(hx2,q.hy,face+30),new THREE.Vector3((hx2+hx)/2,hy,face+34),new THREE.Vector3(hx,hy,face+30),new THREE.Vector3(hx,hy,face+8)];   // side by side: a flat loop across the gap
+        else { const W=q.pts.map(v=>toLocal(v));               // another face or row: out, over its edge, inside, across, over this edge, in
+               pts=[...W,new THREE.Vector3((W[W.length-1].x+hx)/2,(W[W.length-1].y+edge+18)/2,inside-20),new THREE.Vector3(hx,edge+18,inside),new THREE.Vector3(hx,edge+18,face+26),new THREE.Vector3(hx,hy,face+26),new THREE.Vector3(hx,hy,face+8)]; }
+      } else {
+        const hubLocal=new THREE.Vector3(-52+slot*15,HUBZ+UP/2+12+9,0).applyAxisAngle(Y,-FACES[f].rot); slot++;
+        pts=[new THREE.Vector3(hx,hy,face+8),                   // in the socket
+             new THREE.Vector3(hx,hy,face+26),                  // straight out of the face
+             new THREE.Vector3(hx,edge+dir*18,face+26),         // fold: up (down for the panel) past the board's edge
+             new THREE.Vector3(hx,edge+dir*18,inside),          // fold: back over the edge and the rail, inside
+             new THREE.Vector3((hx+hubLocal.x)/2,(edge+dir*18+hubLocal.y)/2,(inside+hubLocal.z)/2),   // slack loop
+             hubLocal];                                         // down onto the hub's header row
+      }
+      if(p.b==='prg'){ const hx2=cx-b.w/2+118+39; const toWorld=v=>v.clone().applyAxisAngle(Y,FACES[f].rot);
+        lastPage={f,z:p.z,hx2,hy,pts:[new THREE.Vector3(hx2,hy,face+8),new THREE.Vector3(hx2,hy,face+26),new THREE.Vector3(hx2,edge+18,face+26),new THREE.Vector3(hx2,edge+18,inside)].map(toWorld)}; }
       const curve=new THREE.CatmullRomCurve3(pts,false,'catmullrom',0.15);
       const shape=new THREE.Shape(); shape.moveTo(-40,-0.8); shape.lineTo(40,-0.8); shape.lineTo(40,0.8); shape.lineTo(-40,0.8); shape.closePath();
       const geo=new THREE.ExtrudeGeometry(shape,{extrudePath:curve,steps:80,bevelEnabled:false});
       rib.add(new THREE.Mesh(geo,matRib));
       const idc=box(84,10,10,matDark); idc.position.set(hx,hy,face+5); rib.add(idc);   // the IDC socket on the header
+      if(hop2){ const idc2=box(84,10,10,matDark); idc2.position.set(hop2.x,hop2.y,face+5); rib.add(idc2); }   // and the plug on the previous page's second header
       g.add(rib);
       const lab=makeLabel(b.name+(p.tag?' · '+p.tag:'')); lab.position.set(cx,p.z-14,OUTER/2+20); lab.name='label'; g.add(lab); labelSprites.push(lab);
     }
@@ -313,8 +327,11 @@ function renderFaces(pages){
   }
   // rail table
   const tb=document.querySelector('#rails tbody'); tb.innerHTML='';
+  let prev=null;
   for(const [f] of order) for(const p of L[f]){ const b=BOARDS[p.b]; const top=p.b!=='pan'; const edge=top?p.z+b.h:p.z; const hx=p.x+26+39-FACE/2;
-    const len=26+18+16+Math.hypot(hx,edge-(HUBZ+32),OUTER/2-UP-16)+100;   // out of the socket, over the edge, inside, diagonal to the hub, slack
+    let len=26+18+16+Math.hypot(hx,edge-(HUBZ+32),OUTER/2-UP-16)+100;   // out of the socket, over the edge, inside, diagonal to the hub, slack
+    if(p.b==='prg'&&prev){ len=(prev.f===f&&prev.z===p.z)?(hx-prev.hx2)+60:2*(26+18+16)+Math.hypot(prev.hx2-hx,prev.edge-edge,0)+150; }   // a hop from the previous page's second header: a flat loop across the gap, or over both edges and inside
+    if(p.b==='prg') prev={f,z:p.z,edge,hx2:p.x+118+39-FACE/2};
     tb.insertAdjacentHTML('beforeend',`<tr><td>${f}</td><td>${b.name}${p.tag?' · '+p.tag:''}</td><td class="n">${b.w} × ${b.h}</td><td class="n">${p.z+4}</td><td class="n">${p.z+b.h-4}</td><td class="n">${Math.ceil(len/50)*5} cm</td><td class="n">${b.leds}</td></tr>`); }
   tb.insertAdjacentHTML('beforeend',`<tr><td>inside</td><td>07 hub, flat on two cross rails</td><td class="n">142 × 115</td><td class="n">450</td><td class="n">—</td><td class="n">—</td><td class="n">1</td></tr>`);
 }

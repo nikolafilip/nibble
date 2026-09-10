@@ -6,8 +6,8 @@ Four boards, all 2-layer, 1.6 mm FR4, HASL is fine (hand soldering). Sizes:
 |---|---|---|---|
 | Coupon | 112 × 94 | 65 | 160 |
 | Hub | 130 × 98 | 28 | 460 (the headers) |
-| Front panel | 150 × 222 | 229 | 560 |
-| ALU | 126 × 210 | 228 | 640 |
+| Front panel | 200 × 222 | 229 | 560 |
+| ALU | 156 × 214 | 228 | 640 |
 
 Gerbers come from `sim/pcb.py` (`fab/` under each board). Order 5 of each; the
 minimum quantity at most fabs is 5 anyway and you will want spares of the coupon.

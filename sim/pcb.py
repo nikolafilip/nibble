@@ -88,6 +88,7 @@ def build(projdir,name,route=True,passes=40):
     gnd_pour(); pcbnew.SaveBoard(pcb,board)     # before routing: the router sees GND as a plane and leaves it alone
     if route:
         dsn=os.path.join(projdir,f'{name}.dsn'); ses=os.path.join(projdir,f'{name}.ses')
+        best=None
         for attempt in range(3):
             pcbnew.ExportSpecctraDSN(board,dsn)
             # pre-routed power (GND/+5V rails, stubs, stitches) is fixed so the router cannot move it; the SES then omits it,
@@ -105,8 +106,17 @@ def build(projdir,name,route=True,passes=40):
             add_rails(); gnd_pour(); pcbnew.SaveBoard(pcb,board)
             for _ in range(2):
                 if gnd_stitch(board,pcb,netobj,gnd_pour)==0: break
-            if unconnected(pcb)==0: break
+            n=unconnected(pcb)
+            if best is None or n<best[0]:
+                best=(n,pcb.replace('.kicad_pcb','.best.kicad_pcb')); import shutil; shutil.copy(pcb,best[1])
+            if n==0: break
         os.remove(dsn)
+        if best and best[0]>0:      # keep the best attempt, not the last
+            board=pcbnew.LoadBoard(best[1]); netobj={n:board.FindNet(n) for n in nets}
+            def gnd_pour():
+                for z in list(board.Zones()): board.Remove(z)
+                pour('GND',pcbnew.B_Cu)
+        if best and os.path.exists(best[1]): os.remove(best[1])
         outline(0); gnd_pour(); pcbnew.SaveBoard(pcb,board)
     return pcb
 

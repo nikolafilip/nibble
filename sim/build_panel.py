@@ -39,6 +39,7 @@ def button(w,x,y,name,pcb):
     xo=xn+6*G
     w.L(name+'_S2',xo,y,180,'input'); w.W(xo,y,xo+G,y); w.at(w.R('10k',xo+2.5*G,y,90),px+39,py-2,270); w.W(xo+4*G,y,xo+5*G,y)
     w.at(w.diode(xo+6.5*G,y,180),px+14,py+7,0); w.W(xo+8*G,y,xo+9*G,y); w.L(name,xo+9*G,y,0,'output')
+    w.rails.append(('GND','F.Cu',px+19,py,px+24,py+3.08,0.5))      # debounce cap ground -> 220k ground (pre-routed)
 
 def main():
     d=panel.build(); assert not d.check(), d.check()
@@ -49,7 +50,7 @@ def main():
         "Every switched or observed line has a 1Meg pull-down so it reads 0 when no board drives it.  DATA switches pull BUS_i# to GND directly (that is what an open-drain driver does), so closed = 1 on the bus.\n"
         "CLK and RST come from RC-debounced buttons through a Schmitt trigger and a diode, so the clock board can drive the same lines later.  Order 1 test: hub + panel + ALU: set A, B, SUB, EO; read S on the D3..D0 LEDs and CF/ZF.",10*G,16*G,1.6)
     used=set(s for s in bus.PINS.values() if s not in ('+5V','GND'))
-    BW,BH=190,222; w.PCB_COL=15.24
+    BW,BH=200,222; w.PCB_COL=15.24
     j=frame.bus_header(w,30*G,40*G,used); w.at(j,50,214,90); w.label("BUS  (pin 1 left)",52,206,1.2); frame.header_gnd(w,50,214,+1)
     frame.power_flags(w,44*G,32*G)
     c1,c2=frame.decoupling(w,52*G,32*G); w.at(c1,12,200,270); w.at(c2,18,200,270); frame.cap_gnd(w,12,200,2.5); frame.cap_gnd(w,18,200,2.0)
@@ -62,16 +63,22 @@ def main():
     w.rails.append(('+5V','F.Cu',144,12,144,80,0.5))   # one +5V spine through all three level-switch columns
     w.label("A3..B0",143,8,1.0); w.label("CONTROL",143,42,1.0); w.label("CONTROL",143,76,1.0); w.label("DATA",143,110,1.0)
     button(w,sx+80*G,30*G,'CLK',(136,140)); button(w,sx+80*G,42*G,'RST',(136,160))
+    # button-cluster grounds -> pull-down ground bar row 0 (y=183.08), via a free column at x=180
+    w.rails.append(('GND','B.Cu',160,143.08,160,145.5,0.5)); w.rails.append(('GND','B.Cu',160,145.5,180,145.5,0.5)); w.rails.append(('GND','B.Cu',180,145.5,180,183.08,0.5)); w.vias.append(('GND',180,183.08))
+    w.rails.append(('GND','B.Cu',160,163.08,160,165.5,0.5)); w.rails.append(('GND','B.Cu',160,165.5,180,165.5,0.5))
     w.T("1Meg pull-downs: every line the panel switches or observes reads 0 when no board drives it",10*G,58*G,1.6,True)
     for k,n in enumerate(panel.PULLDOWNS):
-        r=frame.pulldown(w,n,12*G+(k%20)*4*G,60*G+(k//20)*8*G); w.at(r,140+(k%10)*5,180+(k//10)*9,270)
+        r=frame.pulldown(w,n,12*G+(k%20)*4*G,60*G+(k//20)*8*G); w.at(r,140+(k%10)*6,178+(k//10)*10,270)
     w.label("1Meg PULL-DOWNS",140,176,1.0)
     nrow=(len(panel.PULLDOWNS)+9)//10
     for r in range(nrow):   # GND bar through each row's ground pads, joined at the right end
-        last=140+(min(10,len(panel.PULLDOWNS)-r*10)-1)*5
-        w.rails.append(('GND','F.Cu',137,180+r*9+5.08,last,180+r*9+5.08,0.5))
-    w.rails.append(('GND','F.Cu',137,185.08,137,180+(nrow-1)*9+5.08,0.5))
+        last=140+(min(10,len(panel.PULLDOWNS)-r*10)-1)*6
+        w.rails.append(('GND','F.Cu',137,178+r*10+5.08,last,178+r*10+5.08,0.5))
+    w.rails.append(('GND','F.Cu',137,183.08,137,178+(nrow-1)*10+5.08,0.5))
     yend=w.layout(d.gates,panel.GROUP_TITLES,10*G,80*G,16,pcb_origin=(12.0,16.0),pcb_cols=8)
+    frame.header_gnd_link(w,50,214,w.pcb_extent[1]+6)
+    # header pin-50 ground via -> pull-down ground joiner (both at the bottom right)
+    w.rails.append(('GND','B.Cu',113.46,211.46,137,211.46,0.5)); w.vias.append(('GND',137,211.46))
     W=10*G+16*w.CELL_W+30*G; H=yend+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
     open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))

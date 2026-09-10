@@ -64,3 +64,11 @@ def gnd_bar(w,x1,x2,y,join=None):
     """Pre-routed GND bar on F.Cu through a row of ground pads at height y; `join`=(x,y2) adds a vertical link to another GND track."""
     w.rails.append(('GND','F.Cu',x1,y,x2,y,0.5))
     if join: w.rails.append(('GND','F.Cu',join[0],y,join[0],join[1],0.5))
+
+def header_gnd_link(w,hx,hy,ylink):
+    """After layout(): link the bottom header's GND pin 3 to the nearest column GND rail on B.Cu, below the tiles at height ylink."""
+    x3,y3=hx+2.54,hy
+    rails=[(r[2],r[5]) for r in w.rails if r[0]=='GND' and r[1]=='B.Cu' and abs(r[2]-r[4])<0.01 and r[5]>r[3]]   # vertical GND rails: (x, y_end)
+    if not rails: return
+    xr,yend=min(rails,key=lambda r:abs(r[0]-x3))
+    w.rails.append(('GND','B.Cu',x3,y3,x3,ylink,0.5)); w.rails.append(('GND','B.Cu',x3,ylink,xr,ylink,0.5)); w.rails.append(('GND','B.Cu',xr,yend,xr,ylink,0.5))

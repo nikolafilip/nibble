@@ -4,6 +4,12 @@ One 2x32 (64-pin) box header per board, 2.54 mm pitch, connected to the hub
 board with a 64-way IDC ribbon cable. Pin 1 is marked on every board. Clock and
 reset each sit next to a ground pin.
 
+2x32 is the largest standard IDC size (2x34 and 2x40 are not stocked
+anywhere). Checked 2026-09-10: shrouded headers (XFCN BH254V-64P, LCSC
+C48603668) and crimp sockets (ZHOURI FC-2.54-64P, LCSC C49261185) are cheap
+and thousands deep; assembled 64-way cables are thin (Amazon, DigiKey Assmann
+H3BBH-6406M), so cables are crimped from sockets and 64-way ribbon if needed.
+
 All lines are 0 V / 5 V. Everything is active-high except the four `BUS#`
 lines, which are open-drain and active-low (pulled up to 5 V on the hub; a
 board pulls low to assert a 1), and the eight `M` lines, which are diode-OR
@@ -42,9 +48,9 @@ uses is either driven from the header or tied to a rail on the board.
 | 51 | PCL | 52 | FI |
 | 53 | HLT | 54 | MAI |
 | 55 | MI | 56 | MO |
-| 57 | PWL | 58 | PWH |
-| 59 | SP0 | 60 | SP1 |
-| 61 | SP2 | 62 | SP3 |
+| 57 | WRL | 58 | WRH |
+| 59 | ONE | 60 | F0 |
+| 61 | F1 | 62 | INP |
 | 63 | +5V | 64 | GND |
 
 | Signal | Direction | Meaning |
@@ -57,6 +63,8 @@ uses is either driven from the header or tied to a rail on the board.
 | M0..7 | program memory -> sequencer | The selected instruction word (M7..4 opcode, M3..0 operand). Diode-OR across memory boards |
 | CF, ZF | ALU -> sequencer, panel | Carry and zero, combinational from the ALU; latched on the sequencer when `FI` is high |
 | SUB | sequencer -> ALU | 1 = subtract |
+| ONE | sequencer -> ALU | The ALU uses 0001 in place of B (INC, DEC) |
+| F0, F1 | sequencer -> ALU | Result select: 00 add/subtract, 01 and, 10 or, 11 xor |
 | EO | sequencer -> ALU | ALU drives its result onto the bus |
 | AI, BI, OI | sequencer -> registers | Register loads from the bus on the next clock edge |
 | AO, BO | sequencer -> registers | A / B drives the bus |
@@ -68,9 +76,10 @@ uses is either driven from the header or tied to a rail on the board.
 | HLT | sequencer -> clock | Stops the clock |
 | MAI | sequencer -> data memory | Data memory address register loads from the bus |
 | MI, MO | sequencer -> data memory | Data memory writes the bus into / drives the bus from the addressed slot |
-| PWL, PWH | panel -> writable program memory | Write the bus into the low / high nibble of the word at the PC address |
-| SP0..3 | spare | Unassigned |
+| WRL, WRH | panel -> writable program memory | Write the bus into the low / high nibble of the word at the PC address |
+| INP | sequencer -> panel | The panel's data switches drive the bus (IN) |
 
 Lines marked internal still cross the header so the front panel can drive
-them by hand while the sequencer board does not exist yet. MAI, MI, MO, PWL,
-PWH and BO are reserved for boards that do not exist yet (see `plan.md`).
+them by hand while the sequencer board does not exist yet. WRL and WRH are
+reserved for a writable program memory board that is not designed yet. There
+are no spare pins left (D031).

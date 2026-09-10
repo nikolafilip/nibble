@@ -1,6 +1,6 @@
 ; 7 x 6 = 42 as an 8-bit product, by repeated addition through data memory.
 ; Slots: 0 = X, 1 = Y (count, must be >= 1), 2 = product low nibble, 3 = product high nibble.
-; Only ADD and SUB set the flags, so the loop adds first and tests Y after the decrement.
+; Only ADD, SUB, INC and DEC set the flags, so the loop adds first and tests Y after the decrement.
 ; needs: datamem
 ; expect: 10 2
 ; expect-halt: end
@@ -17,17 +17,13 @@ loop:   LOAD 0
         ADD
         STORE 2         ; low += X
         JC  carry
-back:   LDI 1
-        MOV B,A         ; B = 1
-        LOAD 1
-        SUB
+back:   LOAD 1
+        DEC
         STORE 1         ; Y = Y - 1
         JZ  done
         JMP loop
-carry:  LDI 1
-        MOV B,A
-        LOAD 3
-        ADD
+carry:  LOAD 3
+        INC
         STORE 3         ; high += 1
         JMP back
 done:   LOAD 2

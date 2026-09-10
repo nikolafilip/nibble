@@ -34,8 +34,12 @@ Reference programs, in `sim/programs/`, assembled by `sim/asm.py`:
 - `fib.asm`: Fibonacci to 8, halts on carry. Exercises LDI, MOV, XCH, ADD, OUT, JC, JMP, HLT and the two-word jump.
 - `count.asm`: count 0..15, wrap on carry, count back down with SUB and JZ.
 - `alu.asm`: every ADD/SUB result and flag pattern reachable from a short program.
-- `mul.asm` (after the data memory board): 8-bit product of two nibbles using LOAD/STORE and the carry flag.
-- `list.asm` (after the data memory board): maximum of four numbers held in data memory, compared with SUB and JC.
+- `mul.asm`: 8-bit product of two nibbles using LOAD/STORE, DEC, INC and the carry flag.
+- `list.asm`: maximum of four numbers in data memory, walked with B as the pointer (LOAD [B]).
+- `calc.asm`: two numbers typed on the switches (IN), multiplied by a subroutine (CALL/RET), product shown as two nibbles.
+- `sort.asm`: four numbers from the switches sorted in memory with STORE [B] and shown in order.
+- `lfsr.asm`: a pseudo-random sequence from a 4-bit shift register, using AND, OR, XOR.
+- `gcd.asm`: Euclid's algorithm on two numbers from the switches.
 
 Boards that do not exist yet are absent from the deck; the front panel model
 drives their lines to 0. As each board is designed, it is added and the
@@ -50,27 +54,26 @@ run in the background, three corners in parallel.
 
 | Step | What | Gate | Notes |
 |---|---|---|---|
-| 1 | Regenerate ALU, panel, hub, coupon with the 64-pin header (D017) | schematic + board gates | hub gains M pull-downs (D021); panel gains BO, MAI, MI, MO, PWL, PWH switches and LEDs |
+| 1 | Regenerate ALU, panel, hub, coupon with the 64-pin header (D017) and the D031 lines | schematic + board gates | hub gains M pull-downs (D021); panel gains the control switches and LEDs for every line and the input port (IN); ALU gains ONE, F0, F1 |
 | 2 | `emu.py`, `asm.py`, reference programs | emulator runs all programs with the expected output | pure Python, no hardware |
-| 3 | Register board (A, B, OUT, with BO, BA, AB) | all three gates: panel + ALU + registers run every register transfer | about 300 transistors |
-| 4 | Sequencer board (8-bit PC, IR, 8-bit operand register, 5-state counter, diode matrix, flags) | all three gates: `fib.asm`, `count.asm`, `alu.asm` pass on the machine deck | about 750 transistors; the diode matrix is diodes, not transistors |
-| 5 | Program memory board (16 words, page jumpers, diode-OR outputs) | machine gate with the program held in the switch model replaced by the real board netlist | zero transistors plus page compare |
-| 6 | Clock board (astable, single-step, reset, halt) | machine gate with the real clock instead of the pulse source | about 20 transistors |
-| 7 | Fab order 1: coupon, hub, panel, ALU | Nikola's review: renders, bring-up doc, order-1 doc | boards 1 to 4 only; the later boards' netlists already pass the machine gate |
-| 8 | Bring-up per `bring-up.md`; measured gate delay replaces the simulated one in every testbench | physical | |
-| 9 | Fab order 2: registers, sequencer, program memory, clock | machine gate re-run with measured delays | first program runs on hardware |
-| 10 | Data memory board (16 x 4, MAI, MI, MO); LOAD/STORE diodes | machine gate: `mul.asm`, `list.asm` | first board added to a working machine |
+| 3 | Register board (A, B, OUT, with BO, BA, AB) | all three gates: the ALU and registers run `fib.asm` with the emulator playing the sequencer | about 370 transistors |
+| 4 | Sequencer board (8-bit PC, IR, 8-bit operand register, return register, 5-state counter, two decoders, diode matrix, flags) | all three gates: every program that needs no memory passes on the machine deck | about 1,000 transistors; the diode matrix is diodes, not transistors |
+| 5 | Data memory board (16 x 4, address register, MAI, MI, MO) | machine gate: `mul.asm`, `list.asm`, `sort.asm`, `lfsr.asm`, `calc.asm` | about 700 transistors |
+| 6 | Program memory board (16 words, page jumpers, diode-OR outputs) | machine gate with the program held in the switch model replaced by the real board netlist | zero transistors plus page compare |
+| 7 | Clock board (astable, single-step, reset, halt) | machine gate with the real clock instead of the pulse source | about 20 transistors |
+| 8 | Fab: every board in one order | Nikola's review: renders, bring-up doc, order doc | one order (D032); the coupon is on the same order, so the corner and mixed-threshold simulations are what stands in for its measurements |
+| 9 | Bring-up per `bring-up.md`, one board at a time on the panel; measured gate delay replaces the simulated one in every testbench | physical | first program runs on hardware |
 
-Steps 3 to 6 are designed before order 1 is placed, even though they ship in
-order 2. That way the header, the control lines and the whole-machine test are
-proven before any copper exists, and order 1 cannot be invalidated by a
-discovery made while designing the sequencer.
+Every board passes the machine gate before the order is placed, so the header,
+the control lines and the instruction set are proven as a whole before any
+copper exists.
 
 ## What "won't work" looks like, and where it is caught
 
 | Failure | Caught by |
 |---|---|
-| A gate cell that is too slow or has bad margins in copper | coupon measurements, step 8; every testbench then re-runs with measured numbers |
+| A gate cell that is too slow or has bad margins in copper | the three threshold corners and the mixed-threshold runs of every board; then coupon measurements at bring-up |
+| A latch that only works when all transistors match | corner MIX of the machine deck: every transistor gets a random threshold model (D033) |
 | A wiring mistake on a board | schematic gate (exhaustive sim of the export) |
 | A routing mistake | board gate (DRC + netlist compare) |
 | Two boards disagreeing about a control line's meaning or timing | machine gate |

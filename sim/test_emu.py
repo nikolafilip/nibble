@@ -3,7 +3,7 @@ import glob, os, sys
 import asm, emu
 def check(path,has_datamem=True):
     words,labels,meta=asm.assemble(open(path).read())
-    m=emu.Machine(words,has_datamem=has_datamem); outs=m.run()
+    m=emu.Machine(words,inputs=[int(x) for x in meta.get('input','').split()],has_datamem=has_datamem); outs=m.run()
     want=[int(x) for x in meta.get('expect','').split()]
     ok=outs==want and m.halted
     if 'expect-halt' in meta: ok=ok and m.trace[-1]['pc']==labels[meta['expect-halt']]+1   # PC has already stepped past the HLT word

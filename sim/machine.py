@@ -21,6 +21,7 @@ gated by HLT until the clock board exists.
 """
 import os, re, random, subprocess, sys
 import numpy as np
+import spicedat
 import bus, asm, emu
 
 HERE=os.path.dirname(os.path.abspath(__file__)); BOARDS=os.path.join(HERE,'..','boards'); OUT=os.path.join(HERE,'out')
@@ -35,6 +36,7 @@ PC=[f'PC{i}' for i in range(8)]; M=[f'M{i}' for i in range(8)]
 BOARD={'alu':('01-alu/alu.kicad_sch','alu',[]),
        'reg':('02-registers/registers.kicad_sch','registers',['OUT0','OUT1','OUT2','OUT3']),
        'seq':('03-sequencer/sequencer.kicad_sch','sequencer',['T0','T1','T2','T3','T4','CFQ','ZFQ']),
+       'mem':('08-memory/memory.kicad_sch','memory',[]),
        'panel':('06-panel/panel.kicad_sch','panel',[]),
        'hub':('07-hub/hub.kicad_sch',None,[])}
 
@@ -65,6 +67,10 @@ def subckt(board,lines,corner,rng=None):
     ports=[s for s in bus.SIGNALS+SW if s in nodes]
     return ports, [f".subckt {board} "+" ".join(ports)]+body+[".ends"]
 
+def od(en,x,i,tag):
+    """An ideal open-drain driver on BUS<i>#: a switch to ground closed when both en and x are high (ngspice's SW model converges where a stepping B-source does not)."""
+    return [f"Ben{tag}{i} en{tag}{i} 0 V = V({en})>2.5 && V({x})>2.5 ? 5 : 0", f"S{tag}{i} BUS{i}# 0 en{tag}{i} 0 ODRV"]
+
 def pwl(times,values,delay):
     pts=[(0,values[0])]
     for t,v in zip(times,values): pts.append((t+delay-1e-6,pts[-1][1])); pts.append((t+delay+1e-6,v))
@@ -73,7 +79,8 @@ def pwl(times,values,delay):
 def deck(program,boards,corner,trace,outfile,seed=1):
     edges=[T0+k*T for k in range(len(trace))]
     starts=[e-T for e in edges]      # the state of tick k is set up during the period before edge k
-    L=["* Nibble whole-machine deck",'.include "../lib/2N7000.lib"','.include "../lib/led.lib"','.global +5V','V5 +5V 0 5']
+    import nmos
+    L=["* Nibble whole-machine deck",'.include "../lib/2N7000.lib"','.include "../lib/led.lib"',nmos.SW_MODEL,'.global +5V','V5 +5V 0 5']
     probes=[]; rng=random.Random(seed)
     for spec in boards:
         b,_,dev=spec.partition('@')
@@ -82,12 +89,13 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     probes+=bus.SIGNALS+['CLK','RST']
     # clock and reset (until the clock board exists): pulse gated by HLT
     L.append(f"Vclk clkraw 0 PULSE(0 5 {T0:.6g} 1u 1u {T/2-1e-6:.6g} {T:.6g})")
-    L.append("Bclk clkb 0 V = (V(clkraw)>2.5 && V(HLT)<2.5) ? 5 : 0"); L.append("Rclk clkb CLK 100")
+    # gate the clock with HLT through a smooth function (a ternary is a zero-time step: "timestep too small" at every edge)
+    L.append("Bclk clkb 0 V = V(clkraw)*pwl(V(HLT),0,1,2,1,3,0,5,0)"); L.append("Rclk clkb CLK 100")     # pwl() extrapolates outside its points: give it the whole 0..5 V range
     L.append(f"Vrst rstraw 0 PULSE(5 0 {T0*0.4:.6g} 1u 1u 1 2)"); L.append("Rrst rstraw RST 100")
     # program memory model: M = mem[PC] through a diode (the hub pulls M down)
     idx="+".join(f"{1<<i}*u(V(PC{i})-2.5)" for i in range(8))
     for i in range(8):
-        tbl=",".join(f"{a},{(w>>i)&1}" for a,w in enumerate(program))+(f",{len(program)},0,255,0" if len(program)<256 else "")   # pwl() clamps past its last point
+        tbl=",".join(f"{a},{(w>>i)&1}" for a,w in enumerate(program))+(f",{len(program)},0,255,0" if len(program)<256 else "")   # pwl() extrapolates past its last point: pin it to 0 up to address 255
         L.append(f"Bm{i} mraw{i} 0 V = 5*pwl({idx},{tbl})"); L.append(f"Dm{i} mraw{i} M{i} D1N4148")
     # boards played by the emulator
     virt=[]
@@ -102,20 +110,24 @@ def deck(program,boards,corner,trace,outfile,seed=1):
         # the virtual sequencer's operand register drives the bus when IO is high (ideal open-drain driver)
         for i in range(4):
             L.append(f"Vopr{i} opr{i} 0 "+pwl(starts,[(s['opr']>>i)&1 for s in trace],STEP_DELAY))
-            L.append(f"Bio{i} BUS{i}# 0 I = (V(IO)>2.5 && V(opr{i})>2.5) ? V(BUS{i}#)/50 : 0")
+            L+=od('IO',f'opr{i}',i,'io')
     if 'reg' not in boards:
         for i in range(4):
             for n,f in ((f'A{i}','a'),(f'B{i}','b')):
                 L.append(f"V{n} v{n} 0 "+pwl(starts,[(s[f]>>i)&1 for s in trace],STEP_DELAY)); L.append(f"R{n} v{n} {n} 100")
         # a virtual register board also has to drive the bus for AO / BO: modelled as ideal open-drain drivers
         for i in range(4):
-            L.append(f"Bao{i} BUS{i}# 0 I = (V(AO)>2.5 && V(A{i})>2.5) || (V(BO)>2.5 && V(B{i})>2.5) ? V(BUS{i}#)/50 : 0")
+            L+=od('AO',f'A{i}',i,'ao')+od('BO',f'B{i}',i,'bo')
+    if 'mem' not in boards:      # virtual data memory: drives the bus with the emulator's memory value while MO is high
+        for i in range(4):
+            L.append(f"Vmo{i} mo{i} 0 "+pwl(starts,[(s['bus']>>i)&1 if 'MO' in s['ctl'] else 0 for s in trace],STEP_DELAY))
+            L+=od('MO',f'mo{i}',i,'mo')
     # the panel's data switches: driven from the trace (what the program expects to read with IN)
     for i in range(4):
         L.append(f"Vsw{i} SW{i} 0 "+pwl(starts,[(s['sw']>>i)&1 for s in trace],STEP_DELAY))
     if 'panel' not in boards:     # virtual input port
         for i in range(4):
-            L.append(f"Bin{i} BUS{i}# 0 I = (V(INP)>2.5 && V(SW{i})>2.5) ? V(BUS{i}#)/50 : 0")
+            L+=od('INP',f'SW{i}',i,'in')
     tend=edges[-1]+T/2
     top=set(tok for l in L if l[0] not in '.*+' and not l.startswith(('.subckt','.ends')) for tok in l.split()[1:])
     probes=[p for p in probes if '.' in p or p in top]     # a bus line no board touches is not a node in the deck
@@ -124,8 +136,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     return "\n".join(L)+"\n", probes, edges
 
 def sample(dat,probes,edges):
-    with open(dat) as f: names=f.readline().split()
-    a=np.loadtxt(dat,skiprows=1); t=a[:,0]; col={n.lower():a[:,k] for k,n in enumerate(names)}
+    names,a=spicedat.read(dat); t=a[:,0]; col={n.lower():a[:,k] for k,n in enumerate(names)}
     def bit(name,tt):
         v=col.get(f'v({name.lower()})')
         return 0 if v is None else int(np.interp(tt,t,v)>2.5)
@@ -140,6 +151,9 @@ def compare(rows,trace,boards):
     """Returns a list of (tick, field, want, got) mismatches."""
     bad=[]
     def num(row,names): return sum(row[n]<<i for i,n in enumerate(names))
+    # A, B and OUT have no reset (docs/isa.md): their power-on state is whatever the flip-flops fall into, so they and
+    # the flags the ALU computes from them are compared only once the program has written them
+    known={'a':False,'b':False,'out':False}
     for k,(row,s) in enumerate(zip(rows,trace)):
         chk={}
         chk['m']=(s['m'],num(row,M))
@@ -147,12 +161,17 @@ def compare(rows,trace,boards):
         chk['pc']=(s['pc'],num(row,PC))
         chk['ctl']=(" ".join(c for c in CONTROL if c in s['ctl'])," ".join(c for c in CONTROL if row[c]))
         chk['edge']=(int(not s['halted'] and 'HLT' not in s['ctl']),row['edge'])
-        if 'alu' in boards:
+        if 'alu' in boards and (known['a'] and known['b'] or 'reg' not in boards):
             res,cf,zf=emu.Machine.alu_static(s['a'],s['b'],set(s['ctl']))
             chk['CF']=(cf,row['CF']); chk['ZF']=(zf,row['ZF'])
         if 'reg' in boards:
-            chk['a']=(s['a'],num(row,[f'A{i}' for i in range(4)])); chk['b']=(s['b'],num(row,[f'B{i}' for i in range(4)]))
-            chk['out']=(s['out'],num(row,[f'xreg.OUT{i}' for i in range(4)]))
+            if known['a']: chk['a']=(s['a'],num(row,[f'A{i}' for i in range(4)]))
+            if known['b']: chk['b']=(s['b'],num(row,[f'B{i}' for i in range(4)]))
+            if known['out']: chk['out']=(s['out'],num(row,[f'xreg.OUT{i}' for i in range(4)]))
+        c=set(s['ctl'])
+        if c&{'AI','AB'}: known['a']=True
+        if c&{'BI','BA'}: known['b']=True
+        if 'OI' in c: known['out']=True
         if 'seq' in boards:
             chk['step']=(s['step'],[row[f'xseq.T{i}'] for i in range(5)].index(1) if 1 in [row[f'xseq.T{i}'] for i in range(5)] else -1)
             chk['cf']=(s['cf'],row['xseq.CFQ']); chk['zf']=(s['zf'],row['xseq.ZFQ'])
@@ -166,6 +185,8 @@ def run_trace(words,trace,boards,corner='TYP',tag='machine',seed=1):
     text,probes,edges=deck(words,boards,corner,trace,dat,seed); open(cir,'w').write(text)
     r=subprocess.run(['ngspice','-b',cir],capture_output=True,text=True,cwd=HERE)
     if not os.path.exists(dat): print(r.stdout[-4000:],r.stderr[-4000:]); raise SystemExit('ngspice failed')
+    if 'aborted' in r.stdout+r.stderr:
+        print("\n".join(l for l in (r.stdout+r.stderr).splitlines() if 'Timestep' in l or 'aborted' in l)); raise SystemExit('ngspice aborted the transient')
     rows=sample(dat,probes,edges); bad=compare(rows,trace,[b.partition('@')[0] for b in boards])
     return rows,bad
 

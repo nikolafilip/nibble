@@ -54,5 +54,69 @@ def build():
         for i in (3,2,1,0): d.led(f'LED_M{n}_{i}',f'Q{n}_{i}')
     return d
 
+# ---- the cards (D042): a control card and eight slot-pair cards of one design ----
+MLINK=['MAR0','MAR0N','MAR1','MAR1N','MAR2','MAR2N','MAR3','MAR3N','MIN','MON','GND','GND']   # the control card's ribbon to the slot cards (2x6, chained), pins 1..12
+CTL_TITLES={
+ 'clock':GROUP_TITLES['clock'],
+ 'data':'DATA IN: D_i = NOT BUS_i#, for the address latches',
+ 'mar':'ADDRESS REGISTER: four transparent latches, open while MAI and PH1.  MAR3..0 and their complements go to the slot cards over the ribbon; each card picks its address with jumpers.',
+ 'wl':'WRITE AND READ GATES for all slots: MIN low (write allowed) only while MI and PH1, so a write ends at the clock edge; MON low while MO.  4.7k on MIN: sixteen write lines on eight cards drop within microseconds of the edge.',
+ 'leds':'INDICATORS: the address',
+}
+SLOT_TITLES={
+ 'data':'DATA IN: D_i = NOT BUS_i# (a 1 on the bus); BUS_i# itself is the inverted data',
+ 'dec':'SLOT SELECT: SEL = NOR(X3, X2, X1), the three jumpers giving MAR3..1 or their complements so SEL is high for this card\'s pair of slots; the even slot is MAR0 = 0, the odd slot MAR0 = 1',
+ 'wl':'WORD LINES: WR = slot AND write allowed (MIN low), RD = slot AND MON low',
+ 'cells':GROUP_TITLES['cells'],
+ 'leds':'INDICATORS: the eight cells',
+}
+
+def build_ctl():
+    """Memory control card: PH1, the address register with both polarities out, the write and read gates (docs/cards.md)."""
+    d=nmos.Design('memctl')
+    d.inputs={'BUS0#','BUS1#','BUS2#','BUS3#','MAI','MI','MO','CLK'}
+    d.group='clock'
+    d.inv('CLKN','CLK'); d.nor('PH1','CLK','PH2',pu='10k'); d.nor('PH2','CLKN','PH1',pu='10k')
+    d.group='data'
+    for i in range(4): d.inv(f'D{i}',f'BUS{i}#')
+    d.group='mar'
+    d.nand('ENMN','MAI','PH1'); d.inv('ENM','ENMN')
+    for i in range(4): d.latch(f'MAR{i}',f'D{i}','ENM',qpu='22k'); 
+    for i in range(4): d.inv(f'MAR{i}N',f'MAR{i}',pu='22k')
+    d.group='wl'
+    d.nand('MIN','MI','PH1',pu='4.7k'); d.inv('MON','MO',pu='22k')
+    d.group='leds'
+    for n in ['MAR3','MAR2','MAR1','MAR0']: d.led('LED_'+n,n)
+    for i in range(4): d.ext_loads[f'MAR{i}']+=8; d.ext_loads[f'MAR{i}N']+=8      # a jumper on each of the eight slot cards, worst case all on one polarity
+    d.ext_loads['MIN']+=16; d.ext_loads['MON']+=16
+    return d
+
+def build_slot():
+    """Memory slot card: two 4-bit slots (even: MAR0 = 0, odd: MAR0 = 1) of the pair the jumpers X3 X2 X1 select."""
+    d=nmos.Design('memslot')
+    d.inputs={'BUS0#','BUS1#','BUS2#','BUS3#','MAR0','MAR0N','MIN','MON','X1','X2','X3'}
+    d.group='data'
+    for i in range(4): d.inv(f'D{i}',f'BUS{i}#')
+    d.group='dec'
+    d.nor('SEL','X3','X2','X1'); d.nand('WE#','SEL','MAR0N'); d.nand('WO#','SEL','MAR0')
+    d.group='wl'
+    for s,wn in (('E','WE#'),('O','WO#')): d.nor(f'WR{s}',wn,'MIN',pu='22k'); d.nor(f'RD{s}',wn,'MON')
+    d.group='cells'
+    for s in 'EO':
+        for i in range(4):
+            q=f'Q{s}{i}'
+            d.inv(q,q+'N'); d.inv(q+'N',q)
+            d.pull(q+'N',f'WR{s}',f'D{i}'); d.pull(q,f'WR{s}',f'BUS{i}#'); d.pull(f'BUS{i}#',f'RD{s}',q)
+    d.group='leds'
+    for s in 'EO':
+        for i in (3,2,1,0): d.led(f'LED_M{s}{i}',f'Q{s}{i}')
+    return d
+
+def slot_jumpers(p):
+    """The jumper setting of slot pair p (slots 2p and 2p+1): X_k takes MAR_kN where bit k of the address is 1 (so SEL sees a 0 there), MAR_k where it is 0."""
+    return {f'X{k}':(f'MAR{k}N' if (p>>(k-1))&1 else f'MAR{k}') for k in (1,2,3)}
+
 if __name__=='__main__':
-    d=build(); print(d.check()); print('transistors',d.ntransistors(),'resistors',d.nresistors(),'leds',d.nleds())
+    d=build(); print(d.check()); print('board: transistors',d.ntransistors(),'resistors',d.nresistors(),'leds',d.nleds())
+    d=build_ctl(); print(d.check()); print('control card: transistors',d.ntransistors(),'resistors',d.nresistors(),'leds',d.nleds())
+    d=build_slot(); print(d.check()); print('slot card: transistors',d.ntransistors(),'resistors',d.nresistors(),'leds',d.nleds())

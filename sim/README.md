@@ -42,10 +42,16 @@ Gerbers are regenerated, not committed; the renders and BOM are.
 ## Whole-machine simulation
 
     python3 machine.py programs/fib.asm --boards alu,hub,reg,panel [--corner MIX --seed 2] [--ticks 40]
-    python3 gate.py --boards alu,hub,reg,panel -j 4          # all programs, all corners
+    python3 gate.py --boards alu,hub,reg,panel -j 2          # all programs, all corners (two decks at a time on a 36 GB machine)
+    python3 gate.py --boards aluc,hubc,regc,seq,ctrc,memc,progc,pnl --corners TYP -j 2     # the machine as cards
 
-A board named `x@dev` is taken from its gate list instead of the schematic
-export, for trying a design before drawing it. The deck runs the clock at
+Board names: the nine boards (`alu`, `hub`, `reg`, `seq`, `ctr`, `mem`,
+`prog`, `panel`, `clk`) and the cards (`reg0..3` or the group `regc`,
+`alu0..3` / `aluc`, `ctr0..7` / `ctrc`, `memctl` + `memslot` / `memc`
+(eight slot copies with their jumpers), `progc` (one program card per
+four words, jumpered and switched from the program), `panela..c` / `pnl`,
+`clkc`, `hubc`). A board named `x@dev` is taken from its gate list instead
+of the schematic export, for trying a design before drawing it. The deck runs the clock at
 1 ms per tick; a 130-tick program with three boards takes two to three
 minutes per corner. Registers that have no reset (A, B, OUT) are compared only
 from the tick after the program first writes them.

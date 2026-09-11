@@ -120,9 +120,11 @@ and reads back, single writes between reads, bus noise while nothing loads,
 
 | Netlist | Corner | Result |
 |---|---|---|
+| kicad-cli exports, control + eight slot cards | TYP, LO, HI | 217 / 217 each |
+| kicad-cli exports, control + eight slot cards | MIX seed 1 | 217 / 217 |
 | gate lists (`cards@dev`) | TYP | 217 / 217 |
 
-The exports at TYP, LO, HI, MIX: see the commit that closes the memory cards.
+Layout: both cards route DRC clean in one pass, 0 unconnected.
 
 ## Program card (`prog`)
 

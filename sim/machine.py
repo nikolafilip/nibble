@@ -30,7 +30,7 @@ T=1e-3          # clock period
 T0=2e-3         # first rising edge
 STEP_DELAY=20e-6   # virtual sequencer: control lines change this long after the edge
 CONTROL=['SUB','EO','AI','AO','BI','BO','BA','AB','OI','IO','II','PCE','PCL','FI','HLT','MAI','MI','MO','ONE','F0','F1','INP']
-CABLE_PF=300      # ribbon capacitance per header line, all cables together (see docs/mounting.md)
+CABLE_PF=int(os.environ.get('CABLE_PF','300'))      # ribbon capacitance per header line, all cables together (see docs/mounting.md); CABLE_PF=500 in the environment for the margin rerun
 SW=[f'SW{i}' for i in range(4)]   # the panel's data switch levels, ports of the panel subcircuit so the deck can set them
 LINK=[f'OPR{i}' for i in range(8)]+['PCR','RAI']   # the sequencer-to-counter link header (D035); PCL is on the bus header
 ALINK=['C1','C2','C3','ZS0','ZS1','ZS2']             # the ALU cards' carry and zero-so-far chain (2x3 links between neighbours)

@@ -1,7 +1,8 @@
 """Testbench for board 08 (data memory). A clocked script writes every slot and reads it back, three fills
 (slot number, its complement, a scrambled pattern) plus interleaved single writes between reads, so every cell holds
 both values, every address decodes, and a write never disturbs another slot.
-Usage: python3 tb_memory.py <netlist.cir|dev> <outdir> [--corner TYP|LO|HI|MIX] [--seed N] [--rescore]
+Usage: python3 tb_memory.py <netlist.cir|dev|cards|cards@dev> <outdir> [--corner TYP|LO|HI|MIX] [--seed N] [--rescore]
+  cards: the kicad-cli exports of cards/memctl and cards/memslot, the slot card eight times with its pair jumpers set (cards@dev: from the gate lists)
 The machine's timing: the address rides the bus during a MAI tick (the address latch is open while PH1 is high),
 the data rides the bus during an MI tick, the board drives the bus during an MO tick.
 """
@@ -44,13 +45,13 @@ def deck(lines,s,corner,outfile,probes,kicad,seed):
     models={'TYP':'2N7000','LO':'2N7000_LO','HI':'2N7000_HI'}; rng=random.Random(seed)
     body=[]
     for l in lines:
-        if l.lower().startswith(('.end','.tran','.include','.lib','.title','.ic','.option','.control')): continue
+        if l.lower().startswith(('.end','.tran','.include','.lib','.title','.ic','.option','.control')) and not l.lower().startswith('.ends'): continue
         if kicad and l[0] not in '.*+' and int(''.join(c for c in l.split()[0] if c.isdigit()) or 0)>=9000: continue
         if l[0] in 'Mm': l=l.replace(' 2N7000',' '+(models[rng.choice(['LO','TYP','HI'])] if corner=='MIX' else models[corner]))
         body.append(l)
     edges=[T0+k*T for k in range(len(s))]; starts=[e-T+DELAY for e in edges]
     lib=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','lib','2N7000.lib')
-    L=["* data memory testbench",f'.include "{lib}"',nmos.LED_MODEL,nmos.SW_MODEL,"VDD +5V 0 5"]+[f"RHUB{i} +5V BUS{i}# {HUB_PU}" for i in range(4)]
+    L=["* data memory testbench",f'.include "{lib}"',nmos.LED_MODEL,nmos.SW_MODEL,".global +5V","VDD +5V 0 5"]+[f"RHUB{i} +5V BUS{i}# {HUB_PU}" for i in range(4)]
     L.append(f"Vclk CLK 0 PULSE(0 5 {T0:.6g} 1u 1u {T/2-1e-6:.6g} {T:.6g})")
     for c in CTL: L.append(f"V{c} {c} 0 "+pwl(starts,[int(c in ctl) for ctl,v in s]))
     for i in range(4):
@@ -58,13 +59,15 @@ def deck(lines,s,corner,outfile,probes,kicad,seed):
         L.append(f"Sd{i} BUS{i}# 0 d{i} 0 ODRV")
     L+=body
     tend=edges[-1]+T/2
+    L.append(".save "+" ".join(f"v({p})" for p in probes))      # only the probed vectors stay in memory
     L+=[f".tran 1u {tend:.6g}",".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12",".control","run","set wr_singlescale","set wr_vecnames",
         f"wrdata {outfile} "+" ".join(f"v({p})" for p in probes),"quit",".endc",".end"]
     return "\n".join(L)+"\n", edges
 
-def run(lines,corner,outdir,tag,seed=1,rescore=False):
+def run(lines,corner,outdir,tag,seed=1,rescore=False,cards=False):
     os.makedirs(outdir,exist_ok=True); s=script(); exp=expected(s)
-    probes=[f'MAR{i}' for i in range(4)]+[f'BUS{i}#' for i in range(4)]+['CLK','PH1','PH2']
+    pre='xmemctl.' if cards else ''
+    probes=[f'MAR{i}' for i in range(4)]+[f'BUS{i}#' for i in range(4)]+['CLK',f'{pre}PH1',f'{pre}PH2']      # MAR is on the link ribbon, a port of the memctl card: a top-level node
     dat=os.path.join(outdir,f'{tag}.dat'); cir=os.path.join(outdir,f'{tag}.cir')
     text,edges=deck(lines,s,corner,dat,probes,tag.startswith('kicad'),seed); open(cir,'w').write(text)
     if not (rescore and os.path.exists(dat)):
@@ -74,7 +77,7 @@ def run(lines,corner,outdir,tag,seed=1,rescore=False):
     names,a=spicedat.read(dat); t=a[:,0]; col={n.lower():a[:,k] for k,n in enumerate(names)}
     idx=np.searchsorted(t,np.array([e-5e-6 for e in edges]))-1
     val=lambda n,k: col[f'v({n.lower()})'][idx][k]
-    num=lambda pre,k,suf='': sum((val(f'{pre}{i}{suf}',k)>2.5)<<i for i in range(4))
+    num=lambda p,k,suf='': int(sum(int(val(f'{p}{i}{suf}',k)>2.5)<<i for i in range(4)))
     fails=[]; worst={'high':5.0,'low':0.0}
     for k,((ctl,v),w) in enumerate(zip(s,exp)):
         got=dict(mar=int(num("MAR",k)),bus=int(15-num("BUS",k,"#")))
@@ -93,7 +96,17 @@ if __name__=='__main__':
     src=sys.argv[1]; outdir=sys.argv[2]
     corner=sys.argv[sys.argv.index('--corner')+1] if '--corner' in sys.argv else 'TYP'
     seed=int(sys.argv[sys.argv.index('--seed')+1]) if '--seed' in sys.argv else 1
+    cards=src.startswith('cards')
     if src=='dev':
         d=memory.build(); assert not d.check(), d.check(); lines=d.spice(vdd='+5V')
+    elif cards:
+        import machine; dev=src.endswith('@dev'); lines=[]
+        ports,sub=machine.subckt('memctl',machine.export('memctl',dev),'TYP'); lines+=sub+["Xmemctl "+" ".join(ports)+" memctl"]
+        for p in range(8):
+            ports,sub=machine.subckt('memslot',machine.export('memslot',dev),'TYP')
+            body=[f"Rj{k} {x} {m} 1m" for k,(x,m) in enumerate(memory.slot_jumpers(p).items())]
+            ports=machine.ports_of(sub[1:-1]+body)      # the jumpers bring MAR1..3 (or their complements) onto the card: ports too, else they float inside
+            lines+=[f".subckt memslot{p} "+" ".join(ports)]+sub[1:-1]+body+[sub[-1]]+[f"Xmemslot{p} "+" ".join(ports)+f" memslot{p}"]
     else: lines=[l.rstrip() for l in open(src) if l.strip() and not l.startswith('*')]
-    run(lines,corner,outdir,f"{'dev' if src=='dev' else 'kicad'}_{corner}{seed if corner=='MIX' else ''}",seed,rescore='--rescore' in sys.argv)
+    tag={'dev':'dev','cards':'cards','cards@dev':'cardsdev'}.get(src,'kicad')
+    run(lines,corner,outdir,f"{tag}_{corner}{seed if corner=='MIX' else ''}",seed,rescore='--rescore' in sys.argv,cards=cards)

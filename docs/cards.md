@@ -50,7 +50,7 @@ freerouting closes it in one pass with DRC zero.
 | Clock | 1 | 1 | 16 | none | |
 | Hub: USB, polyfuse, bus pull-ups, M pull-downs, test loops | 1 | 1 | 0 | none | two or three headers where the faces' ribbons meet |
 | Coupon | 1 | 1 | 26 | | shrinks from 112 mm to fit the tier |
-| **Sequencer** | 1 | 1 | ~600 + 83 diodes | link ribbon out to the counter cards | **the one big board, about 230 x 250 mm** |
+| **Sequencer** | 1 | 1 | 592 + 87 diodes | link ribbon out to the counter cards | **the one big board, about 230 x 250 mm** |
 
 Why the bit cards are separate designs rather than one design with jumpers:
 a bit is three lines (BUSi#, Ai, Bi), so selecting it is three 1 x 4 jumper
@@ -89,7 +89,7 @@ routed with DRC zero; machine gate with the emulator) before the next.
 
 1. **Card frame and dense tile.** Done: `frame.card_frame` (100 x 100 outline, header at the top, holes mid-side, decoupling), `ksch.DenseWriter` (the tile above), `build_reg_card.py`. Proved on `cards/reg0`: 99 transistors, routed DRC-clean in one freerouting pass, ERC clean. The rule stands for every later card: if one does not close, it is the tile pitch that moves, not the card size (a 100 x 150 card is $11.20 instead of $2).
 2. **Register bit cards** (4): generator from `registers.py` sliced by bit; `tb_registers.py` on one slice; machine gate with four slices in the deck.
-3. **ISA: JNZ, JNC** in `isa.md`, `emu.py`, `asm.py`, `sequencer.py` (two gated rows); `test_emu.py`; a program that uses them.
+3. **ISA: JNZ, JNC.** Done: `isa.md`, `emu.py` (the assembler follows it), `sequencer.py` (two more flag-gated rows, 45 rows and 87 diodes), `programs/loops.asm`; `test_emu.py` passes all twelve programs.
 4. **Sequencer at the new pitch**: vertical diodes in `ksch.matrix`, dense tiles, JNZ/JNC rows, route, machine gate. Open item to close first: `sim/out/d041_list_MIX3.log`, list.asm at MIX seed 3 on the buffered sequencer, was started at the end of the 2026-09-10 session; it must show 0 mismatches.
 5. **ALU bit cards** (4) with the carry and zero chain; `tb_alu.py` per slice; machine gate.
 6. **Counter bit cards** (8) with the count carry and the chained link ribbon.

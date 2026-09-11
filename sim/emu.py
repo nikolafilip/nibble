@@ -12,10 +12,10 @@ address), A, B, OUT (4), MAR (4), CF, ZF, step (0..4). II loads IR from M7..4
 and OPR3..0 from M3..0; OPI loads all of OPR from M. RST clears PC, IR, OPR,
 RA, flags and step; A, B, OUT and memory keep their values.
 """
-OPS={0:'EXT',1:'LDI',2:'JMP',3:'JC',4:'JZ',5:'LOAD',6:'STORE',7:'CALL'}
+OPS={0:'EXT',1:'LDI',2:'JMP',3:'JC',4:'JZ',5:'LOAD',6:'STORE',7:'CALL',8:'JNZ',9:'JNC'}
 FAMILY={0:'NOP',1:'MOV',2:'XCH',3:'ADD',4:'SUB',5:'OUT',6:'HLT',7:'DEC',8:'INC',9:'LOADB',10:'STOREB',11:'IN',12:'RET',13:'AND',14:'OR',15:'XOR'}
-TWO_WORD={'JMP','JC','JZ','CALL'}
-# execute-step recipes: instruction -> (S3 lines, S4 lines). PCL on JC/JZ is conditional (see controls()).
+TWO_WORD={'JMP','JC','JZ','CALL','JNZ','JNC'}
+# execute-step recipes: instruction -> (S3 lines, S4 lines). PCL on JC/JZ/JNZ/JNC is conditional (see controls()).
 RECIPE={'NOP':({'DONE'},set()),
         'MOV':({'BA','DONE'},set()),
         'XCH':({'AB','BA','DONE'},set()),
@@ -38,7 +38,9 @@ RECIPE={'NOP':({'DONE'},set()),
         'JZ':({'PCL?','DONE'},set()),
         'LOAD':({'IO','MAI'},{'MO','AI','DONE'}),
         'STORE':({'IO','MAI'},{'AO','MI','DONE'}),
-        'CALL':({'RAI','PCL','DONE'},set())}
+        'CALL':({'RAI','PCL','DONE'},set()),
+        'JNZ':({'PCL?','DONE'},set()),
+        'JNC':({'PCL?','DONE'},set())}
 DRIVERS=('AO','BO','EO','IO','MO','INP')     # lines that put a value on the bus; at most one is ever high
 
 class Machine:
@@ -82,7 +84,7 @@ class Machine:
         lines=set(RECIPE[op][s-3])
         if 'PCL?' in lines:
             lines.discard('PCL?')
-            if (op=='JC' and self.cf) or (op=='JZ' and self.zf): lines.add('PCL')
+            if (op=='JC' and self.cf) or (op=='JZ' and self.zf) or (op=='JNZ' and not self.zf) or (op=='JNC' and not self.cf): lines.add('PCL')
         return lines
     def bus(self,ctl=None):
         """Value on the bus (0 when nobody drives it: open-drain lines pulled up = all bits 0)."""

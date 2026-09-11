@@ -41,6 +41,7 @@ Reference programs, in `sim/programs/`, assembled by `sim/asm.py`:
 - `lfsr.asm`: a pseudo-random sequence from a 4-bit shift register, using AND, OR, XOR.
 - `gcd.asm`: Euclid's algorithm on two numbers from the switches.
 - `logic.asm`: AND, OR and XOR of sixteen operand pairs, so every bit of both operands and every function is exercised, not the single pair `lfsr.asm` happens to use.
+- `loops.asm`: a countdown with DEC and JNZ, then a sum until the carry with JNC (the inverted conditions, D044).
 - `call.asm`: a subroutine that calls another. The return register holds one address, so this must fail exactly the way the ISA says (the outer RET goes back into the subroutine); the program counts the arrivals and halts on the second.
 
 Boards that do not exist yet are absent from the deck; the front panel model

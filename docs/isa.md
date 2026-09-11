@@ -6,7 +6,7 @@ address. Program memory is 256 words, addressed by the 8-bit program counter;
 the switch boards provide 16 words each, one per page.
 
 Opcode 0000 is a family: those instructions need no operand, so the operand
-nibble selects which one. That leaves eight opcodes free for instructions that
+nibble selects which one. That leaves six opcodes free for instructions that
 do carry an operand, and blank memory (all switches open) reads as NOP.
 
 | Opcode | Name | Words | Effect |
@@ -19,7 +19,9 @@ do carry an operand, and blank memory (all switches open) reads as NOP.
 | 0101 nnnn | LOAD n | 1 | A = data memory slot n |
 | 0110 nnnn | STORE n | 1 | data memory slot n = A |
 | 0111 | CALL a | 2 | RA = address of the next instruction; PC = a |
-| 1000 to 1111 | | | Free |
+| 1000 | JNZ a | 2 | PC = a if Z is clear |
+| 1001 | JNC a | 2 | PC = a if C is clear |
+| 1010 to 1111 | | | Free |
 
 | Word | Name | Effect |
 |---|---|---|
@@ -44,7 +46,8 @@ Numbers are 4-bit two's complement when it suits the program (-8 to 7) or
 unsigned (0 to 15); the hardware does not care, only the flags differ in
 meaning. Wider results are built from nibbles with the carry flag and JC:
 `sim/programs/mul.asm` makes an 8-bit product, `calc.asm` does it as a
-subroutine on numbers typed on the switches.
+subroutine on numbers typed on the switches. A counted loop is `DEC` then
+`JNZ` (`loops.asm`).
 
 Shift left is `MOV B,A` then `ADD`: the top bit lands in C. There is no shift
 right; a 16-entry table in data memory read with `LOAD [B]` gives any function
@@ -91,6 +94,8 @@ one-word instructions take 3 ticks, memory instructions 4, jumps and calls 5.
 | JMP | `PCL` `DONE` | |
 | JC | `PCL` if C, `DONE` | |
 | JZ | `PCL` if Z, `DONE` | |
+| JNZ | `PCL` if not Z, `DONE` | |
+| JNC | `PCL` if not C, `DONE` | |
 | LOAD n | `IO` `MAI` | `MO` `AI` `DONE` |
 | STORE n | `IO` `MAI` | `AO` `MI` `DONE` |
 | CALL | `RAI` `PCL` `DONE` | |
@@ -150,14 +155,18 @@ simulation.
 
 The sequencer board decodes the opcode into 16 lines and, for opcode 0000,
 the operand nibble into 16 more. ANDed with S3 that gives a row wire per
-instruction (16 family members, 7 opcodes, 8 free opcodes); the four memory
-accesses also get an S4 row, and JC and JZ each get a row that includes the
-flag (`PCL` hangs on that one, `DONE` on the plain one): 37 rows. The 23
-control lines (19 header lines plus `PCL`, `PCR`, `RAI`, `DONE`) are columns.
-A diode soldered at a crossing pulls that column when that row is active.
-Every instruction above is populated at assembly (83 diodes); the free
-opcodes take any future instruction that can be expressed with the lines on
-the header. Columns have 1 Meg pull-downs.
+instruction (16 family members, 9 opcodes, 6 free opcodes); the four memory
+accesses and the six free opcodes also get an S4 row, and the four
+conditional jumps each get a row that includes the flag (`PCL` hangs on that
+one, `DONE` on the plain one): 45 rows. The 23 control lines (19 header lines
+plus `PCL`, `PCR`, `RAI`, `DONE`) are columns. Every crossing has a diode pad
+pair (D040); a diode soldered at a crossing pulls that column when that row
+is active. Every instruction above is populated at assembly (87 diodes); the
+free opcodes take any future one-word instruction that can be expressed with
+the lines on the header, soldered in on their two rows. JNZ and JNC went in at
+design time (D044) because a conditional jump needs a flag-gated row, which
+cannot be added by soldering. Each column has a 1 Meg pull-down and a
+two-inverter buffer driving the control line (D041).
 
 ## Worked program: Fibonacci on the LEDs
 

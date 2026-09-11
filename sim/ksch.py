@@ -136,6 +136,7 @@ class Writer:
         n=len(g['ins']); k=g['kind']
         if k=='LED': return 25.4
         if k=='BUS': return 10.16
+        if k=='PD': return 10.16
         if k=='PULL': return 5.08*n+5.08
         return 10.16+5.08*n+5.08
     def pu_rot(self,pcb): return 0     # schematic rotation of a cell's pull-up (pin 1 at the top when 0)
@@ -164,6 +165,12 @@ class Writer:
             self.W(xq-2*G,yq,xin,yq); self.L(ins[0],xin,yq,180,'input')
             if pcb: self.place_tile(g,pcb,r,d,qs)
             return 8*G
+        if kind=='PD':                         # pull-down resistor from a line to ground (a panel line reads 0 when nothing drives it)
+            self.L(g['out'],xc,yr-2*G,90,'input'); self.W(xc,yr-2*G,xc,yr-1.5*G)
+            r=self.R(g['pu'],xc,yr,180 if (pcb and pcb[2]%2==0) else 0)      # pin 1 at the ground end in an even column: on the board the body pad meets the GND rail there
+            self.W(xc,yr+1.5*G,xc,yr+2*G); self.PW('GND',xc,yr+2*G)
+            if pcb: self.place_tile(g,pcb,r,None,[])
+            return 6*G
         if kind=='PULL':                       # extra pull-down stack on a node that has its pull-up elsewhere: no resistor
             self.W(xc,yc0,xout,yc0); self.L(g['out'],xout,yc0,0,'bidirectional')
         else:
@@ -194,6 +201,7 @@ class Writer:
             self.at(r,px+2.54,py,270); self.at(d,px+1.27,py+10.16,0); self.at(qs[0],px,py+15.24,0); self.label(g['out'].replace('LED_',''),px+3.8,py+12.9,1.0)
             self.pwr.append(('+5V',px+2.54,py)); self.pwr.append(('GND',px,py+15.24)); return
         if kind=='BUS': self.at(qs[0],px,py+2.54,0); self.pwr.append(('GND',px,py+2.54)); return
+        if kind=='PD': self.at(r,px+2.54,py,270); self.pwr.append(('GND',px+2.54,py+5.08)); return
         if kind=='PULL': qy0=py+2.54
         else: self.at(r,px+2.54,py,270); self.pwr.append(('+5V',px+2.54,py)); qy0=py+10.16
         for k,q in enumerate(qs):
@@ -279,6 +287,7 @@ class DenseWriter(Writer):
     def tile_h(self,g):
         n=len(g['ins']); k=g['kind']
         if k=='LED': return 15.24
+        if k=='PD': return 5.08
         if k in ('BUS','PULL'): return 5.08*n
         return 3.175+5.08*n
     def pu_rot(self,pcb):
@@ -295,6 +304,9 @@ class DenseWriter(Writer):
         def use(x,y): self.rail_end[round(x,3)]=max(self.rail_end.get(round(x,3),0),y)
         def Q(q,y): self.at(q,xs,y,0 if m==0 else 180)
         def gnd(y): self.rails.append(('GND','B.Cu',xs,y,xgnd,y,self.RAIL)); use(xgnd,y)
+        if kind=='PD':      # the pull-down resistor lying along its row, the ground pad on the rail side, the other pad the line
+            self.at(r,px,py+2.54,0); xg_=px if m==0 else px+5.08
+            self.rails.append(('GND','B.Cu',xg_,py+2.54,xgnd,py+2.54,self.RAIL)); use(xgnd,py+2.54); return
         if kind in ('BUS','PULL'):
             y0=py+(1.27 if m==0 else 0.635)
             for k,q in enumerate(qs): Q(q,y0+5.08*k)

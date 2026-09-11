@@ -47,6 +47,9 @@ BOARD={'alu':('01-alu/alu.kicad_sch','alu',[]),
        'panel':('06-panel/panel.kicad_sch','panel',[]),
        'hub':('07-hub/hub.kicad_sch',None,[]),
        'hubc':('../cards/hub/hub.kicad_sch',None,[]),
+       'panela':('../cards/panela/panela.kicad_sch',('panel','build_a'),[]),
+       'panelb':('../cards/panelb/panelb.kicad_sch',('panel','build_b'),[]),
+       'panelc':('../cards/panelc/panelc.kicad_sch',('panel','build_c'),[]),
        'clk':('05-clock/clock.kicad_sch','clock',[]),
        'clkc':('../cards/clock/clock.kicad_sch','clock',[])}       # the clock card: the same design on a 100 x 100 card
 for _i in range(4):     # the bit cards (docs/cards.md): each is a slice of its board with the bit baked in
@@ -57,7 +60,7 @@ for _i in range(8):
 BOARD['memctl']=('../cards/memctl/memctl.kicad_sch',('memory','build_ctl'),[])
 BOARD['progc']=('../cards/prog/prog.kicad_sch',('program','build_card'),[])            # the program card: one copy per four words, jumpered to its addresses
 BOARD['memslot']=('../cards/memslot/memslot.kicad_sch',('memory','build_slot'),[])      # one design, eight copies with their pair jumpers set
-GROUPS={'regc':[f'reg{i}' for i in range(4)],'aluc':[f'alu{i}' for i in range(4)],'ctrc':[f'ctr{i}' for i in range(8)],'memc':['memctl','memslot']}     # a group name on --boards stands for its cards (regc@dev: all four from the gate list)
+GROUPS={'regc':[f'reg{i}' for i in range(4)],'aluc':[f'alu{i}' for i in range(4)],'ctrc':[f'ctr{i}' for i in range(8)],'memc':['memctl','memslot'],'pnl':['panela','panelb','panelc']}     # a group name on --boards stands for its cards (regc@dev: all four from the gate list)
 def expand(boards):
     out=[]
     for spec in boards:
@@ -92,9 +95,13 @@ def subckt(board,lines,corner,rng=None):
             model=models[rng.choice(['LO','TYP','HI'])] if corner=='MIX' else models[corner]
             l=l.replace(' 2N7000',' '+model)
         body.append(l)
-    nodes=set(tok for l in body for tok in l.split()[1:])
-    ports=[s for s in bus.SIGNALS+SW+LINK+ALINK+CLINK+MLINK if s in nodes]
+    ports=ports_of(body)
     return ports, [f".subckt {board} "+" ".join(ports)]+body+[".ends"]
+
+def ports_of(body):
+    """The bus and link signals a subcircuit body touches, in the deck's port order (recompute after adding jumper bodies)."""
+    nodes=set(tok for l in body for tok in l.split()[1:])
+    return [s for s in bus.SIGNALS+SW+LINK+ALINK+CLINK+MLINK if s in nodes]
 
 def od(en,x,i,tag):
     """An ideal open-drain driver on BUS<i>#: a switch to ground closed when both en and x are high (ngspice's SW model converges where a stepping B-source does not)."""
@@ -162,6 +169,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
             for p in range(8):
                 ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
                 body=[f"Rj{k} {x} {m} 1m" for k,(x,m) in enumerate(__import__('memory').slot_jumpers(p).items())]
+                ports=ports_of(sub[1:-1]+body)      # the jumpers bring MAR1..3 (or their complements) onto the card: ports too, else they float inside
                 L+=[f".subckt memslot{p} "+" ".join(ports)]+sub[1:-1]+body+[sub[-1]]; L.append(f"Xmemslot{p} "+" ".join(ports)+f" memslot{p}")
             continue
         ports,sub=subckt(b,export(b,dev=='dev'),corner,rng); L+=sub; L.append(f"X{b} "+" ".join(ports)+f" {b}")
@@ -172,7 +180,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
         L.append(f"Vclk clkraw 0 PULSE(0 5 {T0:.6g} 1u 1u {T/2-1e-6:.6g} {T:.6g})")
         # gate the clock with HLT through a smooth function (a ternary is a zero-time step: "timestep too small" at every edge)
         L.append("Bclk clkb 0 V = V(clkraw)*pwl(V(HLT),0,1,2,1,3,0,5,0)"); L.append("Rclk clkb CLK 100")     # pwl() extrapolates outside its points: give it the whole 0..5 V range
-    elif 'panel' not in [b.partition('@')[0] for b in boards]: L.append("Rclkpd CLK 0 1Meg")            # the panel's pull-down on CLK
+    elif not has(boards,'panel'): L.append("Rclkpd CLK 0 1Meg")            # the panel's pull-down on CLK
     L.append(f"Vrst rstraw 0 PULSE(5 0 {T0*0.4:.6g} 1u 1u 1 2)"); L.append("Rrst rstraw RST 100")
     # program memory model (until the program memory board is in the deck): M = mem[PC] through a diode (the hub pulls M down)
     idx="+".join(f"{1<<i}*u(V(PC{i})-2.5)" for i in range(8))
@@ -209,7 +217,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     # the panel's data switches: driven from the trace (what the program expects to read with IN)
     for i in range(4):
         L.append(f"Vsw{i} SW{i} 0 "+pwl(starts,[(s['sw']>>i)&1 for s in trace],STEP_DELAY))
-    if 'panel' not in boards:     # virtual input port
+    if not has(boards,'panel'):     # virtual input port
         for i in range(4):
             L+=od('INP',f'SW{i}',i,'in')
     tend=edges[-1]+T/2 if not real_clock else T0+len(trace)*3.5e-3      # the real clock runs at 400 to 600 Hz at its fastest

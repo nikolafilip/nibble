@@ -1,6 +1,7 @@
 """Testbench for board 01 (ALU). Builds stimuli, runs ngspice on a netlist, checks every case.
-Usage: python3 tb_alu.py <netlist.cir|dev> <outdir> [--corner TYP|LO|HI|MIX] [--seed N] [--cases exhaustive|demo] [--rescore]
-The netlist is either the dev netlist (built from alu.py) or a kicad-cli export of boards/01-alu.
+Usage: python3 tb_alu.py <netlist.cir|dev|cards|cards@dev> <outdir> [--corner TYP|LO|HI|MIX] [--seed N] [--cases exhaustive|demo] [--rescore]
+The netlist is either the dev netlist (built from alu.py), a kicad-cli export of boards/01-alu, or the four ALU bit cards
+(cards: the kicad-cli exports of cards/alu0..3 as subcircuits chained by their links; cards@dev: from alu.build_bit).
 A case is (A, B, controls, EO) with controls a subset of SUB ONE F0 F1. Exhaustive = every A, B, SUB and function
 (2048 cases) plus every A with ONE for both SUB values and all four functions with B = 0 and 15 (256 cases).
 """
@@ -60,15 +61,15 @@ def deck(netlist_lines, cases, corner, outfile, probes, kicad=False, seed=1):
     models={'TYP':'2N7000','LO':'2N7000_LO','HI':'2N7000_HI'}; rng=random.Random(seed)
     body=[]
     for l in netlist_lines:
-        if l.lower().startswith(('.end','.tran','.include','.lib','.title','.ic','.option','.control')): continue
+        if l.lower().startswith(('.end','.tran','.include','.lib','.title','.ic','.option','.control')) and not l.lower().startswith('.ends'): continue
         if kicad and l[0] not in '.*+' and int(''.join(c for c in l.split()[0] if c.isdigit()) or 0)>=9000: continue   # testbench sheet parts
         if l[0] in 'Mm': l=l.replace(' 2N7000',' '+(models[rng.choice(['LO','TYP','HI'])] if corner=='MIX' else models[corner]))
         body.append(l)
-    supply=["VDD +5V 0 5"]+[f"RHUB{i} +5V BUS{i}# {HUB_PU}" for i in range(4)]
+    supply=[".global +5V","VDD +5V 0 5"]+[f"RHUB{i} +5V BUS{i}# {HUB_PU}" for i in range(4)]
     tend=len(cases)*T
     lib=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','lib','2N7000.lib')
     return "\n".join(["* ALU testbench", f'.include "{lib}"', nmos.LED_MODEL]+supply+sources(cases)+body+
-        [f".tran 2u {tend:.6g}", ".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12", ".control","run","set wr_singlescale","set wr_vecnames",
+        [".save "+" ".join(f"v({p.lower()})" for p in probes), f".tran 2u {tend:.6g}", ".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12", ".control","run","set wr_singlescale","set wr_vecnames",
          f"wrdata {outfile} "+" ".join(f"v({p.lower()})" for p in probes),"quit",".endc",".end"])
 
 def dev_netlist():
@@ -77,9 +78,10 @@ def dev_netlist():
 
 OUTS=['R0','R1','R2','R3','CF','ZF','BUS0#','BUS1#','BUS2#','BUS3#']
 
-def run(netlist_lines, cases, corner, outdir, tag, seed=1, rescore=False):
+def run(netlist_lines, cases, corner, outdir, tag, seed=1, rescore=False, cards=False):
     os.makedirs(outdir,exist_ok=True)
-    probes=INPUTS+OUTS
+    PN={n:(f'xalu{n[1]}.{n}' if cards and n[0]=='R' else n) for n in OUTS}      # where each output lives: a card's R<i> is inside that card
+    probes=INPUTS+[PN[n] for n in OUTS]
     dat=os.path.join(outdir,f'{tag}.dat'); cir=os.path.join(outdir,f'{tag}.cir')
     if not (rescore and os.path.exists(dat)):
         open(cir,'w').write(deck(netlist_lines,cases,corner,dat,probes,kicad=tag.startswith('kicad'),seed=seed))
@@ -90,12 +92,12 @@ def run(netlist_lines, cases, corner, outdir, tag, seed=1, rescore=False):
     ts_all=np.array([(k+1)*T-5e-6 for k in range(len(cases))]); idx=np.searchsorted(t,ts_all)-1     # one sample per case, just before its end
     cache={}
     def v(n,tt):
-        n=n.lower()
+        n=PN.get(n,n).lower()
         if n not in cache: cache[n]=col[f'v({n})'][idx]
         return cache[n][int(round((tt+5e-6)/T))-1]
     fails=[]; worst={'high':5.0,'low':0.0,'settle':0.0}
     for n in OUTS:
-        y=col[f'v({n.lower()})']>2.5
+        y=col[f'v({PN[n].lower()})']>2.5
         cross=t[1:][y[1:]!=y[:-1]]
         for tc in cross:
             k=int(tc//T); worst['settle']=max(worst['settle'],tc-k*T)
@@ -123,6 +125,13 @@ if __name__=='__main__':
     if '--corner' in sys.argv: corner=sys.argv[sys.argv.index('--corner')+1]
     if '--cases' in sys.argv: which=sys.argv[sys.argv.index('--cases')+1]
     seed=int(sys.argv[sys.argv.index('--seed')+1]) if '--seed' in sys.argv else 1
-    lines=dev_netlist() if src=='dev' else [l.rstrip() for l in open(src) if l.strip() and not l.startswith('*')]
+    cards=src.startswith('cards')
+    if cards:        # four cards as subcircuits, their carry and zero chains joined by the link nets
+        import machine; lines=[]
+        for i in range(4):
+            ports,sub=machine.subckt(f'alu{i}',machine.export(f'alu{i}',dev=src.endswith('@dev')),'TYP')
+            lines+=sub+[f"Xalu{i} "+" ".join(ports)+f" alu{i}"]
+    else: lines=dev_netlist() if src=='dev' else [l.rstrip() for l in open(src) if l.strip() and not l.startswith('*')]
     cases=exhaustive_cases() if which=='exhaustive' else demo_cases()
-    run(lines,cases,corner,outdir,f"{'dev' if src=='dev' else 'kicad'}_{which}_{corner}{seed if corner=='MIX' else ''}",seed,'--rescore' in sys.argv)
+    tag={'dev':'dev','cards':'cards','cards@dev':'cardsdev'}.get(src,'kicad')
+    run(lines,cases,corner,outdir,f"{tag}_{which}_{corner}{seed if corner=='MIX' else ''}",seed,'--rescore' in sys.argv,cards=cards)

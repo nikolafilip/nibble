@@ -75,6 +75,7 @@ def build(projdir,name,route=True,passes=300,dsn_only=False):
         pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     def gnd_pour():
         for z in list(board.Zones()): board.Remove(z)
+        if plan['extra'].get('no_pour'): return      # the hub: the bus lines own the back, ground is wired on the front
         pour('GND',pcbnew.B_Cu)
     # pre-routed power rails and stubs (from the tile geometry); the router only sees signals.
     # A rail with an eighth field True is hidden from the router (the inside of the sequencer's diode matrix, D045):
@@ -171,6 +172,7 @@ def build(projdir,name,route=True,passes=300,dsn_only=False):
             board=pcbnew.LoadBoard(best[1]); netobj={n:board.FindNet(n) for n in nets}
             def gnd_pour():
                 for z in list(board.Zones()): board.Remove(z)
+                if plan['extra'].get('no_pour'): return
                 pour('GND',pcbnew.B_Cu)
         if best and os.path.exists(best[1]): os.remove(best[1])
         for z in [z for z in board.Zones() if z.GetIsRuleArea()]: board.Remove(z)     # the router keepouts (the board reloaded from best has its own copies)

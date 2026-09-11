@@ -22,6 +22,7 @@ class Writer:
         self.sheet_uuid=sheet_uuid or root_uuid
         self.path=f"/{root_uuid}" if sheet_uuid is None else f"/{root_uuid}/{sheet_uuid}"
         self.place={}; self.silk=[]; self.pwr=[]; self.rails=[]; self.vias=[]; self.body=''; self.n={'Q':1,'R':1,'D':1,'C':1,'J':1,'H':1,'V':1,'#PWR':1,'#FLG':1,'TP':1,'SW':1,'F':1,'U':1}
+        self.router_exclude=[]; self.keepouts=[]     # parts and areas the autorouter does not see (pcb.py): the diode matrix
         self.libs={}
     def ref(self,p):
         r=f"{p}{self.n[p]}"; self.n[p]+=1; return r
@@ -91,9 +92,11 @@ class Writer:
         return self.symbol("Switch",f"SW_DIP_x{n:02d}",self.ref('SW'),value,x,y,0,tuple(str(i) for i in range(1,2*n+1)),f"Button_Switch_THT:SW_DIP_SPSTx{n:02d}_Slide_9.78x{ {1:'4.72',2:'7.26',4:'12.34',8:'22.5'}[n]}mm_W7.62mm_P2.54mm",[("Description","DIP switch",True)],sim=False)
     def button(self,x,y,value):
         return self.symbol("Switch","SW_Push",self.ref('SW'),value,x,y,0,('1','2'),"Button_Switch_THT:SW_PUSH_6mm",[("Description","push button",True)],sim=False)
-    def diode(self,x,y,rot=0,dnp=False):
+    D_FOOT="Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal"
+    D_FOOT_V="Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp"    # standing on its cathode pad, anode lead down to a pad 2.54 away
+    def diode(self,x,y,rot=0,dnp=False,foot=None):
         """1N4148: pin 1 K, pin 2 A. dnp: the pads are on the board, the part is not (an empty matrix crossing)"""
-        return self.symbol("Device","D",self.ref('D'),"1N4148",x,y,rot,('1','2'),"Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal",[("Description","small signal diode",True),("Sim.Device","D",True),("Sim.Pins","1=K 2=A",True),("Sim.Library",self.LED_LIB,True),("Sim.Name","D1N4148",True)],dnp=dnp)
+        return self.symbol("Device","D",self.ref('D'),"1N4148",x,y,rot,('1','2'),foot or self.D_FOOT,[("Description","small signal diode",True),("Sim.Device","D",True),("Sim.Pins","1=K 2=A",True),("Sim.Library",self.LED_LIB,True),("Sim.Name","D1N4148",True)],dnp=dnp)
     def hole(self,x,y):
         return self.symbol("Mechanical","MountingHole",self.ref('H'),"M3",x,y,0,(),self.H_FOOT,[],in_bom=False,sim=False)
     def vsource(self,kind,params,x,y):
@@ -196,30 +199,36 @@ class Writer:
         for k,q in enumerate(qs):
             self.at(q,px,qy0+5.08*k,0)
             if kind=='NOR' or k==n-1: self.pwr.append(('GND',px,qy0+5.08*k))
-    def pack(self,gates,pxo,pyo,pcb_cols,mode):
-        """PCB tile positions. 'skyline': each gate goes to the lowest column (ties left to right). 'column': fill a column
-        top to bottom in gate order, next column when a tile no longer fits (needs HCOL). Returns [(g,(x,y,col))], column heights."""
-        colh=[pyo]*pcb_cols; tiles=[]; j=0
+    def pack(self,gates,fields,mode):
+        """PCB tile positions over the tile fields [(x, y, columns, height or None)], filled in order.
+        'skyline': each gate goes to the lowest column of the first field with room (ties left to right). 'column': fill a
+        column top to bottom in gate order, next column (next field) when a tile no longer fits. Returns [(g,(x,y,col))], [column heights per field]."""
+        colh=[[f[1]]*f[2] for f in fields]; tiles=[]; fi=0; j=0
+        def fits(fi,j,h): return fields[fi][3] is None or colh[fi][j]+h<=fields[fi][1]+fields[fi][3]
         for g in gates:
             h=self.tile_h(g)
             if mode=='skyline':
-                j=min(range(pcb_cols),key=lambda c:(round(colh[c],3),c))
-                if self.HCOL and colh[j]+h>pyo+self.HCOL: raise SystemExit(f"tile {g['out']} does not fit: every column is full ({pcb_cols} x {self.HCOL} mm)")
+                for fi in range(len(fields)):
+                    ok=[c for c in range(fields[fi][2]) if fits(fi,c,h)]
+                    if ok: j=min(ok,key=lambda c:(round(colh[fi][c],3),c)); break
+                else: raise SystemExit(f"tile {g['out']} does not fit: every column of every field is full")
             else:
-                while self.HCOL and colh[j]+h>pyo+self.HCOL:
+                while not fits(fi,j,h):
                     j+=1
-                    if j>=pcb_cols: raise SystemExit(f"tile {g['out']} does not fit: {pcb_cols} columns of {self.HCOL} mm are full")
-            tiles.append((g,(pxo+j*self.PCB_COL,colh[j],j))); colh[j]+=h
+                    if j>=fields[fi][2]:
+                        fi+=1; j=0
+                        if fi>=len(fields): raise SystemExit(f"tile {g['out']} does not fit: every column of every field is full")
+            tiles.append((g,(fields[fi][0]+j*self.PCB_COL,colh[fi][j],j))); colh[fi][j]+=h
         return tiles,colh
-    def layout(self,gates,titles,x0,y0,cols,pcb_origin=(10.0,10.0),pcb_cols=None,pack='skyline'):
-        """Draw all gates group by group (schematic) and assign PCB tiles in a grid of pcb_cols columns."""
+    def layout(self,gates,titles,x0,y0,cols,pcb_origin=(10.0,10.0),pcb_cols=None,pack='skyline',fields=None,pack_order=None):
+        """Draw all gates group by group (schematic) and assign PCB tiles: one field of pcb_cols columns at pcb_origin, or the
+        given fields [(x, y, columns, height or None)] filled in order. pack_order: the gates in the order they are packed (default: as drawn)."""
         y=y0; groups=[]
-        pcb_cols=pcb_cols or cols; pxo,pyo=pcb_origin
+        fields=fields or [(pcb_origin[0],pcb_origin[1],pcb_cols or cols,self.HCOL)]
         for g in gates:
             if not groups or groups[-1][0]!=g['group']: groups.append((g['group'],[]))
             groups[-1][1].append(g)
-        tiles,colh=self.pack(gates,pxo,pyo,pcb_cols,pack)
-        py=max(colh)
+        tiles,colh=self.pack(pack_order or gates,fields,pack)
         pos={id(g):t for g,t in tiles}
         for name,gs in groups:
             self.T(titles.get(name,name),x0,y-G,2.0,True); y+=2*G
@@ -228,8 +237,9 @@ class Writer:
                 for j,g in enumerate(rw): h=max(h,self.gate(g,x0+j*self.CELL_W,y,pcb=pos[id(g)]))
                 y+=h+2*G
             y+=2*G
-        self.pcb_extent=(pxo+pcb_cols*self.PCB_COL,py)
-        self.rails_for(pxo,pyo,pcb_cols,colh)
+        self.pcb_extent=(max(f[0]+f[2]*self.PCB_COL for f in fields),max(max(c) for c in colh))
+        self.trunks=[]
+        for f,ch in zip(fields,colh): self.rails_for(f[0],f[1],f[2],ch)
         return y
     def rails_for(self,pxo,pyo,pcb_cols,colh):
         """Power rails: per column, GND on B.Cu at x-1.27 and +5V on B.Cu at x+6.35, from the trunks above the tiles to the column bottom."""
@@ -241,6 +251,7 @@ class Writer:
             if yg_end: self.rails.append(('GND','B.Cu',x-1.27,yg,x-1.27,yg_end,0.5)); self.vias.append(('GND',x-1.27,yg))
             if yv_end: self.rails.append(('+5V','B.Cu',x+6.35,yv,x+6.35,yv_end,0.5)); self.vias.append(('+5V',x+6.35,yv))
         used=[x for j,x in enumerate(xs) if colh[j]>pyo]
+        self.trunks.append(((used[0]-1.27,used[-1]-1.27,yg),(used[0]+6.35,used[-1]+6.35,yv)))
         self.rails.append(('GND','F.Cu',used[0]-1.27,yg,used[-1]-1.27,yg,0.8))
         self.rails.append(('+5V','F.Cu',used[0]+6.35,yv,used[-1]+6.35,yv,0.8))
         for net,sx,sy in self.pwr:
@@ -306,7 +317,7 @@ class DenseWriter(Writer):
             self.rails.append((net,'B.Cu',x,yt,x,end,self.RAIL)); self.vias.append((net,x,yt))
         ug=[x for k,x in enumerate(xr) if k%2==0 and self.rail_end.get(round(x,3))]
         uv=[x for k,x in enumerate(xr) if k%2==1 and self.rail_end.get(round(x,3))]
-        self.trunks=((min(ug),max(ug),yg),(min(uv),max(uv),yv))
+        self.trunks.append(((min(ug),max(ug),yg),(min(uv),max(uv),yv)))
         self.rails.append(('GND','F.Cu',min(ug),yg,max(ug),yg,0.8))
         self.rails.append(('+5V','F.Cu',min(uv),yv,max(uv),yv,0.8))
 
@@ -316,9 +327,11 @@ def project_file(name):
 def write_plan(w,path,outline,extra=None):
     """PCB placement plan consumed by pcb.py (run with KiCad's python)."""
     import json
-    json.dump(dict(place=w.place,silk=w.silk,rails=w.rails,vias=w.vias,outline=list(outline),extra=extra or {}),open(path,'w'),indent=0)
+    extra=dict(extra or {})
+    if w.router_exclude or w.keepouts: extra['router']=dict(extra.get('router',{}),exclude_refs=w.router_exclude,keepout=w.keepouts)
+    json.dump(dict(place=w.place,silk=w.silk,rails=w.rails,vias=w.vias,outline=list(outline),extra=extra),open(path,'w'),indent=0)
 
-def matrix(w,rows,cols,diodes,x0,y0,pcb,pd='1Meg',caption=lambda c:c,note=None):
+def matrix(w,rows,cols,diodes,x0,y0,pcb,pd='1Meg',caption=lambda c:c,note=None,vertical=False):
     """Diode control matrix. rows: [(net, caption)], cols: [net], diodes: [(row_net, col_net)] fitted; every other
     crossing gets a DNP diode (pads on the board, nothing fitted) so an instruction can be added by soldering (D040).
     Schematic: columns are vertical wires (label at the top, pull-down at the bottom), rows horizontal wires
@@ -327,30 +340,44 @@ def matrix(w,rows,cols,diodes,x0,y0,pcb,pd='1Meg',caption=lambda c:c,note=None):
     (left to right), columns horizontal F.Cu tracks at 10.16 mm pitch (top to bottom). The diode stands along its
     row, centred between row tracks: cathode pad on the column track, anode pad 7.62 below with a short stub to the
     row track. The pull-downs stand at the right end of the columns with a GND rail 2.5 mm beside them.
+    vertical (D045): the diodes stand up (DO-35 on a 2.54 mm pad pair), columns at 5.08 mm, the anode pad 2.54 below the
+    crossing; the pull-downs lie along the columns at the right end with the GND rail through their far pads.
     Returns (schematic height used, pcb extent (x, y))."""
     CW,RH=5*G,4*G; xl=x0+8*G; yt=y0+6*G
-    CP,RP=10.16,2.54; px0,py0=pcb; pxl=px0+8; pyt=py0+12
+    CP,RP=(5.08 if vertical else 10.16),2.54; AP=2.54 if vertical else 7.62; px0,py0=pcb; pxl=px0+8; pyt=py0+12
     colx={c:xl+k*CW for k,c in enumerate(cols)}; rowy={r:yt+k*RH for k,(r,cap) in enumerate(rows)}
     pcy={c:pyt+k*CP for k,c in enumerate(cols)}; prx={r:pxl+k*RP for k,(r,cap) in enumerate(rows)}
-    ybot=yt+len(rows)*RH; xr=xl+len(cols)*CW; pxr=pxl+len(rows)*RP+2       # pxr: where the pull-downs stand
+    ybot=yt+len(rows)*RH; xr=xl+len(cols)*CW; pxr=pxl+len(rows)*RP+(3.0 if vertical else 2)       # pxr: where the pull-downs stand
     for c in cols:
         x=colx[c]; w.W(x,yt-2*G,x,ybot+G); w.L(c,x,yt-2*G,90,'output')
         r=w.R(pd,x,ybot+2.5*G); w.W(x,ybot+4*G,x,ybot+5*G); w.PW('GND',x,ybot+5*G)
-        w.at(r,pxr,pcy[c],270); w.pwr.append(('GND',pxr,pcy[c]+5.08))     # rot 270: pad 1 at (x,y) on the column track, pad 2 (GND) at (x,y+5.08)
-        w.rails.append(('GND','B.Cu',pxr,pcy[c]+5.08,pxr+2.5,pcy[c]+5.08,0.5))   # stub to the GND rail beside the pull-downs (a rail through them would cross their signal pads)
-        w.rails.append((c,'F.Cu',pxl-4,pcy[c],pxr,pcy[c],0.5)); w.label(caption(c),px0,pcy[c]-0.9,0.9)
-    w.rails.append(('GND','B.Cu',pxr+2.5,pcy[cols[0]]+5.08,pxr+2.5,pcy[cols[-1]]+5.08,0.5)); w.vias.append(('GND',pxr+2.5,pcy[cols[-1]]+5.08))
+        if vertical:
+            w.at(r,pxr,pcy[c],0); w.rails.append(('GND','B.Cu',pxr+5.08,pcy[c],pxr+5.08+2.5,pcy[c],0.5))  # rot 0: pad 1 on the column track, pad 2 (GND) 5.08 to the right, stub to the rail
+        else:
+            w.at(r,pxr,pcy[c],270); w.pwr.append(('GND',pxr,pcy[c]+5.08))     # rot 270: pad 1 at (x,y) on the column track, pad 2 (GND) at (x,y+5.08)
+            w.rails.append(('GND','B.Cu',pxr,pcy[c]+5.08,pxr+2.5,pcy[c]+5.08,0.5))   # stub to the GND rail beside the pull-downs (a rail through them would cross their signal pads)
+        w.rails.append((c,'F.Cu',pxl-2 if vertical else pxl-4,pcy[c],pxr,pcy[c],0.5)+((True,) if vertical else ())); w.label(caption(c),px0,pcy[c]-0.9,0.9)
+    if vertical:
+        xg=pxr+5.08+2.5; w.rails.append(('GND','B.Cu',xg,pcy[cols[0]],xg,pcy[cols[-1]],0.5))      # joined by the pour
+    else:
+        w.rails.append(('GND','B.Cu',pxr+2.5,pcy[cols[0]]+5.08,pxr+2.5,pcy[cols[-1]]+5.08,0.5)); w.vias.append(('GND',pxr+2.5,pcy[cols[-1]]+5.08))
+    ybot_in=pcy[cols[-1]]+AP+1.0                   # the matrix's copper ends here; vertical: a 2.2 mm tail per row sticks out for the router
     for k,(r,cap) in enumerate(rows):
         y=rowy[r]; w.W(xl-4*G,y,xr,y); w.L(r,xl-4*G,y,180,'input'); w.L(r,xr,y,0,'input'); w.T(cap,xl-4*G,y-0.6*G,1.0)   # a label at both ends: no dangling wire
-        w.rails.append((r,'B.Cu',prx[r],pyt-4,prx[r],pcy[cols[-1]]+8.5,0.4))
+        if vertical:
+            w.rails.append((r,'B.Cu',prx[r],pyt-1.0,prx[r],ybot_in,0.4,True)); w.rails.append((r,'B.Cu',prx[r],ybot_in,prx[r],ybot_in+2.2,0.4))
+        else: w.rails.append((r,'B.Cu',prx[r],pyt-4,prx[r],ybot_in,0.4))
     for k,(r,cap) in enumerate(rows):      # row captions along the top, three heights so they stay legible at 2.54 pitch
-        w.label(cap.replace(' (free)',''),prx[r]-0.9,pyt-6-(k%3)*3.0,0.55)
+        w.label(cap.replace(' (free)',''),prx[r]-0.9,pyt-6.5-(k%3)*3.0,0.8)
     fitted=set(diodes)
     for rn,cap in rows:                    # a diode symbol at every crossing (D040): fitted where the design has one, DNP (pads only) elsewhere
         for cn in cols:
             x,y=colx[cn],rowy[rn]; dnp=(rn,cn) not in fitted
-            d=w.diode(x+2*G,y+1.5*G,90,dnp=dnp); w.J(x+2*G,y); w.W(x+2*G,y+3*G,x,y+3*G); w.J(x,y+3*G)   # A on the row wire, K to the column wire
-            w.at(d,prx[rn]+1.27,pcy[cn],270); w.rails.append((rn,"B.Cu",prx[rn]+1.27,pcy[cn]+7.62,prx[rn],pcy[cn]+7.62,0.4))   # rot 270: K at (x,y), A at (x,y+7.62)
+            d=w.diode(x+2*G,y+1.5*G,90,dnp=dnp,foot=w.D_FOOT_V if vertical else None); w.J(x+2*G,y); w.W(x+2*G,y+3*G,x,y+3*G); w.J(x,y+3*G)   # A on the row wire, K to the column wire
+            w.at(d,prx[rn]+1.27,pcy[cn],270); w.rails.append((rn,"B.Cu",prx[rn]+1.27,pcy[cn]+AP,prx[rn],pcy[cn]+AP,0.4)+((True,) if vertical else ()))   # rot 270: K at (x,y) on the column track, A at (x,y+AP) with a stub to the row track
+            if vertical: w.router_exclude.append(d)
+    if vertical:   # the router never enters the matrix: its diodes and tracks are hidden from it (pcb.py), a keepout fences the area
+        w.keepouts.append((pxl-3.0,pyt-1.5,prx[rows[-1][0]]+2.6,ybot_in+0.2))
     w.T(note or "Rows are driven by the NOR gates on the left (10k pull-ups); a diode pulls its column high while the row is high; columns have 1 Meg pull-downs and a buffer to the bus header.\n"
         "Every crossing has a pad pair on the board; a crossed-out diode is not fitted.  Add an instruction: solder diodes on a free row.",x0,y0+2*G,1.4)
-    return ybot+8*G-y0, (pxr+8, pcy[cols[-1]]+12)
+    return ybot+8*G-y0, ((pxr+5.08+2.5+3 if vertical else pxr+8), pcy[cols[-1]]+(AP+6 if vertical else 12))

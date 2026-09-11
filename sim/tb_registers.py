@@ -1,6 +1,7 @@
-"""Testbench for board 02 (registers). A clocked script of operations covers every reachable path:
-every value through A and B from the bus, A and B driven back onto the bus, MOV (BA), XCH (AB+BA), OUT (OI), holds.
-Usage: python3 tb_registers.py <netlist.cir|dev> <outdir> [--corner TYP|LO|HI|MIX] [--seed N]
+"""Testbench for board 02 (registers) and for the four register bit cards. A clocked script of operations covers every
+reachable path: every value through A and B from the bus, A and B driven back onto the bus, MOV (BA), XCH (AB+BA), OUT (OI), holds.
+Usage: python3 tb_registers.py <netlist.cir|dev|cards|cards@dev> <outdir> [--corner TYP|LO|HI|MIX] [--seed N]
+  cards: the kicad-cli exports of cards/reg0..3 as four subcircuits on one bus (cards@dev: from registers.build_bit)
 """
 import sys, os, subprocess, random, json, numpy as np
 import spicedat
@@ -48,13 +49,13 @@ def deck(lines,s,corner,outfile,probes,kicad,seed):
     models={'TYP':'2N7000','LO':'2N7000_LO','HI':'2N7000_HI'}; rng=random.Random(seed)
     body=[]
     for l in lines:
-        if l.lower().startswith(('.end','.tran','.include','.lib','.title','.ic','.option','.control')): continue
+        if l.lower().startswith(('.end','.tran','.include','.lib','.title','.ic','.option','.control')) and not l.lower().startswith('.ends'): continue
         if kicad and l[0] not in '.*+' and int(''.join(c for c in l.split()[0] if c.isdigit()) or 0)>=9000: continue   # testbench sheet parts: replaced by the sources below
         if l[0] in 'Mm': l=l.replace(' 2N7000',' '+(models[rng.choice(['LO','TYP','HI'])] if corner=='MIX' else models[corner]))
         body.append(l)
     edges=[T0+k*T for k in range(len(s))]; starts=[e-T+DELAY for e in edges]
     lib=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','lib','2N7000.lib')
-    L=["* registers testbench",f'.include "{lib}"',nmos.LED_MODEL,nmos.SW_MODEL,"VDD +5V 0 5"]+[f"RHUB{i} +5V BUS{i}# {HUB_PU}" for i in range(4)]
+    L=["* registers testbench",f'.include "{lib}"',nmos.LED_MODEL,nmos.SW_MODEL,".global +5V","VDD +5V 0 5"]+[f"RHUB{i} +5V BUS{i}# {HUB_PU}" for i in range(4)]
     L.append(f"Vclk CLK 0 PULSE(0 5 {T0:.6g} 1u 1u {T/2-1e-6:.6g} {T:.6g})")
     for c in CTL: L.append(f"V{c} {c} 0 "+pwl(starts,[int(c in ctl) for ctl,v in s]))
     for i in range(4):
@@ -62,14 +63,15 @@ def deck(lines,s,corner,outfile,probes,kicad,seed):
         L.append(f"Sd{i} BUS{i}# 0 d{i} 0 ODRV")      # ideal open-drain driver: a switch to ground
     L+=body
     tend=edges[-1]+T/2
+    L.append(".save "+" ".join(f"v({p})" for p in probes))      # only the probed vectors stay in memory
     L+=[f".tran 1u {tend:.6g}",".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12",".control","run","set wr_singlescale","set wr_vecnames",
         f"wrdata {outfile} "+" ".join(f"v({p})" for p in probes),"quit",".endc",".end"]
     return "\n".join(L)+"\n", edges
 
-def run(lines,corner,outdir,tag,seed=1,rescore=False):
+def run(lines,corner,outdir,tag,seed=1,rescore=False,cards=False):
     tb_T,tb_T0=T,T0
     os.makedirs(outdir,exist_ok=True); s=script(); exp=expected(s)
-    probes=[f'A{i}' for i in range(4)]+[f'B{i}' for i in range(4)]+[f'OUT{i}' for i in range(4)]+[f'BUS{i}#' for i in range(4)]+['CLK','PH1','PH2']
+    probes=[f'A{i}' for i in range(4)]+[f'B{i}' for i in range(4)]+[f'OUT{i}' for i in range(4)]+[f'BUS{i}#' for i in range(4)]+['CLK']+(['xreg0.PH1','xreg0.PH2'] if cards else ['PH1','PH2'])
     dat=os.path.join(outdir,f'{tag}.dat'); cir=os.path.join(outdir,f'{tag}.cir')
     text,edges=deck(lines,s,corner,dat,probes,tag.startswith('kicad'),seed); open(cir,'w').write(text)
     if not (rescore and os.path.exists(dat)):
@@ -83,7 +85,7 @@ def run(lines,corner,outdir,tag,seed=1,rescore=False):
         n=n.lower()
         if n not in cache: cache[n]=col[f'v({n})'][idx]
         return cache[n][int(round((tt+5e-6-tb_T0)/tb_T))]
-    num=lambda pre,tt,suf='': sum((v(f'{pre}{i}{suf}',tt)>2.5)<<i for i in range(4))
+    num=lambda pre,tt,suf='': int(sum(int(v(f'{pre}{i}{suf}',tt)>2.5)<<i for i in range(4)))
     fails=[]; worst={'high':5.0,'low':0.0}
     for k,(e,(ctl,val),w) in enumerate(zip(edges,s,exp)):
         ts=e-5e-6
@@ -104,7 +106,15 @@ if __name__=='__main__':
     src=sys.argv[1]; outdir=sys.argv[2]
     corner=sys.argv[sys.argv.index('--corner')+1] if '--corner' in sys.argv else 'TYP'
     seed=int(sys.argv[sys.argv.index('--seed')+1]) if '--seed' in sys.argv else 1
+    cards=src.startswith('cards')
     if src=='dev':
         d=registers.build(); assert not d.check(), d.check(); lines=d.spice(vdd='+5V')
+    elif cards:      # four cards as subcircuits; the OUT probes are the cards' own OUT<i> nets, made ports by naming them
+        import machine; lines=[]
+        for i in range(4):
+            ports,sub=machine.subckt(f'reg{i}',machine.export(f'reg{i}',dev=src.endswith('@dev')),'TYP')
+            ports=ports+[f'OUT{i}']; sub[0]=f".subckt reg{i} "+" ".join(ports)
+            lines+=sub+[f"Xreg{i} "+" ".join(ports)+f" reg{i}"]
     else: lines=[l.rstrip() for l in open(src) if l.strip() and not l.startswith('*')]
-    run(lines,corner,outdir,f"{'dev' if src=='dev' else 'kicad'}_{corner}{seed if corner=='MIX' else ''}",seed,rescore='--rescore' in sys.argv)
+    tag={'dev':'dev','cards':'cards','cards@dev':'cardsdev'}.get(src,'kicad')
+    run(lines,corner,outdir,f"{tag}_{corner}{seed if corner=='MIX' else ''}",seed,rescore='--rescore' in sys.argv,cards=cards)

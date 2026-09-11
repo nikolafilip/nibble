@@ -33,6 +33,9 @@ CONTROL=['SUB','EO','AI','AO','BI','BO','BA','AB','OI','IO','II','PCE','PCL','FI
 CABLE_PF=300      # ribbon capacitance per header line, all cables together (see docs/mounting.md)
 SW=[f'SW{i}' for i in range(4)]   # the panel's data switch levels, ports of the panel subcircuit so the deck can set them
 LINK=[f'OPR{i}' for i in range(8)]+['PCR','RAI']   # the sequencer-to-counter link header (D035); PCL is on the bus header
+ALINK=['C1','C2','C3','ZS0','ZS1','ZS2']             # the ALU cards' carry and zero-so-far chain (2x3 links between neighbours)
+CLINK=[f'TC{i}' for i in range(1,8)]                  # the counter cards' count carry (2x3 links between neighbours)
+MLINK=[s for s in __import__("memory").MLINK if s!="GND"]   # the memory control card's ribbon to the slot cards
 PC=[f'PC{i}' for i in range(8)]; M=[f'M{i}' for i in range(8)]
 # per board: schematic path, the design module for a dev netlist (board@dev), and the internal nets to probe
 BOARD={'alu':('01-alu/alu.kicad_sch','alu',[]),
@@ -43,12 +46,33 @@ BOARD={'alu':('01-alu/alu.kicad_sch','alu',[]),
        'prog':('04-program/program.kicad_sch','program',[]),
        'panel':('06-panel/panel.kicad_sch','panel',[]),
        'hub':('07-hub/hub.kicad_sch',None,[]),
-       'clk':('05-clock/clock.kicad_sch','clock',[])}
+       'hubc':('../cards/hub/hub.kicad_sch',None,[]),
+       'clk':('05-clock/clock.kicad_sch','clock',[]),
+       'clkc':('../cards/clock/clock.kicad_sch','clock',[])}       # the clock card: the same design on a 100 x 100 card
+for _i in range(4):     # the bit cards (docs/cards.md): each is a slice of its board with the bit baked in
+    BOARD[f'reg{_i}']=(f'../cards/reg{_i}/reg{_i}.kicad_sch',('registers','build_bit',_i),[f'OUT{_i}'])
+    BOARD[f'alu{_i}']=(f'../cards/alu{_i}/alu{_i}.kicad_sch',('alu','build_bit',_i),[])
+for _i in range(8):
+    BOARD[f'ctr{_i}']=(f'../cards/ctr{_i}/ctr{_i}.kicad_sch',('counter','build_bit',_i),[])
+BOARD['memctl']=('../cards/memctl/memctl.kicad_sch',('memory','build_ctl'),[])
+BOARD['progc']=('../cards/prog/prog.kicad_sch',('program','build_card'),[])            # the program card: one copy per four words, jumpered to its addresses
+BOARD['memslot']=('../cards/memslot/memslot.kicad_sch',('memory','build_slot'),[])      # one design, eight copies with their pair jumpers set
+GROUPS={'regc':[f'reg{i}' for i in range(4)],'aluc':[f'alu{i}' for i in range(4)],'ctrc':[f'ctr{i}' for i in range(8)],'memc':['memctl','memslot']}     # a group name on --boards stands for its cards (regc@dev: all four from the gate list)
+def expand(boards):
+    out=[]
+    for spec in boards:
+        b,_,dev=spec.partition('@')
+        out+=[f'{c}@{dev}' if dev else c for c in GROUPS[b]] if b in GROUPS else [spec]
+    return out
+def has(boards,kind): return any(b.partition('@')[0].startswith(kind) for b in boards)     # the board, or its cards
+def has_reg(boards): return has(boards,'reg')
 
 def export(board,dev=False):
     """A board's netlist: the kicad-cli SPICE export of its schematic, or (dev) the gate list's own flat netlist."""
     if dev:
-        import importlib; d=importlib.import_module(BOARD[board][1]).build(); assert not d.check(), d.check()
+        import importlib; spec=BOARD[board][1]
+        d=getattr(importlib.import_module(spec[0]),spec[1])(*spec[2:]) if isinstance(spec,tuple) else importlib.import_module(spec).build()
+        assert not d.check(), d.check()
         return d.spice(vdd='+5V')
     sch=os.path.join(BOARDS,BOARD[board][0]); cir=os.path.join(OUT,f'{board}_kicad.cir')
     r=subprocess.run([KICAD_CLI,'sch','export','netlist','--format','spice','-o',cir,sch],capture_output=True,text=True)
@@ -69,7 +93,7 @@ def subckt(board,lines,corner,rng=None):
             l=l.replace(' 2N7000',' '+model)
         body.append(l)
     nodes=set(tok for l in body for tok in l.split()[1:])
-    ports=[s for s in bus.SIGNALS+SW+LINK if s in nodes]
+    ports=[s for s in bus.SIGNALS+SW+LINK+ALINK+CLINK+MLINK if s in nodes]
     return ports, [f".subckt {board} "+" ".join(ports)]+body+[".ends"]
 
 def od(en,x,i,tag):
@@ -93,11 +117,11 @@ def deck(program,boards,corner,trace,outfile,seed=1):
         assert not missing, f"with the clock board every board the program needs must be real (no virtual timing): missing {missing}"
     for spec in boards:
         b,_,dev=spec.partition('@')
-        if b=='clk':       # the clock board: RUN switch closed, pot at minimum, timing capacitor empty at power-up
+        if b in ('clk','clkc'):       # the clock board or card: RUN switch closed, pot at minimum, timing capacitor empty at power-up
             ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
             body=["Rrun +5V RUNSW 1m","Rpot RT X 1m","Rj2 Net-_J2-Pin_2_ 0 1G"]
-            L+=sub[:-1]+body+[sub[-1]]; L.append(f"Xclk "+" ".join(ports)+" clk"); L.append(".ic V(xclk.X)=0 V(xclk.POR)=5")
-            probes+=['xclk.X','xclk.VD2']
+            L+=sub[:-1]+body+[sub[-1]]; L.append(f"X{b} "+" ".join(ports)+f" {b}"); L.append(f".ic V(x{b}.X)=0 V(x{b}.POR)=5")
+            probes+=[f'x{b}.X',f'x{b}.VD2']
             continue
         if b=='prog':      # one copy of the program memory board per 16-word page the program needs, switches set from the program
             import json
@@ -116,6 +140,29 @@ def deck(program,boards,corner,trace,outfile,seed=1):
                             body.append(f"Rsw{w}_{bit} ROW{w} Net-_{ref}-A_ 1m")                                   # close the switch: row to the diode's anode
                 nodes=set(tok for l in sub[1:-1]+body for tok in l.split()[1:]); ports=[x for x in bus.SIGNALS if x in nodes]
                 L+=[f".subckt prog{p} "+" ".join(ports)]+sub[1:-1]+body+[sub[-1]]; L.append(f"Xprog{p} "+" ".join(ports)+f" prog{p}")
+            continue
+        if b=='progc':     # one program card per four words, jumpers strapped to the card's addresses (PC7..2 = c), switches set from the program
+            import json
+            ncards=max(1,(len(program)+3)//4); mp=json.load(open(os.path.join(BOARDS,'..','cards','prog','prog.map.json')))
+            for c in range(ncards):
+                ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
+                body=[f"Rj{k} JS{k} {f'PC{k}' if (c>>(k-2))&1 else f'PN{k}'} 1m" for k in range(2,8)]
+                for w in range(4):
+                    word=program[4*c+w] if 4*c+w<len(program) else 0
+                    for bit in range(8):
+                        if not (word>>bit)&1: continue                                                           # open switch: nothing
+                        if dev=='dev': body.append(f"Dsw{w}_{bit} ROW{w} M{bit} D1N4148")                          # closed switch: the diode is in circuit
+                        else:
+                            ref=[r for r,(ww,bb) in mp['diodes'].items() if (ww,bb)==(w,bit)][0]
+                            body.append(f"Rsw{w}_{bit} ROW{w} Net-_{ref}-A_ 1m")                                   # close the switch: row to the diode's anode
+                nodes=set(tok for l in sub[1:-1]+body for tok in l.split()[1:]); ports=[x for x in bus.SIGNALS if x in nodes]
+                L+=[f".subckt progc{c} "+" ".join(ports)]+sub[1:-1]+body+[sub[-1]]; L.append(f"Xprogc{c} "+" ".join(ports)+f" progc{c}")
+            continue
+        if b=='memslot':   # eight copies of the slot card, the pair jumpers of copy p set for slots 2p and 2p+1
+            for p in range(8):
+                ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
+                body=[f"Rj{k} {x} {m} 1m" for k,(x,m) in enumerate(__import__('memory').slot_jumpers(p).items())]
+                L+=[f".subckt memslot{p} "+" ".join(ports)]+sub[1:-1]+body+[sub[-1]]; L.append(f"Xmemslot{p} "+" ".join(ports)+f" memslot{p}")
             continue
         ports,sub=subckt(b,export(b,dev=='dev'),corner,rng); L+=sub; L.append(f"X{b} "+" ".join(ports)+f" {b}")
         probes+=[f"x{b}.{n}" for n in BOARD[b][2]]
@@ -142,20 +189,20 @@ def deck(program,boards,corner,trace,outfile,seed=1):
         for i in range(4):
             L.append(f"Vopr{i} opr{i} 0 "+pwl(starts,[(s['opr']>>i)&1 for s in trace],STEP_DELAY))
             L+=od('IO',f'opr{i}',i,'io')
-        if 'ctr' in boards:      # the link header: operand register and the counter's load lines
+        if has(boards,'ctr'):    # the link header: operand register and the counter's load lines
             for i in range(8): L.append(f"Vlopr{i} vOPR{i} 0 "+pwl(starts,[(s['opr']>>i)&1 for s in trace],STEP_DELAY)); L.append(f"Rlopr{i} vOPR{i} OPR{i} 100")
             for n in ('PCR','RAI'): L.append(f"Vl{n} v{n} 0 "+pwl(starts,[int(n in s['ctl']) for s in trace],STEP_DELAY)); L.append(f"Rl{n} v{n} {n} 100")
-    if 'ctr' not in boards:
+    if not has(boards,'ctr'):
         for i,n in enumerate(PC):
             L.append(f"V{n} v{n} 0 "+pwl(starts,[(s['pc']>>i)&1 for s in trace],STEP_DELAY)); L.append(f"R{n} v{n} {n} 100")
-    if 'reg' not in boards:
+    if not has_reg(boards):
         for i in range(4):
             for n,f in ((f'A{i}','a'),(f'B{i}','b')):
                 L.append(f"V{n} v{n} 0 "+pwl(starts,[(s[f]>>i)&1 for s in trace],STEP_DELAY)); L.append(f"R{n} v{n} {n} 100")
         # a virtual register board also has to drive the bus for AO / BO: modelled as ideal open-drain drivers
         for i in range(4):
             L+=od('AO',f'A{i}',i,'ao')+od('BO',f'B{i}',i,'bo')
-    if 'mem' not in boards:      # virtual data memory: drives the bus with the emulator's memory value while MO is high
+    if not has(boards,'mem'):    # virtual data memory: drives the bus with the emulator's memory value while MO is high
         for i in range(4):
             L.append(f"Vmo{i} mo{i} 0 "+pwl(starts,[(s['bus']>>i)&1 if 'MO' in s['ctl'] else 0 for s in trace],STEP_DELAY))
             L+=od('MO',f'mo{i}',i,'mo')
@@ -173,7 +220,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     # tmax stays at the default (1 us): 10 us is a quarter faster but aborts with "timestep too small" on some decks.
     # cshunt: 1 pF from every node to ground (less than the real stray capacitance), and abstol/chgtol a hundred times looser than
     # the defaults (still far below any current or charge that matters here), keep ngspice's timestep from collapsing at clock edges
-    L+=[f".tran 1u {tend:.6g}",".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12",".control","run","set wr_singlescale","set wr_vecnames",
+    L+=[".save "+" ".join(f"v({p})" for p in probes),f".tran 1u {tend:.6g}",".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12",".control","run","set wr_singlescale","set wr_vecnames",
         f"wrdata {outfile} "+" ".join(f"v({p})" for p in probes),"quit",".endc",".end"]
     return "\n".join(L)+"\n", probes, edges
 
@@ -211,13 +258,13 @@ def compare(rows,trace,boards):
         chk['pc']=(s['pc'],num(row,PC))
         chk['ctl']=(" ".join(c for c in CONTROL if c in s['ctl'])," ".join(c for c in CONTROL if row[c]))
         chk['edge']=(int(not s['halted'] and 'HLT' not in s['ctl']),row['edge'])
-        if 'alu' in boards and (known['a'] and known['b'] or 'reg' not in boards):
+        if has(boards,'alu') and (known['a'] and known['b'] or not has_reg(boards)):
             res,cf,zf=emu.Machine.alu_static(s['a'],s['b'],set(s['ctl']))
             chk['CF']=(cf,row['CF']); chk['ZF']=(zf,row['ZF'])
-        if 'reg' in boards:
+        if has_reg(boards):
             if known['a']: chk['a']=(s['a'],num(row,[f'A{i}' for i in range(4)]))
             if known['b']: chk['b']=(s['b'],num(row,[f'B{i}' for i in range(4)]))
-            if known['out']: chk['out']=(s['out'],num(row,[f'xreg.OUT{i}' for i in range(4)]))
+            if known['out']: chk['out']=(s['out'],num(row,[f'xreg.OUT{i}' if 'reg' in boards else f'xreg{i}.OUT{i}' for i in range(4)]))
         c=set(s['ctl'])
         if c&{'AI','AB'}: known['a']=True
         if c&{'BI','BA'}: known['b']=True
@@ -233,8 +280,8 @@ def compare(rows,trace,boards):
 def run_trace(words,trace,boards,corner='TYP',tag='machine',seed=1):
     os.makedirs(OUT,exist_ok=True); cir=os.path.join(OUT,tag+'.cir'); dat=os.path.join(OUT,tag+'.dat')
     if os.path.exists(dat): os.remove(dat)
-    text,probes,edges=deck(words,boards,corner,trace,dat,seed); open(cir,'w').write(text)
-    for attempt,opts in enumerate(("cshunt=1e-12 abstol=1e-10 chgtol=1e-12","cshunt=1e-11 abstol=1e-9 chgtol=1e-11")):
+    text,probes,edges=deck(words,expand(boards),corner,trace,dat,seed); open(cir,'w').write(text)
+    for attempt,opts in enumerate(("cshunt=1e-12 abstol=1e-10 chgtol=1e-12","cshunt=1e-11 abstol=1e-9 chgtol=1e-11","cshunt=1e-11 abstol=1e-9 chgtol=1e-11 gmin=1e-10 itl4=50")):     # the third: more transient iterations and a larger gmin for a deck that still stalls at an edge
         # a deck that aborts with "timestep too small" at a clock edge usually runs with ten times the shunt capacitance
         if attempt: open(cir,'w').write(text.replace("cshunt=1e-12 abstol=1e-10 chgtol=1e-12",opts)); print(f"  ngspice aborted; retrying with {opts}")
         r=subprocess.run(['ngspice','-b',cir],capture_output=True,text=True,cwd=HERE)
@@ -243,7 +290,7 @@ def run_trace(words,trace,boards,corner='TYP',tag='machine',seed=1):
         print("\n".join(l for l in (r.stdout+r.stderr).splitlines() if 'Timestep' in l or 'aborted' in l))
     else: raise SystemExit('ngspice aborted the transient')
     tend=float(text.split('.tran 1u ')[1].split()[0])
-    rows,det=sample(dat,probes,len(trace),tend); bad=compare(rows,trace,[b.partition('@')[0] for b in boards])
+    rows,det=sample(dat,probes,len(trace),tend); bad=compare(rows,trace,[b.partition('@')[0] for b in expand(boards)])
     if trace[-1]['halted'] or 'HLT' in trace[-1]['ctl']:
         if len(det)!=len(trace)-1: bad.append((len(trace),'edges',len(trace)-1,len(det)))      # the clock must stop exactly when the program halts
     return rows,bad

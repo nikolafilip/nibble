@@ -1,4 +1,4 @@
-"""Parse a kicad-cli kicadsexpr netlist into {net: [(ref,pin),...]} and {ref: (value, footprint)}."""
+"""Parse a kicad-cli kicadsexpr netlist into {net: [(ref,pin),...]} and {ref: (value, footprint, dnp)}."""
 import re
 def parse(path):
     s=open(path).read()
@@ -8,7 +8,7 @@ def parse(path):
     comps={}
     for m in re.finditer(r'\(comp\s*\(ref "([^"]+)"\)(.*?)\n\t\t\)',s,re.S):
         b=m.group(2); v=re.search(r'\(value "([^"]*)"\)',b); f=re.search(r'\(footprint "([^"]*)"\)',b)
-        comps[m.group(1)]=(v.group(1) if v else '', f.group(1) if f else '')
+        comps[m.group(1)]=(v.group(1) if v else '', f.group(1) if f else '', '(name "dnp")' in b)
     return nets,comps
 if __name__=='__main__':
     import sys; nets,comps=parse(sys.argv[1]); print(len(nets),'nets',len(comps),'components')

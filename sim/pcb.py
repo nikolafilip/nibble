@@ -48,8 +48,9 @@ def build(projdir,name,route=True,passes=40):
             x,y,rot=place[ref]; m.SetPosition(V(x,y)); m.SetOrientationDegrees(rot)
         else: print('WARNING: no placement for',ref,fp); m.SetPosition(V(W+20,10))
     if missing: raise SystemExit('missing footprints: '+str(missing))
-    for k,h in enumerate(holes[:4]):
-        h.SetPosition(V(4 if k%2==0 else W-4, 4 if k<2 else H-4))
+    hp=plan['extra'].get('holes')            # explicit hole positions (cards: mid-side), else the four corners
+    for k,h in enumerate(holes[:len(hp) if hp else 4]):
+        h.SetPosition(V(*hp[k]) if hp else V(4 if k%2==0 else W-4, 4 if k<2 else H-4))
     # outline (inset while routing so the router keeps vias off the edge; restored to full size at the end)
     def outline(inset):
         for d in [d for d in board.GetDrawings() if d.GetLayer()==pcbnew.Edge_Cuts]: board.Remove(d)

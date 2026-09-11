@@ -89,3 +89,33 @@ def link_header(w,x,y,direction):
             ex=px-4*G if odd else px+4*G; w.W(px,py,ex,py); w.L(sig,ex,py,180 if odd else 0,direction)
     w.T("LINK to board 09 (counter)" if direction=='output' else "LINK from board 03 (sequencer)",x-6*G,y-4*G,1.27,True)
     return ref
+
+# ---- the 100 x 100 mm card (D042, docs/cards.md) ----
+CARD=100.0
+HX,HY=10.63,7.5          # bus header, rot 90 along the top edge: pin 1 at (HX,HY), pin 2 above it; the shroud is centred, x 5.03 to 94.97
+X0,Y0=9.0,16.0           # tile origin: first column's left pad, first pull-up row
+COLS=11                  # 11 columns of 7.68 mm between the mid-side holes
+HCOL=82.0                # usable column height: tiles end by y = 98, the name runs along the bottom edge
+HOLES=[(4.0,50.0),(CARD-4.0,50.0)]
+def card_frame(w,x,y,used,name):
+    """Everything on a card that is not a tile: the bus header (pin 1 left), two M3 holes mid-height, 100 n + 10 u in the
+    strip right of the tiles, PWR_FLAGs; and the pre-routes: header GND to the GND trunk and the pour, header +5V pins
+    down on B.Cu to the +5V trunk, the trunk extended to the decoupling. (x,y): where the header symbol goes on the
+    schematic. Call after layout(): it needs w.trunks. Returns the plan's `extra`."""
+    (xg1,xg2,yg),(xv1,xv2,yv)=w.trunks
+    j=bus_header(w,x,y,used); w.at(j,HX,HY,90); w.label("1",HX-7.0,HY+0.9,1.0)
+    header_gnd(w,HX,HY,-1,y_gnd_trunk=yg)
+    P=lambda n:(HX+((n-1)//2)*2.54, HY-((n-1)%2)*2.54)
+    for a,b in ((1,2),):                                             # +5V pins 1-2 joined, then down the back to the trunk
+        (xa,ya),(xb,yb)=P(a),P(b); w.rails.append(('+5V','F.Cu',xa,ya,xb,yb,0.5))
+    for n in (1,63):
+        px,py=P(n); w.rails.append(('+5V','B.Cu',px,py,px,yv,0.5)); w.vias.append(('+5V',px,yv))
+    xc=CARD-5.0; xt=CARD-2.0
+    w.rails.append(('+5V','F.Cu',xv2,yv,xt,yv,0.8))                  # trunk on to the decoupling strip
+    w.rails.append(('+5V','F.Cu',HX,yv,xv1,yv,0.8))                  # and back to pin 1's via
+    power_flags(w,x+8*G,y-8*G)
+    c1,c2=decoupling(w,x+16*G,y-8*G)
+    w.at(c1,xc,16.5,270); w.rails.append(('+5V','F.Cu',xc,yv,xc,16.5,0.5)); cap_gnd(w,xc,16.5,2.5)
+    w.at(c2,xc,26.0,270); w.rails.append(('+5V','F.Cu',xt,yv,xt,26.0,0.5)); w.rails.append(('+5V','F.Cu',xt,26.0,xc,26.0,0.5)); cap_gnd(w,xc,26.0,2.0)
+    holes(w,x+46*G,y-8*G,2)
+    return dict(silk_big=[(name,X0+20,CARD-1.8,1.5)],hide_refs=['Q','R'],rules=dict(track=0.2,clearance=0.15),holes=HOLES)

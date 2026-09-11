@@ -25,12 +25,22 @@ is the four register bits plus a spare.
 
 100 x 100 x 1.6 mm, 2-layer, one 2 x 32 shrouded header on the top edge
 (the header is 91 mm long, so the two M3 holes sit mid-height on the left and
-right edges). LEDs on the front. About 85 cm2 for logic, laid out at about 70
-mm2 per transistor (D045), so up to about 120 transistors per card.
+right edges). LEDs on the front. Below the header and its two power trunks
+there is room for 11 tile columns of 82 mm (`sim/frame.py`, `ksch.DenseWriter`).
+
+The dense tile (D045): a column is 7.68 mm wide and holds one TO-92 per 5.08 mm
+row; the pull-up lies along the row above its stack, one pad on the source
+column and one on the drain column. A gate of n transistors is 3.175 + 5.08 n
+mm tall (8.3, 13.3, 18.4 mm for one, two, three), an LED cell 15.2 mm. The
+power rails run on the back between the columns, alternately GND and +5V, each
+shared by the two columns beside it (odd columns are mirrored so their sources
+face the GND rail). The register bit card, 99 transistors and 54 pull-ups,
+fills 10.3 of the 11 columns: about 66 mm2 per transistor all in, and
+freerouting closes it in one pass with DRC zero.
 
 | Card | Count | Designs | Transistors | Neighbour link | Notes |
 |---|---|---|---|---|---|
-| Register bit i: A, B, OUT flip-flops and muxes for one bit | 4 | 4 (bit baked in) | ~92 | none | LEDs A, B, OUT |
+| Register bit i: A, B, OUT flip-flops and muxes for one bit | 4 | 4 (bit baked in) | 99 (89 for the bit, 10 for the card's clock phases and hold decoders) | none | LEDs A, B, OUT |
 | ALU bit i | 4 | 4 | ~60 | carry and zero-so-far to bit i+1 (2 x 3) | bit 3 carries CF and ZF to the bus |
 | Counter bit i: PC bit and RA bit | 8 | 8 | ~52 | count carry to bit i+1 (2 x 3); OPR i from the sequencer's link ribbon (2 x 6, chained) | |
 | Memory control: MAR, write gate, PH1 | 1 | 1 | ~35 | MAR0..3 and WR/RD to the slot cards (2 x 6, chained) | |
@@ -77,7 +87,7 @@ Each step is a commit or a few; each card passes the three gates of
 `plan.md` (ERC and exhaustive or scripted sim of the export at TYP/LO/HI/MIX;
 routed with DRC zero; machine gate with the emulator) before the next.
 
-1. **Card frame and dense tile.** `frame.card_frame` (100 x 100 outline, header at the top, holes mid-side, decoupling), a tile generator at the D045 pitch, and `pcb.py` routing it. Prove it on the register bit card: 92 transistors must route DRC-clean in 85 cm2. If it does not close, it is the tile pitch that moves, not the card size (a 100 x 150 card is $11.20 instead of $2).
+1. **Card frame and dense tile.** Done: `frame.card_frame` (100 x 100 outline, header at the top, holes mid-side, decoupling), `ksch.DenseWriter` (the tile above), `build_reg_card.py`. Proved on `cards/reg0`: 99 transistors, routed DRC-clean in one freerouting pass, ERC clean. The rule stands for every later card: if one does not close, it is the tile pitch that moves, not the card size (a 100 x 150 card is $11.20 instead of $2).
 2. **Register bit cards** (4): generator from `registers.py` sliced by bit; `tb_registers.py` on one slice; machine gate with four slices in the deck.
 3. **ISA: JNZ, JNC** in `isa.md`, `emu.py`, `asm.py`, `sequencer.py` (two gated rows); `test_emu.py`; a program that uses them.
 4. **Sequencer at the new pitch**: vertical diodes in `ksch.matrix`, dense tiles, JNZ/JNC rows, route, machine gate. Open item to close first: `sim/out/d041_list_MIX3.log`, list.asm at MIX seed 3 on the buffered sequencer, was started at the end of the 2026-09-10 session; it must show 0 mismatches.

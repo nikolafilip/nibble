@@ -6,7 +6,8 @@
 | `ksch.py`, `frame.py`, `knet.py` | KiCad 10 schematic writer (gate lists as cells, header, decoupling, indicators, testbench sources), the common board frame, netlist parser |
 | `bus.py` | The 64-pin header pinout (docs/bus-header.md) |
 | `alu.py`, `build_alu.py`, `tb_alu.py` | Board 01: logic, generator for `boards/01-alu/`, testbench (demo or exhaustive cases, TYP/LO/HI/MIX corners, dev netlist or kicad-cli export) |
-| `registers.py`, `build_registers.py`, `tb_registers.py` | Board 02: logic, generator, testbench (a clocked script through every register path) |
+| `registers.py`, `build_registers.py`, `tb_registers.py` | Board 02: logic, generator, testbench (a clocked script through every register path; `cards` runs it on the four bit cards) |
+| `build_reg_card.py` | Register bit cards `cards/reg<i>/` (docs/cards.md) from `registers.build_bit`, on the dense tile (`ksch.DenseWriter`) in the 100 x 100 card frame (`frame.card_frame`) |
 | `panel.py`, `build_panel.py` | Board 06: switches, buttons, LEDs, input port |
 | `build_hub.py`, `coupon.py`, `build_coupon.py` | Board 07 (hub) and the gate coupon |
 | `plots_alu.py` | Transient plots from a testbench run |

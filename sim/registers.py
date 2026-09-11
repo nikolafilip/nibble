@@ -62,5 +62,41 @@ def build():
     for i in range(4): d.ext_loads[f'A{i}']+=4; d.ext_loads[f'B{i}']+=5   # B also feeds the ALU's conditional inverter
     return d
 
+def build_bit(i):
+    """Register bit card i (D042): the A, B and OUT flip-flops of one bit with their muxes and bus driver, plus the
+    card's own two-phase clock and hold decoders (five and five transistors, repeated on each of the four cards).
+    Header in: BUS<i>#, AI, AO, BI, BO, BA, AB, OI, CLK.  Header out: A<i>, B<i>.  Same nets as the full board."""
+    d=nmos.Design(f'reg{i}')
+    d.inputs={f'BUS{i}#','AI','AO','BI','BO','BA','AB','OI','CLK'}
+    d.group='clock'
+    d.inv('CLKN','CLK')
+    d.nor('PH1','CLK','PH2',pu='10k'); d.nor('PH2','CLKN','PH1',pu='10k')
+    d.group='busin'
+    d.inv(f'D{i}',f'BUS{i}#')
+    d.group='muxA'
+    d.nor('HOLDA','AI','AB')
+    mux3(d,f'DA{i}','AI',f'D{i}','AB',f'B{i}','HOLDA',f'A{i}')
+    d.group='regA'
+    d.ff(f'A{i}',f'DA{i}',qpu='22k',ckn='PH1',ckb='PH2')
+    d.group='muxB'
+    d.nor('HOLDB','BI','BA')
+    mux3(d,f'DB{i}','BI',f'D{i}','BA',f'A{i}','HOLDB',f'B{i}')
+    d.group='regB'
+    d.ff(f'B{i}',f'DB{i}',qpu='22k',ckn='PH1',ckb='PH2')
+    d.group='muxO'
+    d.inv('OIN','OI')
+    d.nand(f'DO{i}_1','OI',f'D{i}'); d.nand(f'DO{i}_2','OIN',f'OUT{i}'); d.nand(f'DO{i}',f'DO{i}_1',f'DO{i}_2')
+    d.group='regO'
+    d.ff(f'OUT{i}',f'DO{i}',ckn='PH1',ckb='PH2')
+    d.group='drv'
+    d.nand(f'AON{i}','AO',f'A{i}'); d.nand(f'BON{i}','BO',f'B{i}')
+    d.nand(f'BD{i}',f'AON{i}',f'BON{i}')
+    d.bus(f'BUS{i}#',f'BD{i}')
+    d.group='leds'
+    for n in [f'OUT{i}',f'A{i}',f'B{i}']: d.led('LED_'+n,n)
+    d.ext_loads[f'A{i}']+=4; d.ext_loads[f'B{i}']+=5
+    return d
+
 if __name__=='__main__':
-    d=build(); print(d.check()); print('transistors',d.ntransistors(),'resistors',d.nresistors(),'leds',d.nleds())
+    d=build(); print(d.check()); print('board: transistors',d.ntransistors(),'resistors',d.nresistors(),'leds',d.nleds())
+    d=build_bit(0); print(d.check()); print('bit card: transistors',d.ntransistors(),'resistors',d.nresistors(),'leds',d.nleds())

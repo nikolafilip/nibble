@@ -128,52 +128,49 @@ class Writer:
     # ---- cells ----
     CELL_W=15*G   # 38.1 schematic
     PCB_COL=10.16 # PCB tile pitch
-    @staticmethod
-    def tile_h(g):
+    HCOL=None     # usable tile column height on the board (None: unlimited)
+    def tile_h(self,g):
         n=len(g['ins']); k=g['kind']
         if k=='LED': return 25.4
         if k=='BUS': return 10.16
         if k=='PULL': return 5.08*n+5.08
         return 10.16+5.08*n+5.08
+    def pu_rot(self,pcb): return 0     # schematic rotation of a cell's pull-up (pin 1 at the top when 0)
     def gate(self,g,x0,y0,pcb=None):
-        """Draw one NAND/NOR/INV/BUS/LED cell at (x0,y0). Returns height used."""
+        """Draw one NAND/NOR/INV/BUS/LED cell at (x0,y0) and, with pcb=(x,y,column), place its tile. Returns height used."""
         ins=g['ins']; n=len(ins); kind=g['kind']
         xq=x0+8*G; xc=xq+G; xbus=xq+3*G; xout=x0+14*G; xin=x0+2*G
         yr=y0+3*G          # pull-up resistor centre
         yc0=yr+3*G         # output node
-        px,py=pcb if pcb else (None,None)
+        r=d=None; qs=[]
         if kind=='LED':
             self.PW('+5V',xc,yr-1.5*G)
-            r=self.R(g['pu'],xc,yr)              # pins yr-1.5G / yr+1.5G
+            r=self.R(g['pu'],xc,yr,self.pu_rot(pcb))   # pins yr-1.5G / yr+1.5G
             d=self.LED(xc,yr+3.5*G)              # A at yr+2G, K at yr+5G
             self.W(xc,yr+1.5*G,xc,yr+2*G)
             yq=yr+7*G                          # D at yq-2G = yr+5G
-            q=self.Q(xq,yq); self.PW('GND',xc,yq+2*G)
-            if pcb: self.at(r,px+2.54,py,270); self.at(d,px+1.27,py+10.16,0); self.at(q,px,py+15.24,0); self.label(g['out'].replace('LED_',''),px+3.8,py+12.9,1.0); self.pwr.append(('+5V',px+2.54,py)); self.pwr.append(('GND',px,py+15.24))
+            qs.append(self.Q(xq,yq)); self.PW('GND',xc,yq+2*G)
             self.W(xq-2*G,yq,xin,yq); self.L(ins[0],xin,yq,180,'input')
             self.T(g['out'],xc+1.5*G,yr+3.5*G,1.0)
+            if pcb: self.place_tile(g,pcb,r,d,qs)
             return 10*G
         if kind=='BUS':
             yq=y0+4*G
-            q=self.Q(xq,yq); self.PW('GND',xc,yq+2*G)
-            if pcb: self.at(q,px,py+2.54,0); self.pwr.append(('GND',px,py+2.54))
+            qs.append(self.Q(xq,yq)); self.PW('GND',xc,yq+2*G)
             self.W(xc,yq-2*G,xc,yq-3*G); self.W(xc,yq-3*G,xout,yq-3*G); self.L(g['out'],xout,yq-3*G,0,'bidirectional')
             self.W(xq-2*G,yq,xin,yq); self.L(ins[0],xin,yq,180,'input')
+            if pcb: self.place_tile(g,pcb,r,d,qs)
             return 8*G
         if kind=='PULL':                       # extra pull-down stack on a node that has its pull-up elsewhere: no resistor
-            self.W(xc,yc0,xout,yc0); self.L(g['out'],xout,yc0,0,'bidirectional'); qy0=py+2.54 if pcb else None
+            self.W(xc,yc0,xout,yc0); self.L(g['out'],xout,yc0,0,'bidirectional')
         else:
             self.PW('+5V',xc,yr-1.5*G)
-            r=self.R(g['pu'],xc,yr)
-            if pcb: self.at(r,px+2.54,py,270); self.pwr.append(('+5V',px+2.54,py)); qy0=py+10.16
+            r=self.R(g['pu'],xc,yr,self.pu_rot(pcb))
             self.W(xc,yr+1.5*G,xc,yc0); self.W(xc,yc0,xout,yc0); self.L(g['out'],xout,yc0,0,'output')
         if n>1: self.J(xc,yc0)
         for k,inp in enumerate(ins):
             yq=yc0+2*G+6*G*k                   # D at yq-2G, S at yq+2G
-            q=self.Q(xq,yq)
-            if pcb:
-                self.at(q,px,qy0+5.08*k,0)
-                if kind=='NOR' or k==n-1: self.pwr.append(('GND',px,qy0+5.08*k))
+            qs.append(self.Q(xq,yq))
             self.W(xq-2*G,yq,xin,yq); self.L(inp,xin,yq,180,'input')
             if kind in ('NAND','PULL'):
                 if k<n-1: self.W(xc,yq+2*G,xc,yq+4*G)
@@ -181,23 +178,47 @@ class Writer:
             else:
                 self.PW('GND',xc,yq+2*G)
                 if k>0:
-                    self.W(xc,yq-2*G,xbus,yq-2*G); self.J(xc,yq-2*G) if False else None
+                    self.W(xc,yq-2*G,xbus,yq-2*G)
                     ytop=yc0 if k==1 else yq-2*G-6*G
                     self.W(xbus,ytop,xbus,yq-2*G); self.J(xbus,ytop)
+        if pcb: self.place_tile(g,pcb,r,d,qs)
         return 6*G*n+8*G
-    def layout(self,gates,titles,x0,y0,cols,pcb_origin=(10.0,10.0),pcb_cols=None):
+    def place_tile(self,g,pcb,r,d,qs):
+        """Classic tile (the nine boards): pull-up standing at the top of a 10.16 mm column, transistors below it at 5.08,
+        GND rail on B.Cu at x-1.27 and +5V at x+6.35 of every column, stubs recorded in self.pwr."""
+        px,py=pcb[0],pcb[1]; kind=g['kind']; n=len(qs)
+        if kind=='LED':
+            self.at(r,px+2.54,py,270); self.at(d,px+1.27,py+10.16,0); self.at(qs[0],px,py+15.24,0); self.label(g['out'].replace('LED_',''),px+3.8,py+12.9,1.0)
+            self.pwr.append(('+5V',px+2.54,py)); self.pwr.append(('GND',px,py+15.24)); return
+        if kind=='BUS': self.at(qs[0],px,py+2.54,0); self.pwr.append(('GND',px,py+2.54)); return
+        if kind=='PULL': qy0=py+2.54
+        else: self.at(r,px+2.54,py,270); self.pwr.append(('+5V',px+2.54,py)); qy0=py+10.16
+        for k,q in enumerate(qs):
+            self.at(q,px,qy0+5.08*k,0)
+            if kind=='NOR' or k==n-1: self.pwr.append(('GND',px,qy0+5.08*k))
+    def pack(self,gates,pxo,pyo,pcb_cols,mode):
+        """PCB tile positions. 'skyline': each gate goes to the lowest column (ties left to right). 'column': fill a column
+        top to bottom in gate order, next column when a tile no longer fits (needs HCOL). Returns [(g,(x,y,col))], column heights."""
+        colh=[pyo]*pcb_cols; tiles=[]; j=0
+        for g in gates:
+            h=self.tile_h(g)
+            if mode=='skyline':
+                j=min(range(pcb_cols),key=lambda c:(round(colh[c],3),c))
+                if self.HCOL and colh[j]+h>pyo+self.HCOL: raise SystemExit(f"tile {g['out']} does not fit: every column is full ({pcb_cols} x {self.HCOL} mm)")
+            else:
+                while self.HCOL and colh[j]+h>pyo+self.HCOL:
+                    j+=1
+                    if j>=pcb_cols: raise SystemExit(f"tile {g['out']} does not fit: {pcb_cols} columns of {self.HCOL} mm are full")
+            tiles.append((g,(pxo+j*self.PCB_COL,colh[j],j))); colh[j]+=h
+        return tiles,colh
+    def layout(self,gates,titles,x0,y0,cols,pcb_origin=(10.0,10.0),pcb_cols=None,pack='skyline'):
         """Draw all gates group by group (schematic) and assign PCB tiles in a grid of pcb_cols columns."""
         y=y0; groups=[]
-        pcb_cols=pcb_cols or cols; pxo,pyo=pcb_origin; py=pyo; tiles=[]
+        pcb_cols=pcb_cols or cols; pxo,pyo=pcb_origin
         for g in gates:
             if not groups or groups[-1][0]!=g['group']: groups.append((g['group'],[]))
             groups[-1][1].append(g)
-        # pcb tile positions: fill columns left to right in gate order, each column packed independently
-        # (skyline packing: next gate goes to the lowest column, ties broken left to right)
-        colh=[pyo]*pcb_cols
-        for g in gates:
-            j=min(range(pcb_cols),key=lambda c:(round(colh[c],3),c))
-            tiles.append((g,(pxo+j*self.PCB_COL,colh[j]))); colh[j]+=self.tile_h(g)
+        tiles,colh=self.pack(gates,pxo,pyo,pcb_cols,pack)
         py=max(colh)
         pos={id(g):t for g,t in tiles}
         for name,gs in groups:
@@ -208,7 +229,10 @@ class Writer:
                 y+=h+2*G
             y+=2*G
         self.pcb_extent=(pxo+pcb_cols*self.PCB_COL,py)
-        # power rails: per column, GND on B.Cu at x-1.27 and +5V on B.Cu at x+6.35, from the trunks above the tiles to the column bottom
+        self.rails_for(pxo,pyo,pcb_cols,colh)
+        return y
+    def rails_for(self,pxo,pyo,pcb_cols,colh):
+        """Power rails: per column, GND on B.Cu at x-1.27 and +5V on B.Cu at x+6.35, from the trunks above the tiles to the column bottom."""
         yg=pyo-6.0; yv=pyo-3.0; xs=[pxo+j*self.PCB_COL for j in range(pcb_cols)]
         for j,x in enumerate(xs):
             if colh[j]==pyo: continue
@@ -222,12 +246,69 @@ class Writer:
         for net,sx,sy in self.pwr:
             if net=='GND': self.rails.append(('GND','B.Cu',sx,sy,sx-1.27,sy,0.5))
             else: self.rails.append(('+5V','B.Cu',sx,sy,sx+3.81,sy,0.5))
-        return y
     def file(self,paper_w,paper_h,extra_libs=()):
         libs="".join(self.libs.values())+"".join(extra_libs)
         return (f'(kicad_sch\n\t(version 20260306)\n\t(generator "eeschema")\n\t(generator_version "10.0")\n\t(uuid "{self.sheet_uuid}")\n\t(paper "User" {f(paper_w)} {f(paper_h)})\n'
                 "\t(lib_symbols\n"+libs+"\t)\n"+self.body+
                 ('\t(sheet_instances\n\t\t(path "/"\n\t\t\t(page "1")\n\t\t)\n\t)\n' if self.sheet_uuid==self.root_uuid else '')+'\t(embedded_fonts no)\n)\n')
+
+class DenseWriter(Writer):
+    """The card tile (D045, docs/cards.md): about 70 mm2 per transistor against 200 to 300 on the nine boards.
+    Columns at P = 7.68 mm holding one TO-92 per 5.08 mm row (pads S G D at 2.54, or D G S in the odd columns, which
+    are mirrored). The pull-up lies along the row above its stack, one pad on the source column and one on the drain
+    column (P is 7.68 and not 7.62 because the vertical 0207 footprint's courtyard is 7.63 long). Power runs on B.Cu
+    between the columns, alternately a GND and a +5V rail, each shared by the two columns beside it: sources face the
+    GND rail, pull-ups reach the +5V rail with a 1.27 mm stub. Tile heights: 3.175 + 5.08 n for a gate of n
+    transistors (the R row plus courtyard gaps), 5.08 n for a bare stack (BUS, PULL), 15.24 for an LED.
+    The trunks above the tiles are on F.Cu: GND at y0 - 3.5, +5V at y0 - 2.0, one via per rail."""
+    PCB_COL=7.68
+    RAIL=0.5
+    def __init__(self,*a,**k):
+        super().__init__(*a,**k); self.rail_end={}     # rail x -> lowest y a stub reaches
+    def tile_h(self,g):
+        n=len(g['ins']); k=g['kind']
+        if k=='LED': return 15.24
+        if k in ('BUS','PULL'): return 5.08*n
+        return 3.175+5.08*n
+    def pu_rot(self,pcb):
+        # all pull-ups lie rot 0 on the board, body on the left pad: in an even column the left pad is the source
+        # column (the output), in an odd (mirrored) column it is the drain column (+5V). Pad 1 is the body pad.
+        return 180 if (pcb and pcb[2]%2==0) else 0
+    def R(self,value,x,y,rot=0,**kw):
+        """Resistor symbol; rot 180 puts pin 1 at the bottom (the pins land on the same wire ends either way)."""
+        return self.symbol("Device","R",self.ref('R'),value,x,y,rot,('1','2'),self.R_FOOT,[("Description","Resistor",True)],**kw)
+    def place_tile(self,g,pcb,r,d,qs):
+        px,py,j=pcb; m=j%2; P=self.PCB_COL; kind=g['kind']; n=len(qs)
+        xs,xg,xd=(px,px+2.54,px+5.08) if m==0 else (px+5.08,px+2.54,px)
+        xgnd,x5v=(px-1.27,px+P-1.27) if m==0 else (px+P-1.27,px-1.27)
+        def use(x,y): self.rail_end[round(x,3)]=max(self.rail_end.get(round(x,3),0),y)
+        def Q(q,y): self.at(q,xs,y,0 if m==0 else 180)
+        def gnd(y): self.rails.append(('GND','B.Cu',xs,y,xgnd,y,self.RAIL)); use(xgnd,y)
+        if kind in ('BUS','PULL'):
+            y0=py+(1.27 if m==0 else 0.635)
+            for k,q in enumerate(qs): Q(q,y0+5.08*k)
+            gnd(y0+5.08*(n-1)); return
+        self.at(r,px,py,0); self.rails.append(('+5V','B.Cu',xd,py,x5v,py,self.RAIL)); use(x5v,py)   # body on the left pad; +5V pad on the drain column
+        if kind=='LED':
+            self.at(d,xg,py+6.35,90); Q(qs[0],py+10.795); gnd(py+10.795)
+            self.label(g['out'].replace('LED_',''),xg+2.4,py+5.7,0.8); return
+        y0=py+(4.445 if m==0 else 3.81)
+        for k,q in enumerate(qs):
+            Q(q,y0+5.08*k)
+            if kind=='NOR' or k==n-1: gnd(y0+5.08*k)
+    def rails_for(self,pxo,pyo,pcb_cols,colh):
+        yg=pyo-3.5; yv=pyo-2.0; P=self.PCB_COL
+        xr=[pxo-1.27+P*k for k in range(pcb_cols+1)]
+        for k,x in enumerate(xr):
+            end=self.rail_end.get(round(x,3))
+            if not end: continue
+            net,yt=('GND',yg) if k%2==0 else ('+5V',yv)
+            self.rails.append((net,'B.Cu',x,yt,x,end,self.RAIL)); self.vias.append((net,x,yt))
+        ug=[x for k,x in enumerate(xr) if k%2==0 and self.rail_end.get(round(x,3))]
+        uv=[x for k,x in enumerate(xr) if k%2==1 and self.rail_end.get(round(x,3))]
+        self.trunks=((min(ug),max(ug),yg),(min(uv),max(uv),yv))
+        self.rails.append(('GND','F.Cu',min(ug),yg,max(ug),yg,0.8))
+        self.rails.append(('+5V','F.Cu',min(uv),yv,max(uv),yv,0.8))
 
 def project_file(name):
     return '{\n  "board": {"design_settings": {"defaults": {}, "rules": {}}},\n  "meta": {"filename": "%s.kicad_pro", "version": 3},\n  "schematic": {"drawing": {}, "legacy_lib_dir": "", "legacy_lib_list": []},\n  "sheets": [],\n  "text_variables": {}\n}\n' % name

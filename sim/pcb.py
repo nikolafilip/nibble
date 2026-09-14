@@ -1,5 +1,5 @@
 """Build, route and check a board from a KiCad project + placement plan.
-Run with KiCad's python:  <kicad>/python3 pcb.py <projectdir> <name> [--no-route] [--passes N] [--silk] [--dsn-only]   (N: freerouting router and optimizer pass cap, default 300 (a dense card needs about 200 to close its last net); a board that cannot finish stops there with its unrouted nets listed; --silk only replaces the silkscreen text of a routed board from the plan)
+Run with KiCad's python:  <kicad>/python3 pcb.py <projectdir> <name> [--no-route] [--passes N] [--silk] [--patch] [--dsn-only] [--ses file.ses]   (N: freerouting router and optimizer pass cap, default 300 (a dense card needs about 200 to close its last net); a board that cannot finish stops there with its unrouted nets listed; --silk only replaces the silkscreen text of a routed board from the plan)
 Reads <name>.kicad_sch (via kicad-cli netlist), <name>.plan.json; writes <name>.kicad_pcb, fab/ outputs.
 """
 import glob, sys, os, json, subprocess, re
@@ -7,17 +7,20 @@ sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import pcbnew, knet
 K='/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli'
 F='/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints'
-JAVA=os.path.expanduser('~/.sdkman/candidates/java/21.0.2-tem/bin/java')
+JAVA=os.environ.get('NIBBLE_JAVA') or os.path.expanduser('~/.sdkman/candidates/java/21.0.2-tem/bin/java')      # NIBBLE_JAVA: another JVM (freerouting 2.4.1 needs Java 25; 2.1.0 runs on 21)
 JAR=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','tools','freerouting-1.9.0.jar')   # 1.9: -mp caps the passes and the SES is written; 2.1 ignores every cap headless
 mm=lambda v:int(round(v*1e6))
 V=lambda x,y:pcbnew.VECTOR2I(mm(x),mm(y))
 
-def build(projdir,name,route=True,passes=300,dsn_only=False):
+def build(projdir,name,route=True,passes=300,dsn_only=False,ses_file=None):
     sch=os.path.join(projdir,f'{name}.kicad_sch'); net=os.path.join(projdir,f'{name}.net')
     subprocess.run([K,'sch','export','netlist','--format','kicadsexpr','-o',net,sch],check=True,capture_output=True)
     nets,comps=knet.parse(net); plan=json.load(open(os.path.join(projdir,f'{name}.plan.json')))
     W,H=plan['outline']; place=plan['place']
     board=pcbnew.NewBoard(os.path.join(projdir,f'{name}.kicad_pcb'))
+    layers=plan['extra'].get('layers',2)          # 4 (the sequencer, D051): In1.Cu is a solid GND plane the router leaves alone, In2.Cu a third routing layer
+    if layers==4: board.SetCopperLayerCount(4)
+    GND_LAYER=pcbnew.In1_Cu if layers==4 else pcbnew.B_Cu
     ds=board.GetDesignSettings()
     nc=ds.m_NetSettings.GetDefaultNetclass()
     rules=plan['extra'].get('rules',{}); tw=rules.get('track',0.25); cl=rules.get('clearance',0.2)
@@ -74,13 +77,14 @@ def build(projdir,name,route=True,passes=300,dsn_only=False):
         z.SetZoneName(netname); board.Add(z)
         pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     def gnd_pour():
-        for z in list(board.Zones()): board.Remove(z)
+        for z in list(board.Zones()):
+            if not z.GetIsRuleArea(): board.Remove(z)     # the router keepouts stay (a retry exports them again)
         if plan['extra'].get('no_pour'): return      # the hub: the bus lines own the back, ground is wired on the front
-        pour('GND',pcbnew.B_Cu)
+        pour('GND',GND_LAYER)
     # pre-routed power rails and stubs (from the tile geometry); the router only sees signals.
     # A rail with an eighth field True is hidden from the router (the inside of the sequencer's diode matrix, D045):
     # it is not on the board while the DSN is written and comes back with the others after the import.
-    LAY={'F.Cu':pcbnew.F_Cu,'B.Cu':pcbnew.B_Cu}
+    LAY={'F.Cu':pcbnew.F_Cu,'B.Cu':pcbnew.B_Cu,'In1.Cu':pcbnew.In1_Cu,'In2.Cu':pcbnew.In2_Cu}
     hidden=[]
     def add_rails(all=True):
         for r in plan.get('rails',[]):
@@ -99,10 +103,18 @@ def build(projdir,name,route=True,passes=300,dsn_only=False):
         """Rule areas the router must stay out of (the matrix): exported to the DSN as keepouts, removed again at the end."""
         for x1,y1,x2,y2 in router.get('keepout',[]):
             z=pcbnew.ZONE(board); z.SetIsRuleArea(True); z.SetDoNotAllowTracks(True); z.SetDoNotAllowVias(True)
-            ls=pcbnew.LSET(); ls.addLayer(pcbnew.F_Cu); ls.addLayer(pcbnew.B_Cu); z.SetLayerSet(ls)
+            ls=pcbnew.LSET(); ls.addLayer(pcbnew.F_Cu); ls.addLayer(pcbnew.B_Cu)
+            if layers==4: ls.addLayer(pcbnew.In1_Cu)     # the plane layer too; In2 stays open across the matrix (D051)
+            z.SetLayerSet(ls)
             o=z.Outline(); o.NewOutline()
             for x,y in [(x1,y1),(x2,y1),(x2,y2),(x1,y2)]: o.Append(mm(x),mm(y))
             z.SetZoneName('router keepout'); board.Add(z); keepouts.append(z)
+        if layers==4 and not router.get('route_in1'):       # the plane layer: no tracks anywhere (vias still pass); a wire keepout in the DSN, so the router never uses In1 (D051; route_in1: the plan lets the router use In1 too, the GND pour fills what is left)
+            z=pcbnew.ZONE(board); z.SetIsRuleArea(True); z.SetDoNotAllowTracks(True); z.SetDoNotAllowVias(False)
+            ls=pcbnew.LSET(); ls.addLayer(pcbnew.In1_Cu); z.SetLayerSet(ls)
+            o=z.Outline(); o.NewOutline()
+            for x,y in [(0,0),(W,0),(W,H),(0,H)]: o.Append(mm(x),mm(y))
+            z.SetZoneName('plane keepout'); board.Add(z); keepouts.append(z)
     def filter_dsn(path):
         """Take the excluded parts (the matrix diodes, whose pads sit on hidden tracks) out of the DSN: their placements
         and their pins. What stays on those nets is what the router has to reach: the row driver pads and the row
@@ -110,8 +122,8 @@ def build(projdir,name,route=True,passes=300,dsn_only=False):
         ex=set(router.get('exclude_refs',[]))
         if not ex: return
         s=open(path).read()
-        s=re.sub(r'\n[ \t]*\(place (\S+) [^\n]*',lambda m:'' if m.group(1) in ex else m.group(0),s)
-        s=re.sub(r'\(component "[^"]*"\s*\)','',s)
+        # D051: the placements stay (their pads are obstacles on every copper layer, so the inner-layer routes thread between the
+        # diodes instead of through their pins); only their pins leave the nets, so the router has nothing to route to them
         s=re.sub(r'\b([A-Za-z]+\d+)-\d+\b',lambda m:'' if m.group(1) in ex else m.group(0),s)
         open(path,'w').write(s)
     add_rails()
@@ -123,13 +135,11 @@ def build(projdir,name,route=True,passes=300,dsn_only=False):
         dsn=os.path.join(projdir,f'{name}.dsn'); ses=os.path.join(projdir,f'{name}.ses')
         best=None
         add_keepouts()
-        for attempt in range(3):
+        for attempt in range(1 if ses_file else router.get('attempts',3)):
             hide_rails(); pcbnew.SaveBoard(pcb,board)
             if attempt:     # a retry starts from the saved board, not the in-memory one after the SES import: the DSN of the latter left the router blind to the open pads
                 board=pcbnew.LoadBoard(pcb); netobj={n:board.FindNet(n) for n in nets}
             pcbnew.ExportSpecctraDSN(board,dsn); filter_dsn(dsn)
-            import shutil; shutil.copy(dsn,dsn+f'.attempt{attempt+1}')
-            if dsn_only: print('DSN written:',dsn); return pcb
             # pre-routed power (GND/+5V rails, stubs, stitches) is fixed so the router cannot move it; the SES then omits it,
             # and KiCad's SES import replaces all tracks, so the rails are re-added after every import (add_rails below)
             lines=open(dsn).read().split('\n')
@@ -137,31 +147,44 @@ def build(projdir,name,route=True,passes=300,dsn_only=False):
             lines=[l.replace('(type route)','(type fix)') if any(f'(net {n})' in l for n in fixed) else l for l in lines]
             # the router's via: 0.6/0.3 (JLCPCB's minimum) whatever the board's netclass says; with 0.8/0.4 it could not drop the last net past the bus header pins on a dense card
             text='\n'.join(lines)
-            m8=re.search(r'\(padstack "Via\[0-1\]_800:400_um".*?\n    \)\n',text,flags=re.S)
-            if m8:      # a second padstack for the router's own vias; the pre-placed 0.8 mm vias keep theirs (else the router misjudges their size by 0.1 mm)
-                p6=m8.group(0).replace('800:400_um','600:300_um').replace('(shape (circle F.Cu 800','(shape (circle F.Cu 600').replace('(shape (circle B.Cu 800','(shape (circle B.Cu 600')
-                text=text[:m8.end()]+p6+text[m8.end():]
-                text=re.sub(r'\n(\s*)\(via "Via\[0-1\]_800:400_um"\)',r'\n\1(via "Via[0-1]_600:300_um")',text)      # the structure's via choice
-                text=text.replace('(use_via "Via[0-1]_800:400_um")','(use_via "Via[0-1]_600:300_um")')
+            # (In1 stays "(type signal)": marked "(type power)", freerouting 2.1 and 2.4 could no longer join the drain pads of a tile, three bare
+            # transistors on a test board included; the whole-board wire keepout on In1 from add_keepouts keeps the plane layer free of tracks instead)
+            for n in router.get('exclude_nets',[]):    # nets the router must leave alone (the sequencer's GND and +5V, D051): their pins leave the network, the pre-routed
+                text=re.sub(r'\(net '+re.escape(n)+r'\s*\(pins[^)]*\)',f'(net {n}\n      (pins)',text,count=1)   # rails stay as obstacles; asked to finish power itself around fixed rails, freerouting left 75 of 509 connections open on a test cut against 9
+            order=router.get('layer_order')    # freerouting prefers vertical on even DSN layers and horizontal on odd ones (2.5x against), and its own
+            if order:                          # autoroute_settings block stops 2.1.0 dead; listing the layers in another order (KiCad maps the SES by name) picks the directions
+                blocks={m.group(1):m.group(0) for m in re.finditer(r'    \(layer (\S+)\n      \(type \w+\)\n      \(property\n        \(index \d+\)\n      \)\n    \)\n',text)}
+                assert set(order)==set(blocks), (order,list(blocks))
+                first=min(text.index(b) for b in blocks.values())
+                for b in blocks.values(): text=text.replace(b,'',1)
+                text=text[:first]+''.join(re.sub(r'\(index \d+\)',f'(index {k})',blocks[ln]) for k,ln in enumerate(order))+text[first:]
             open(dsn,'w').write(text)
+            import shutil; shutil.copy(dsn,dsn+f'.attempt{attempt+1}')      # what the router was given (kept when a connection stayed open)
+            if dsn_only: print('DSN written:',dsn); return pcb
             # freerouting's own log goes to <name>.freerouting.log so a long run can be watched
-            with open(os.path.join(projdir,f'{name}.freerouting.log'),'w') as flog:
-                subprocess.run([JAVA,f"-Xmx{router.get('xmx','4g')}",'-jar',JAR,'-de',dsn,'-do',ses,'-mp',str(passes),'-dct','2'],stdout=flog,stderr=subprocess.STDOUT,text=True,timeout=router.get('timeout',3*3600))
+            if ses_file:      # --ses: a session routed outside this run (freerouting 2.1.0 by hand on the exported DSN); imported like the router's own
+                import shutil; shutil.copy(ses_file,ses); open(os.path.join(projdir,f'{name}.freerouting.log'),'w').write(f'session imported from {ses_file}\n')
+            with open(os.path.join(projdir,f'{name}.freerouting.log'),'a' if ses_file else 'w') as flog:
+                if ses_file: pass
+                else: jar=os.path.join(os.path.dirname(JAR),router['jar']) if router.get('jar') else JAR      # the plan may pick another freerouting (2.1.0 for the sequencer: 1.9 needs hours per pass there)
+                # 2.1.0 honours the pass cap only with its window up (headless it routes until killed) and saves the SES on its own; 2.4.1 (Java 25) runs headless
+                new=os.path.basename(jar)>='freerouting-2.4'; flags=(['-Djava.awt.headless=true'] if new else [])
+                if not ses_file: subprocess.run([JAVA]+flags+[f"-Xmx{router.get('xmx','4g')}",'-jar',jar,'-de',dsn,'-do',ses,'-mp',str(passes),'-dct','2']+(['-mt','1'] if new else []),stdout=flog,stderr=subprocess.STDOUT,text=True,timeout=router.get('timeout',3*3600))
             class R: stdout=open(os.path.join(projdir,f'{name}.freerouting.log')).read()
             r=R()
             last=[l for l in r.stdout.splitlines() if 'unrouted' in l.lower()]
-            m=re.search(r'\((\d+) unrouted\)',last[-1]) if last else None
+            m=re.search(r'\((\d+) unrouted',last[-1]) if last else None      # 1.9 "(N unrouted)", 2.1 "(N unrouted and M violations)"
             unrouted=int(m.group(1)) if m else None      # freerouting 1.9 logs no count when it gives up early; KiCad's DRC below is the gate
             print(f'  route attempt {attempt+1}: router reports {unrouted if unrouted is not None else "no unrouted count"}')
             if not os.path.exists(ses): print(r.stdout[-3000:]); raise SystemExit('freerouting produced no SES')
             pcbnew.ImportSpecctraSES(board,ses); os.remove(ses)
-            add_rails(); gnd_pour(); pcbnew.SaveBoard(pcb,board)
+            add_rails(); apply_patches(board,plan); gnd_pour(); pcbnew.SaveBoard(pcb,board)
             for _ in range(2):
                 if gnd_stitch(board,pcb,netobj,gnd_pour)==0: break
             n=unconnected(pcb)
             if n:       # which connections the router left open (freerouting 1.9 gives up on a few silently; the next attempt starts from these wires)
                 for u in json.load(open(pcb.replace('.kicad_pcb','.drc.json'))).get('unconnected_items',[]): print('     open:',' <-> '.join(i['description'] for i in u['items']))
-                done=[l for l in r.stdout.splitlines() if 'completed in' in l]; print('     router:',' | '.join(l.split('INFO')[-1].strip()[:60] for l in done))
+                done=[l for l in r.stdout.splitlines() if 'completed in' in l]; print('     router:',' | '.join(l.split('INFO')[-1].strip()[:60] for l in done[-3:]))
             if best is None or n<best[0]:
                 best=(n,pcb.replace('.kicad_pcb','.best.kicad_pcb')); import shutil; shutil.copy(pcb,best[1])
             if n==0: break
@@ -171,14 +194,48 @@ def build(projdir,name,route=True,passes=300,dsn_only=False):
         if best and best[0]>0:      # keep the best attempt, not the last
             board=pcbnew.LoadBoard(best[1]); netobj={n:board.FindNet(n) for n in nets}
             def gnd_pour():
-                for z in list(board.Zones()): board.Remove(z)
+                for z in list(board.Zones()):
+                    if not z.GetIsRuleArea(): board.Remove(z)     # the router keepouts stay (a retry exports them again)
                 if plan['extra'].get('no_pour'): return
-                pour('GND',pcbnew.B_Cu)
+                pour('GND',GND_LAYER)
         if best and os.path.exists(best[1]): os.remove(best[1])
         for z in [z for z in board.Zones() if z.GetIsRuleArea()]: board.Remove(z)     # the router keepouts (the board reloaded from best has its own copies)
         outline(0); gnd_pour(); pcbnew.SaveBoard(pcb,board)
     sync_project(projdir,name,tw,cl)     # again: SaveBoard rewrites the project file with KiCad's defaults (0.2 mm clearance)
     return pcb
+
+def apply_patches(board,plan):
+    """Hand fixes after the router (plan extra.patches): [{'net','layer','remove':[[x0,y0,x1,y1],...],'add':[[x0,y0,x1,y1],...],'width'}].
+    A removed segment must match an existing track of that net and layer by its endpoints (0.01 mm); a patch whose segments are not
+    all there is reported and skipped, so a re-route that no longer has the flaw is not damaged. The sequencer's v9 route left ENF
+    hooked across CFQ_m1 on In2 in one spot (freerouting's own tracks crossing); the patch straightens ENF there."""
+    patches=plan['extra'].get('patches',[])
+    if not patches: return
+    def key(x,y): return (round(x,2),round(y,2))
+    # read every track's geometry first: pcbnew loses the SWIG types after the first board.Remove in a process
+    tracks=[(t,t.GetLayerName(),t.GetNetname(),{key(t.GetStart().x*1e-6,t.GetStart().y*1e-6),key(t.GetEnd().x*1e-6,t.GetEnd().y*1e-6)}) for t in board.GetTracks() if t.GetClass()!='PCB_VIA']
+    todo=[]
+    for pt in patches:
+        found=[]
+        for x0,y0,x1,y1 in pt.get('remove',[]):
+            want={key(x0,y0),key(x1,y1)}
+            hit=[t for t,l,n,ends in tracks if l==pt['layer'] and n==pt['net'] and ends==want and t not in found]
+            if hit: found.append(hit[0])
+        if len(found)==len(pt.get('remove',[])): todo.append((pt,found))
+        else: print(f"   patch {pt['net']} on {pt['layer']}: {len(found)} of {len(pt['remove'])} segments found, skipped")
+    for pt,found in todo:
+        net=board.FindNet(pt['net']); lay=getattr(pcbnew,pt['layer'].replace('.','_'))
+        for t in found: board.Remove(t)
+        for x0,y0,x1,y1 in pt.get('add',[]):
+            t=pcbnew.PCB_TRACK(board); t.SetStart(pcbnew.VECTOR2I(int(x0*1e6),int(y0*1e6))); t.SetEnd(pcbnew.VECTOR2I(int(x1*1e6),int(y1*1e6)))
+            t.SetWidth(int(pt.get('width',0.2)*1e6)); t.SetLayer(lay); t.SetNet(net); board.Add(t)
+        print(f"   patch {pt['net']} on {pt['layer']}: {len(found)} segments removed, {len(pt.get('add',[]))} added")
+
+def repatch(projdir,name):
+    """Apply the plan's patches to the routed board as it is (a route already done), refill the pour, save."""
+    pcb=os.path.join(projdir,f'{name}.kicad_pcb'); plan=json.load(open(os.path.join(projdir,f'{name}.plan.json')))
+    board=pcbnew.LoadBoard(pcb); apply_patches(board,plan)
+    pcbnew.ZONE_FILLER(board).Fill(board.Zones()); pcbnew.SaveBoard(pcb,board); return pcb
 
 def add_silk(board,plan):
     """Board-level silkscreen text from the plan (labels, then the big board name)."""
@@ -307,5 +364,6 @@ if __name__=='__main__':
     projdir,name=sys.argv[1],sys.argv[2]
     passes=int(sys.argv[sys.argv.index("--passes")+1]) if "--passes" in sys.argv else 300
     if '--dsn-only' in sys.argv: build(projdir,name,passes=passes,dsn_only=True); sys.exit(0)     # write the filtered DSN the router would get, and stop
-    pcb=resilk(projdir,name) if '--silk' in sys.argv else build(projdir,name,route='--no-route' not in sys.argv,passes=passes)
+    ses_file=sys.argv[sys.argv.index('--ses')+1] if '--ses' in sys.argv else None                 # import a session routed by hand from that DSN instead of running the router
+    pcb=resilk(projdir,name) if '--silk' in sys.argv else repatch(projdir,name) if '--patch' in sys.argv else build(projdir,name,route='--no-route' not in sys.argv,passes=passes,ses_file=ses_file)
     drc(pcb); outputs(pcb,name)

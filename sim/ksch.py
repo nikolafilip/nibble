@@ -207,13 +207,23 @@ class Writer:
         for k,q in enumerate(qs):
             self.at(q,px,qy0+5.08*k,0)
             if kind=='NOR' or k==n-1: self.pwr.append(('GND',px,qy0+5.08*k))
-    def pack(self,gates,fields,mode):
+    def pack(self,gates,fields,mode,pre=None):
         """PCB tile positions over the tile fields [(x, y, columns, height or None)], filled in order.
         'skyline': each gate goes to the lowest column of the first field with room (ties left to right). 'column': fill a
-        column top to bottom in gate order, next column (next field) when a tile no longer fits. Returns [(g,(x,y,col))], [column heights per field]."""
+        column top to bottom in gate order, next column (next field) when a tile no longer fits. Returns [(g,(x,y,col))], [column heights per field].
+        pre: [(g, field, column)] placed first, stacked in the given column (the sequencer puts the matrix's drivers under
+        their columns and the row buffers beside the row tails, D051); the rest packs around them."""
         colh=[[f[1]]*f[2] for f in fields]; tiles=[]; fi=0; j=0
         def fits(fi,j,h): return fields[fi][3] is None or colh[fi][j]+h<=fields[fi][1]+fields[fi][3]
+        def col(fi,j): return j+(fields[fi][4] if len(fields[fi])>4 else 0)      # a field's optional fifth element: the global column index of its first column, so the
+        # rail parity (GND/+5V alternate at the column boundaries) continues across a seam where two fields share a boundary (the sequencer's split left field)
+        done=set()
+        for g,pf,pj in pre or []:
+            h=self.tile_h(g)
+            if not fits(pf,pj,h): raise SystemExit(f"pre-placed tile {g['out']} does not fit in field {pf} column {pj}")
+            tiles.append((g,(fields[pf][0]+pj*self.PCB_COL,colh[pf][pj],col(pf,pj)))); colh[pf][pj]+=h; done.add(id(g))
         for g in gates:
+            if id(g) in done: continue
             h=self.tile_h(g)
             if mode=='skyline':
                 for fi in range(len(fields)):
@@ -221,14 +231,16 @@ class Writer:
                     if ok: j=min(ok,key=lambda c:(round(colh[fi][c],3),c)); break
                 else: raise SystemExit(f"tile {g['out']} does not fit: every column of every field is full")
             else:
-                while not fits(fi,j,h):
+                while fi<len(fields) and not fits(fi,j,h):
                     j+=1
-                    if j>=fields[fi][2]:
-                        fi+=1; j=0
-                        if fi>=len(fields): raise SystemExit(f"tile {g['out']} does not fit: every column of every field is full")
-            tiles.append((g,(fields[fi][0]+j*self.PCB_COL,colh[fi][j],j))); colh[fi][j]+=h
+                    if j>=fields[fi][2]: fi+=1; j=0
+                if fi>=len(fields):      # every column passed: the tile goes to the lowest column with room anywhere (the remainders under the pre-placed tiles)
+                    ok=[(f,c) for f in range(len(fields)) for c in range(fields[f][2]) if fits(f,c,h)]
+                    if not ok: raise SystemExit(f"tile {g['out']} does not fit: every column of every field is full")
+                    fi,j=min(ok,key=lambda fc:(round(colh[fc[0]][fc[1]],3),fc)); tiles.append((g,(fields[fi][0]+j*self.PCB_COL,colh[fi][j],col(fi,j)))); colh[fi][j]+=h; fi=len(fields); continue
+            tiles.append((g,(fields[fi][0]+j*self.PCB_COL,colh[fi][j],col(fi,j)))); colh[fi][j]+=h
         return tiles,colh
-    def layout(self,gates,titles,x0,y0,cols,pcb_origin=(10.0,10.0),pcb_cols=None,pack='skyline',fields=None,pack_order=None):
+    def layout(self,gates,titles,x0,y0,cols,pcb_origin=(10.0,10.0),pcb_cols=None,pack='skyline',fields=None,pack_order=None,pre=None):
         """Draw all gates group by group (schematic) and assign PCB tiles: one field of pcb_cols columns at pcb_origin, or the
         given fields [(x, y, columns, height or None)] filled in order. pack_order: the gates in the order they are packed (default: as drawn)."""
         y=y0; groups=[]
@@ -236,7 +248,7 @@ class Writer:
         for g in gates:
             if not groups or groups[-1][0]!=g['group']: groups.append((g['group'],[]))
             groups[-1][1].append(g)
-        tiles,colh=self.pack(pack_order or gates,fields,pack)
+        tiles,colh=self.pack(pack_order or gates,fields,pack,pre); self.tiles=tiles     # kept: a board can draw spines over its tile positions
         pos={id(g):t for g,t in tiles}
         for name,gs in groups:
             self.T(titles.get(name,name),x0,y-G,2.0,True); y+=2*G
@@ -247,15 +259,15 @@ class Writer:
             y+=2*G
         self.pcb_extent=(max(f[0]+f[2]*self.PCB_COL for f in fields),max(max(c) for c in colh))
         self.trunks=[]
-        for f,ch in zip(fields,colh): self.rails_for(f[0],f[1],f[2],ch)
+        for f,ch in zip(fields,colh): self.rails_for(f[0],f[1],f[2],ch,f[4] if len(f)>4 else 0)
         return y
-    def rails_for(self,pxo,pyo,pcb_cols,colh):
+    def rails_for(self,pxo,pyo,pcb_cols,colh,phase=0):
         """Power rails: per column, GND on B.Cu at x-1.27 and +5V on B.Cu at x+6.35, from the trunks above the tiles to the column bottom."""
         yg=pyo-6.0; yv=pyo-3.0; xs=[pxo+j*self.PCB_COL for j in range(pcb_cols)]
         for j,x in enumerate(xs):
             if colh[j]==pyo: continue
-            yg_end=max([y for n,px_,y in self.pwr if n=='GND' and abs(px_-x)<0.01],default=None)
-            yv_end=max([y for n,px_,y in self.pwr if n=='+5V' and abs(px_-(x+2.54))<0.01],default=None)
+            yg_end=max([y for n,px_,y in self.pwr if n=='GND' and abs(px_-x)<0.01 and pyo<=y<=colh[j]],default=None)          # this field's stubs only: another field may share the column x (the sequencer's spine band splits a field)
+            yv_end=max([y for n,px_,y in self.pwr if n=='+5V' and abs(px_-(x+2.54))<0.01 and pyo<=y<=colh[j]],default=None)
             if yg_end: self.rails.append(('GND','B.Cu',x-1.27,yg,x-1.27,yg_end,0.5)); self.vias.append(('GND',x-1.27,yg))
             if yv_end: self.rails.append(('+5V','B.Cu',x+6.35,yv,x+6.35,yv_end,0.5)); self.vias.append(('+5V',x+6.35,yv))
         used=[x for j,x in enumerate(xs) if colh[j]>pyo]
@@ -319,16 +331,17 @@ class DenseWriter(Writer):
         for k,q in enumerate(qs):
             Q(q,y0+5.08*k)
             if kind=='NOR' or k==n-1: gnd(y0+5.08*k)
-    def rails_for(self,pxo,pyo,pcb_cols,colh):
+    def rails_for(self,pxo,pyo,pcb_cols,colh,phase=0):
+        """phase: the global column index of the field's first column (the parity of a boundary's net must agree with the field next door)."""
         yg=pyo-3.5; yv=pyo-2.0; P=self.PCB_COL
         xr=[pxo-1.27+P*k for k in range(pcb_cols+1)]
         for k,x in enumerate(xr):
             end=self.rail_end.get(round(x,3))
             if not end: continue
-            net,yt=('GND',yg) if k%2==0 else ('+5V',yv)
+            net,yt=('GND',yg) if (k+phase)%2==0 else ('+5V',yv)
             self.rails.append((net,'B.Cu',x,yt,x,end,self.RAIL)); self.vias.append((net,x,yt))
-        ug=[x for k,x in enumerate(xr) if k%2==0 and self.rail_end.get(round(x,3))]
-        uv=[x for k,x in enumerate(xr) if k%2==1 and self.rail_end.get(round(x,3))]
+        ug=[x for k,x in enumerate(xr) if (k+phase)%2==0 and self.rail_end.get(round(x,3))]
+        uv=[x for k,x in enumerate(xr) if (k+phase)%2==1 and self.rail_end.get(round(x,3))]
         self.trunks.append(((min(ug),max(ug),yg),(min(uv),max(uv),yv)))
         self.rails.append(('GND','F.Cu',min(ug),yg,max(ug),yg,0.8))
         self.rails.append(('+5V','F.Cu',min(uv),yv,max(uv),yv,0.8))
@@ -343,7 +356,7 @@ def write_plan(w,path,outline,extra=None):
     if w.router_exclude or w.keepouts: extra['router']=dict(extra.get('router',{}),exclude_refs=w.router_exclude,keepout=w.keepouts)
     json.dump(dict(place=w.place,silk=w.silk,rails=w.rails,vias=w.vias,outline=list(outline),extra=extra),open(path,'w'),indent=0)
 
-def matrix(w,rows,cols,diodes,x0,y0,pcb,pd='1Meg',caption=lambda c:c,note=None,vertical=False):
+def matrix(w,rows,cols,diodes,x0,y0,pcb,pd='1Meg',caption=lambda c:c,note=None,vertical=False,tails='right'):
     """Diode control matrix. rows: [(net, caption)], cols: [net], diodes: [(row_net, col_net)] fitted; every other
     crossing gets a DNP diode (pads on the board, nothing fitted) so an instruction can be added by soldering (D040).
     Schematic: columns are vertical wires (label at the top, pull-down at the bottom), rows horizontal wires
@@ -368,7 +381,16 @@ def matrix(w,rows,cols,diodes,x0,y0,pcb,pd='1Meg',caption=lambda c:c,note=None,v
         else:
             w.at(r,pxr,pcy[c],270); w.pwr.append(('GND',pxr,pcy[c]+5.08))     # rot 270: pad 1 at (x,y) on the column track, pad 2 (GND) at (x,y+5.08)
             w.rails.append(('GND','B.Cu',pxr,pcy[c]+5.08,pxr+2.5,pcy[c]+5.08,0.5))   # stub to the GND rail beside the pull-downs (a rail through them would cross their signal pads)
-        w.rails.append((c,'F.Cu',pxl-2 if vertical else pxl-4,pcy[c],pxr,pcy[c],0.5)+((True,) if vertical else ())); w.label(caption(c),px0,pcy[c]-0.9,0.9)
+        if vertical and tails=='left':      # D051: the tail sticks out of the keepout's left edge, toward the buffers beside the matrix; the pull-down at the right end sits on the hidden track, so the router does not see it either
+            # the tail: a fixed via 4.5 mm before the keepout and a 3.5 mm In2 stub from it, so the router reaches the column on its vertical
+            # layer straight from the buffer's drain pad (an F.Cu tail beside the keepout was boxed in by the corridor's vertical tracks: 23 of 23 open)
+            # the 1.5 mm of F.Cu tail between the via and the keepout's edge stays visible to the router (hidden, v8 routed PCL_m across PCR_m's tail there)
+            w.rails.append((c,'F.Cu',pxl-4.5,pcy[c],pxl-3.0,pcy[c],0.5)); w.rails.append((c,'F.Cu',pxl-3.0,pcy[c],pxr,pcy[c],0.5,True)); w.vias.append((c,pxl-4.5,pcy[c])); w.rails.append((c,'In2.Cu',pxl-4.5,pcy[c],pxl-8.0,pcy[c],0.5)); w.router_exclude.append(r)
+        elif vertical:    # the column track inside the matrix is hidden from the router; its tail past the keepout's edge to the pull-down is not, so the router neither crosses it nor misses it
+            xk=prx[rows[-1][0]]+2.6
+            w.rails.append((c,'F.Cu',pxl-2,pcy[c],xk,pcy[c],0.5,True)); w.rails.append((c,'F.Cu',xk,pcy[c],pxr,pcy[c],0.5))
+        else: w.rails.append((c,'F.Cu',pxl-4,pcy[c],pxr,pcy[c],0.5))
+        w.label(caption(c),px0,pcy[c]-0.9,0.9)
     if vertical:
         xg=pxr+5.08+2.5; w.rails.append(('GND','B.Cu',xg,pcy[cols[0]],xg,pcy[cols[-1]],0.5))      # joined by the pour
     else:
@@ -380,7 +402,7 @@ def matrix(w,rows,cols,diodes,x0,y0,pcb,pd='1Meg',caption=lambda c:c,note=None,v
             w.rails.append((r,'B.Cu',prx[r],pyt-1.0,prx[r],ybot_in,0.4,True)); w.rails.append((r,'B.Cu',prx[r],ybot_in,prx[r],ybot_in+2.2,0.4))
         else: w.rails.append((r,'B.Cu',prx[r],pyt-4,prx[r],ybot_in,0.4))
     for k,(r,cap) in enumerate(rows):      # row captions along the top, three heights so they stay legible at 2.54 pitch
-        w.label(cap.replace(' (free)',''),prx[r]-0.9,pyt-6.5-(k%3)*3.0,0.8)
+        w.label(cap.replace(' (free)',''),prx[r]-0.9,pyt-5.0-(k%3)*3.0,0.8)     # (1.5 mm lower than before: the top row touched the sequencer's link header outline)
     fitted=set(diodes)
     for rn,cap in rows:                    # a diode symbol at every crossing (D040): fitted where the design has one, DNP (pads only) elsewhere
         for cn in cols:

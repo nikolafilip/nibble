@@ -128,7 +128,11 @@ def header_top(w,x,y,used,yg,yv,xv1):
     P=lambda n:(HX+((n-1)//2)*2.54, HY-((n-1)%2)*2.54)
     (xa,ya),(xb,yb)=P(1),P(2); w.rails.append(('+5V','F.Cu',xa,ya,xb,yb,0.5))
     for n in (1,63):
-        px,py=P(n); w.rails.append(('+5V','B.Cu',px,py,px,yv,0.5)); w.vias.append(('+5V',px,yv))
+        px,py=P(n)
+        near=[r[2] for r in w.rails if r[1]=='B.Cu' and abs(r[2]-r[4])<0.01 and abs(r[2]-px)<0.7]     # a tile rail under the pin's column (the sequencer's 10.16 pitch puts one at 89.0)
+        if near:    # jog 1.5 mm past the rail before dropping to the trunk
+            xj=near[0]+1.5; w.rails.append(('+5V','B.Cu',px,py,px,py+2.0,0.5)); w.rails.append(('+5V','B.Cu',px,py+2.0,xj,py+3.5,0.5)); w.rails.append(('+5V','B.Cu',xj,py+3.5,xj,yv,0.5)); w.vias.append(('+5V',xj,yv))
+        else: w.rails.append(('+5V','B.Cu',px,py,px,yv,0.5)); w.vias.append(('+5V',px,yv))
     w.rails.append(('+5V','F.Cu',HX,yv,xv1,yv,0.8))
     return j
 

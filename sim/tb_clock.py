@@ -43,7 +43,7 @@ def run(lines,corner,outdir,tag,seed=1):
     period=np.mean(np.diff(run_r)) if len(run_r)>2 else float('nan')
     highs=[min([f for f in run_f if f>r],default=r)-r for r in run_r[:-1]]
     duty=np.mean(highs)/period if len(run_r)>2 else float('nan')
-    last_before_hlt=max([x for x in rises if x<T_HLT],default=0); after_hlt=[x for x in rises if T_HLT<x<T_STEP]
+    last_before_hlt=max([x for x in rises if x<T_HLT],default=0); after_hlt=[x for x in rises if T_HLT+0.3e-3<x<T_STEP]     # D050: HLT reaches the gate 0.22 ms late, so a pulse may still start in that window
     rst=col['v(rst)']>2.5; rst_end=t[np.argmax(~rst)] if rst[0] else 0.0
     step_rises=[x for x in rises if x>T_STEP]
     clk_low_in_step=float(np.max(clk[(t>T_STEP+1e-3)&(t<T_BTN)]))

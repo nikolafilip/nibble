@@ -20,18 +20,18 @@ import nmos
 
 GROUP_TITLES={
  'osc':'OSCILLATOR BUFFERS: SA = NOT VD2 (VD2 is Q2\'s drain, high while X is above the trip point) with a 4.7k pull-up: SA charges and discharges X through R.  SB = NOT SA is the clock phase',
- 'gate':'CLOCK GATE: the CLK pull-down transistor is on while RUN and (oscillator low or HLT)',
+ 'gate':'CLOCK GATE: the CLK pull-down transistor is on while RUN and (oscillator low or HLTD).  HLTD is HLT through 100k / 2.2n (0.22 ms), so the clock pulse that started the halt step completes before the clock stops (D050)',
  'por':'POWER-ON RESET SCHMITT: PA = NOT PN, PB = NOT PA; PN is the RC node through 100k with 1 Meg from PB (drawn on the sheet).  While PA is high (the capacitor still low) RST is pulled high through 10k and a diode',
  'leds':'INDICATORS: RUN, OSC',
 }
 
 def build():
     d=nmos.Design('clock')
-    d.inputs={'VD2','RUNSW','HLT','PN'}
+    d.inputs={'VD2','RUNSW','HLTD','PN'}      # HLTD: HLT through 100k / 2.2n on the sheet (D050: the pulse that started the halt step completes)
     d.group='osc'
     d.inv('SA','VD2',pu='4.7k'); d.inv('SB','SA')
     d.group='gate'
-    d.inv('HLTN','HLT'); d.nand('OSCGN','SB','HLTN'); d.inv('OSCG','OSCGN'); d.inv('RUNN','RUNSW')
+    d.inv('HLTN','HLTD'); d.nand('OSCGN','SB','HLTN'); d.inv('OSCG','OSCGN'); d.inv('RUNN','RUNSW')
     d.nor('PULL','RUNN','OSCG'); d.bus('CLK','PULL')
     d.group='por'
     d.inv('PA','PN'); d.inv('PB','PA')

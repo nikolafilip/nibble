@@ -126,7 +126,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
         b,_,dev=spec.partition('@')
         if b in ('clk','clkc'):       # the clock board or card: RUN switch closed, pot at minimum, timing capacitor empty at power-up
             ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
-            body=["Rrun +5V RUNSW 1m","Rpot RT X 1m","Rj2 Net-_J2-Pin_2_ 0 1G"]
+            body=["Rrun +5V RUNSW 1m","Rpot RT X 1m","Rj2 Net-_J2-Pin_2_ 0 1G"]+(["Rhd HLT HLTD 100k","Chd HLTD 0 2.2n"] if dev=='dev' else [])      # the RC on HLT is drawn on the sheet (D050)
             L+=sub[:-1]+body+[sub[-1]]; L.append(f"X{b} "+" ".join(ports)+f" {b}"); L.append(f".ic V(x{b}.X)=0 V(x{b}.POR)=5")
             probes+=[f'x{b}.X',f'x{b}.VD2']
             continue
@@ -179,9 +179,12 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     if not real_clock:
         L.append(f"Vclk clkraw 0 PULSE(0 5 {T0:.6g} 1u 1u {T/2-1e-6:.6g} {T:.6g})")
         # gate the clock with HLT through a smooth function (a ternary is a zero-time step: "timestep too small" at every edge)
-        L.append("Bclk clkb 0 V = V(clkraw)*pwl(V(HLT),0,1,2,1,3,0,5,0)"); L.append("Rclk clkb CLK 100")     # pwl() extrapolates outside its points: give it the whole 0..5 V range
+        # HLT reaches the gate through 100k / 2.2n (0.22 ms), as on the clock card (D050): the clock pulse that started the halt step completes,
+        # so the counter's last increment (in flight in its master-slave latch) lands before the clock stops
+        L.append("Rhd HLT HLTD 100k"); L.append("Chd HLTD 0 2.2n")
+        L.append("Bclk clkb 0 V = V(clkraw)*pwl(V(HLTD),0,1,2,1,3,0,5,0)"); L.append("Rclk clkb CLK 100")     # pwl() extrapolates outside its points: give it the whole 0..5 V range
     elif not has(boards,'panel'): L.append("Rclkpd CLK 0 1Meg")            # the panel's pull-down on CLK
-    L.append(f"Vrst rstraw 0 PULSE(5 0 {T0*0.4:.6g} 1u 1u 1 2)"); L.append("Rrst rstraw RST 100")
+    L.append(f"Vrst rstraw 0 PULSE(5 0 {T0*0.4:.6g} 1u 1u 1e4 2e4)"); L.append("Rrst rstraw RST 100")     # released once, for good: a 1 s pulse width re-asserted reset at tick 999 and failed lfsr (1497 ticks)
     # program memory model (until the program memory board is in the deck): M = mem[PC] through a diode (the hub pulls M down)
     idx="+".join(f"{1<<i}*u(V(PC{i})-2.5)" for i in range(8))
     for i in range(8) if not any(b.startswith('prog') for b in boards) else []:
@@ -287,16 +290,24 @@ def compare(rows,trace,boards):
 
 def run_trace(words,trace,boards,corner='TYP',tag='machine',seed=1):
     os.makedirs(OUT,exist_ok=True); cir=os.path.join(OUT,tag+'.cir'); dat=os.path.join(OUT,tag+'.dat')
-    if os.path.exists(dat): os.remove(dat)
-    text,probes,edges=deck(words,expand(boards),corner,trace,dat,seed); open(cir,'w').write(text)
-    for attempt,opts in enumerate(("cshunt=1e-12 abstol=1e-10 chgtol=1e-12","cshunt=1e-11 abstol=1e-9 chgtol=1e-11","cshunt=1e-11 abstol=1e-9 chgtol=1e-11 gmin=1e-10 itl4=50")):     # the third: more transient iterations and a larger gmin for a deck that still stalls at an edge
+    rescore=os.environ.get('RESCORE') and os.path.exists(dat)      # RESCORE=1: score an existing .dat again without running ngspice
+    if os.path.exists(dat) and not rescore: os.remove(dat)
+    text,probes,edges=deck(words,expand(boards),corner,trace,dat,seed)
+    if not rescore: open(cir,'w').write(text)
+    LADDER=("cshunt=1e-12 abstol=1e-10 chgtol=1e-12","cshunt=1e-11 abstol=1e-9 chgtol=1e-11","cshunt=1e-11 abstol=1e-9 chgtol=1e-11 gmin=1e-10 itl4=50",
+            "cshunt=3e-11 abstol=1e-9 chgtol=1e-11 gmin=1e-9 itl4=100 rshunt=1e10")     # the fourth: logic at LO with 500 pF cables died on the first three mid-run in an ALU transistor;
+            # more shunt capacitance, gmin and iterations, a shunt resistance from every node (looser reltol/trtol made it die at 2 ms instead)
+    rung=int(os.environ.get('NGSPICE_RUNG',0))      # NGSPICE_RUNG=n: start the ladder at rung n (a rerun of a deck that already failed the lower ones)
+    for attempt,opts in enumerate(() if rescore else LADDER):
+        if attempt<rung: continue     # the third: more transient iterations and a larger gmin for a deck that still stalls at an edge
         # a deck that aborts with "timestep too small" at a clock edge usually runs with ten times the shunt capacitance
-        if attempt: open(cir,'w').write(text.replace("cshunt=1e-12 abstol=1e-10 chgtol=1e-12",opts)); print(f"  ngspice aborted; retrying with {opts}")
+        if attempt: open(cir,'w').write(text.replace("cshunt=1e-12 abstol=1e-10 chgtol=1e-12",opts)); print(f"  {'ngspice aborted; retrying' if attempt>rung else 'starting'} with {opts}")
         r=subprocess.run(['ngspice','-b',cir],capture_output=True,text=True,cwd=HERE)
         if not os.path.exists(dat): print(r.stdout[-4000:],r.stderr[-4000:]); raise SystemExit('ngspice failed')
         if 'aborted' not in r.stdout+r.stderr: break
         print("\n".join(l for l in (r.stdout+r.stderr).splitlines() if 'Timestep' in l or 'aborted' in l))
-    else: raise SystemExit('ngspice aborted the transient')
+    else:
+        if not rescore: raise SystemExit('ngspice aborted the transient')
     tend=float(text.split('.tran 1u ')[1].split()[0])
     rows,det=sample(dat,probes,len(trace),tend); bad=compare(rows,trace,[b.partition('@')[0] for b in expand(boards)])
     if trace[-1]['halted'] or 'HLT' in trace[-1]['ctl']:

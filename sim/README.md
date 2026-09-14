@@ -37,7 +37,7 @@ retried until DRC reports zero unconnected), a ground pour on the back, DRC, and
 
     <kicad>/python3 pcb.py ../boards/01-alu alu
 
-Gerbers are regenerated, not committed; the renders and BOM are.
+The `fab/` outputs (gerbers, drill, BOM, position file, renders) are committed with the board, as built.
 
 ## Whole-machine simulation
 

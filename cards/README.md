@@ -129,7 +129,8 @@ Layout: both cards route DRC clean in one pass, 0 unconnected.
 ## Program card (`prog`)
 
 Four words of eight DIP switches; a closed switch pulls its M line high
-through a diode while the word's row is selected. Six 1x3 jumpers strap the
+through a diode while the word's row is selected (3.3k row pull-ups, so a
+row of eight ones still reads 3.8 V against the hub's 220k, D048). Six 1x3 jumpers strap the
 card to its addresses: P7..P4 the page (PC7..4), G3 G2 the word group
 (PC3..2), the centre pin to '1' where the address bit is 1; PC1..0 pick the
 word. A program of n words takes ceil(n/4) cards (`list` 6, `sort` 20). In
@@ -144,8 +145,10 @@ mismatches; the whole-machine gate is in the commit that closes the cards.
 
 Board 05's circuit on a card: the source-coupled Schmitt RC oscillator with
 the speed pot and SLOW jumper, the RUN/STEP switch, the halt gate, the
-power-on reset (`sim/clock.py`, drawn by `build_clock_card.py`). Deck name
-`clkc`.
+power-on reset (`sim/clock.py`, drawn by `build_clock_card.py`). HLT
+reaches the halt gate through 100k into 2.2 nF (0.22 ms, D050), so the
+clock pulse that started the halt step completes before the clock stops.
+Deck name `clkc`.
 
 ## Hub card (`hub`)
 
@@ -154,7 +157,8 @@ column face's ribbon (D043), the 64 lines routed between them. Ground is
 wired, not poured: a ring above the top header's pads, down the right edge
 and below the bottom header's, with bars for the capacitors, the LED and
 the M pull-downs (the lines cut a pour to islands). USB-B through a 750 mA
-polyfuse, the four bus pull-ups, the eight M-line pull-downs, a power LED,
+polyfuse, the four bus pull-ups, the eight M-line pull-downs (220k, D048:
+with 1 Meg an M line released by a jump took 0.6 ms to fall), a power LED,
 100 uF, test loops on BUS3..0, CLK and RST. Deck name `hubc`.
 
 ## Panel cards (`panela`, `panelb`, `panelc`)

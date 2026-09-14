@@ -47,10 +47,10 @@ freerouting closes it in one pass with DRC zero.
 | Memory slots: two 4-bit slots with their decode | 8 | 1, slot pair by jumper | 91 | from memory control | 8 cell LEDs |
 | Program: four words, page and word-group jumpers | one per four words | 1 | 41 + 32 diodes | none | 4 DIP-8, six 1x3 jumpers (PC7..2); `list` takes 6 cards, `sort` 20 |
 | Panel | 3 | 3 | 28 + 20 + 32 | none | A: A/B and SUB..AB switches, their LEDs, data, CF, ZF, CLK, RST LEDs. B: OI..INP switches and LEDs, CLK and RST buttons. C: PC and M LEDs, DATA switches and input port |
-| Clock | 1 | 1 | 14 + the Schmitt pair | none | the clock board's circuit on a card |
-| Hub: USB, polyfuse, bus pull-ups, M pull-downs, test loops | 1 | 1 | 0 | none | two bus headers, top and bottom edge, one per face's ribbon; ground wired as a ring and bars, no pour |
+| Clock | 1 | 1 | 14 + the Schmitt pair | none | the clock board's circuit on a card; HLT delayed 0.22 ms into the halt gate (D050) |
+| Hub: USB, polyfuse, bus pull-ups, M pull-downs (220k, D048), test loops | 1 | 1 | 0 | none | two bus headers, top and bottom edge, one per face's ribbon; ground wired as a ring and bars, no pour |
 | Coupon | 1 | 1 | 26 | | powered from the bus header; inputs on a 1x4 header, test loops |
-| **Sequencer** | 1 | 1 | 592 + 87 diodes | link ribbon out to the counter cards | **the one big board, 240 x 280 mm** |
+| **Sequencer** | 1 | 1 | 592 + 87 diodes | link ribbon out to the counter cards | **the one big board, 245 x 255 mm, four layers (D051)** |
 
 Why the bit cards are separate designs rather than one design with jumpers:
 a bit is three lines (BUSi#, Ai, Bi), so selecting it is three 1 x 4 jumper
@@ -78,8 +78,9 @@ before the order.
 Stays one board because 45 rows and 23 columns would otherwise cross card
 boundaries. Diodes standing up on a 2.54 x 5.08 mm grid make the matrix
 114 x 117 mm with a pad pair at every crossing; the 600 transistors of steps,
-registers, decoders, rows and column buffers at the card pitch around it. Two
-new gated rows for JNZ and JNC. 240 x 280 mm, about $40 for five.
+registers, decoders, rows and column buffers around it at the card pitch on four layers (D051: on two layers the router
+plateaued near 100 open nets at the card pitch and near 70 at a 10.16 mm pitch; layer 2 is a ground plane, layer 3 a
+third routing layer). Two new gated rows for JNZ and JNC. 245 x 255 mm, about $65 for five.
 
 ## Order of work
 
@@ -90,11 +91,11 @@ routed with DRC zero; machine gate with the emulator) before the next.
 1. **Card frame and dense tile.** Done: `frame.card_frame` (100 x 100 outline, header at the top, holes mid-side, decoupling), `ksch.DenseWriter` (the tile above), `build_reg_card.py`. Proved on `cards/reg0`: 99 transistors, routed DRC-clean in one freerouting pass, ERC clean. The rule stands for every later card: if one does not close, it is the tile pitch that moves, not the card size (a 100 x 150 card is $11.20 instead of $2).
 2. **Register bit cards** (4). Done: `cards/reg0..3`, routed DRC-clean; `tb_registers.py cards` 113/113 at TYP, LO, HI, MIX 1..3 on the exports; machine gate with the four cards, all twelve programs at TYP.
 3. **ISA: JNZ, JNC.** Done: `isa.md`, `emu.py` (the assembler follows it), `sequencer.py` (two more flag-gated rows, 45 rows and 87 diodes), `programs/loops.asm`; `test_emu.py` passes all twelve programs.
-4. **Sequencer at the new pitch**: vertical diodes in `ksch.matrix`, dense tiles, JNZ/JNC rows (done: `boards/03-sequencer`, 240 x 280, ERC clean, the matrix hidden from the router), route (running), machine gate. Open item to close first: `sim/out/d041_list_MIX3.log`, list.asm at MIX seed 3 on the buffered sequencer, must show 0 mismatches (2026-09-11: two runs aborted in ngspice with "timestep too small" at tick 82, a numerical stall, not a mismatch; a third retry option was added and the run restarted).
+4. **Sequencer at the new pitch**: vertical diodes in `ksch.matrix`, dense tiles, JNZ/JNC rows (done: `boards/03-sequencer`, 245 x 255 on four layers at the card pitch, D051, ERC clean, the matrix hidden from the router), routed 2026-09-14 with freerouting 2.4.1 on the ninth attempt (0 unconnected, 0 DRC errors; the route rules are in D051's amendment and the board README), machine gate on its export: 24 of 24 corner runs and the TYP programs pass. Open item to close first: `sim/out/d041_list_MIX3.log`, list.asm at MIX seed 3 on the buffered sequencer, must show 0 mismatches. Closed 2026-09-11: 210 ticks, 0 mismatches (two earlier runs stalled in ngspice at tick 82 with "timestep too small"; the third retry option, gmin and more transient iterations, got through).
 5. **ALU bit cards** (4) with the carry and zero chain. Done: `cards/alu0..3` routed DRC-clean; `tb_alu.py cards` exhaustive 2304/2304 at TYP, LO, HI on the exports (MIX running); machine gate with step 9.
 6. **Counter bit cards** (8) with the count carry and the chained link ribbon. Built: `cards/ctr0..7` routed DRC-clean; call.asm on the gate lists 0 mismatches; the exports are proven by the step 9 gate.
 7. **Memory control and slot cards** (1 + 8). Built: `cards/memctl`, `cards/memslot` routed DRC-clean; `tb_memory.py cards@dev` 217/217 (the slot jumpers make MAR1..3 ports of the slot subcircuit; left inside they floated and every read came from pair 7); the exports at four corners run in step 9's queue.
 8. **Program cards** (one per four words), **panel cards** (3), **clock**, **hub**, **coupon** as cards. Built 2026-09-11: `cards/prog` (six jumpers PC7..2; fib on the gate lists 0 mismatches), `cards/clock`, `cards/hub` (two headers, the 64 lines pre-routed), `cards/panela..c` (a tile column is a panel column, so the LEDs read row by row), `cards/coupon`; all ERC clean and placement DRC clean, routes in progress.
-9. **Machine deck** instantiating cards with their links; the machine gate over all eleven programs at TYP, then LO/HI/MIX on fib, alu, gcd, list, logic, call; clock-board runs; 500 pF rerun.
+9. **Machine deck** instantiating cards with their links; the machine gate over all twelve programs at TYP, then LO/HI/MIX on fib, alu, gcd, list, logic, call; clock-board runs; 500 pF rerun. Status 2026-09-14: at TYP 11 of 12 programs pass on the whole card deck (calc found D048 and D050 on the way); lfsr failed at tick 999 because the testbench's virtual reset re-asserted after 1 s (machine.py, fixed; rerun queued in `sim/out/queue15.log`); LO, HI, MIX1, MIX2 on fib, alu, gcd, list, logic, call: 24 of 24 pass, 0 mismatches (`sim/out/gate_cards_corners.log`); the 500 pF rerun and the clock-board runs are in `sim/out/queue14.log`.
 10. **Mounting**: `mounting.md` and the column preview redrawn for a 4 x 7 card grid per face, the sequencer as a 2 x 2 block, the ribbon zigzag; rails per card row.
 11. **Docs and order**: `bring-up.md` per card, `order-1.md` with the quotes from the calculator, `bom.py` over the cards, renders; then the order.

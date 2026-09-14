@@ -236,17 +236,19 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     return "\n".join(L)+"\n", probes, edges
 
 def sample(dat,probes,nticks,tend):
-    """One row of probe bits per tick, sampled 5 us before each rising CLK edge found in the waveform (so the same code
-    serves the pulse-source clock and the real clock board). The tick after the last edge, if any, is the halted state,
+    """One row of probe bits per tick, sampled 5 us before each rising CLK edge found in the waveform, the edge timed
+    where CLK leaves 1.5 V (so the same code serves the pulse-source clock and the real clock card). The tick after the last edge, if any, is the halted state,
     sampled at the end of the run. rows[k]['edge'] = 1 if an edge ended tick k."""
     names,a=spicedat.read(dat); t=a[:,0]; col={n.lower():a[:,k] for k,n in enumerate(names)}
     def bit(name,tt):
         v=col.get(f'v({name.lower()})')
         return 0 if v is None else int(np.interp(tt,t,v)>2.5)
-    clk=col['v(clk)']; hi=clk>3.5; lo=clk<1.5; state=0; det=[]
-    for k in range(len(t)):          # rising edges with hysteresis: low (<1.5 V) then high (>3.5 V)
-        if state==0 and hi[k]: state=1; det.append(t[k])
-        elif state==1 and lo[k]: state=0
+    clk=col['v(clk)']; hi=clk>3.5; lo=clk<1.5; state=0; det=[]; tstart=0
+    for k in range(len(t)):          # rising edges with hysteresis: low (<1.5 V) then high (>3.5 V), timed where the rise leaves 1.5 V:
+        if state==0 and not lo[k]: state=1; tstart=t[k]       # the clock card's edge takes 35 us from 0.5 V to 3.5 V and the boards step at 2.4 V,
+        elif state==1 and lo[k]: state=0                       # so the state has to be sampled before the rise starts, not before its 3.5 V crossing
+        elif state==1 and hi[k]: state=2; det.append(tstart)
+        elif state==2 and lo[k]: state=0
     det=[e for e in det if e>T0/2]   # the first edge comes after reset; anything earlier is power-up
     rows=[]
     for k in range(nticks):

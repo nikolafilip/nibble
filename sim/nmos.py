@@ -13,7 +13,7 @@ import collections
 
 PU_DEFAULT='47k'
 MAX_SERIES=3
-MAX_LOADS={'47k':8,'22k':16,'10k':32,'4.7k':64}   # rising-edge budget, see docs/gate-cell.md
+MAX_LOADS={'47k':8,'22k':16,'10k':32,'4.7k':64,'3.3k':96}   # rising-edge budget, see docs/gate-cell.md; 3.3k: the program card's rows (D048)
 LED_R='1k'
 
 class Design:

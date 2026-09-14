@@ -94,6 +94,7 @@ def main(which,pack='column'):
         button(w,sx+60*G,sy+10*G,'RST',52.0,61.0,RAIL_M)
     if which=='c':
         dip_levels(w,sx,sy,panel.DATA_SW,"DATA (input port, read by IN)",RAIL_R-7.62,BLOCK_Y[which])
+        extra['patches']=[dict(net='M6',move_via=[[48.9139,18.286],[48.9139,18.406]])]      # after the route: M6's via 0.48 mm hole-to-hole from M4's (JLCPCB wants 0.5); 0.12 mm down clears both
     ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(frame.CARD,frame.CARD),extra=extra)
     W=10*G+cols*w.CELL_W+30*G; H=sy+24*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))

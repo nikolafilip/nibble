@@ -212,6 +212,18 @@ def apply_patches(board,plan):
     patches=plan['extra'].get('patches',[])
     if not patches: return
     def key(x,y): return (round(x,2),round(y,2))
+    # {'net','move_via':[[x,y],[nx,ny]]}: nudge a via (and the ends of its net's tracks that meet it); panelc's M6 via sat 0.48 mm
+    # hole-to-hole from M4's, under JLCPCB's 0.5 mm, with every rule the router knew satisfied. Skipped when no via is there.
+    for pt in [p for p in patches if 'move_via' in p]:
+        (x,y),(nx,ny)=pt['move_via']; old=pcbnew.VECTOR2I(int(x*1e6),int(y*1e6)); new=pcbnew.VECTOR2I(int(nx*1e6),int(ny*1e6)); n=0
+        for t in board.GetTracks():
+            if t.GetNetname()!=pt['net']: continue
+            if t.GetClass()=='PCB_VIA' and (t.GetPosition()-old).EuclideanNorm()<1000: t.SetPosition(new); n+=1
+            elif t.GetClass()!='PCB_VIA':
+                if (t.GetStart()-old).EuclideanNorm()<1000: t.SetStart(new); n+=1
+                if (t.GetEnd()-old).EuclideanNorm()<1000: t.SetEnd(new); n+=1
+        print(f"   patch {pt['net']}: via at {x},{y} moved to {nx},{ny} ({n} items)" if n else f"   patch {pt['net']}: no via at {x},{y}, skipped")
+    patches=[p for p in patches if 'move_via' not in p]
     # read every track's geometry first: pcbnew loses the SWIG types after the first board.Remove in a process
     tracks=[(t,t.GetLayerName(),t.GetNetname(),{key(t.GetStart().x*1e-6,t.GetStart().y*1e-6),key(t.GetEnd().x*1e-6,t.GetEnd().y*1e-6)}) for t in board.GetTracks() if t.GetClass()!='PCB_VIA']
     todo=[]

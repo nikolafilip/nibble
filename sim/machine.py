@@ -31,6 +31,8 @@ T0=2e-3         # first rising edge
 STEP_DELAY=20e-6   # virtual sequencer: control lines change this long after the edge
 CONTROL=['SUB','EO','AI','AO','BI','BO','BA','AB','OI','IO','II','PCE','PCL','FI','HLT','MAI','MI','MO','ONE','F0','F1','INP']
 CABLE_PF=int(os.environ.get('CABLE_PF','300'))      # ribbon capacitance per header line, all cables together (see docs/mounting.md); CABLE_PF=500 in the environment for the margin rerun
+CROSS_PF=int(os.environ.get('CROSS_PF','0'))        # coupling capacitance between ribbon neighbours (consecutive header pins), 0 = not modelled; about 100 pF for 3 m of 1.27 mm ribbon
+VDD=float(os.environ.get('VDD','5'))                 # the supply at the hub; VDD=4.5 for a USB port at its minimum less the polyfuse and the ribbon
 SW=[f'SW{i}' for i in range(4)]   # the panel's data switch levels, ports of the panel subcircuit so the deck can set them
 LINK=[f'OPR{i}' for i in range(8)]+['PCR','RAI']   # the sequencer-to-counter link header (D035); PCL is on the bus header
 ALINK=['C1','C2','C3','ZS0','ZS1','ZS2']             # the ALU cards' carry and zero-so-far chain (2x3 links between neighbours)
@@ -116,7 +118,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     edges=[T0+k*T for k in range(len(trace))]
     starts=[e-T for e in edges]      # the state of tick k is set up during the period before edge k
     import nmos
-    L=["* Nibble whole-machine deck",'.include "../lib/2N7000.lib"','.include "../lib/led.lib"',nmos.SW_MODEL,'.global +5V','V5 +5V 0 5']
+    L=["* Nibble whole-machine deck",'.include "../lib/2N7000.lib"','.include "../lib/led.lib"',nmos.SW_MODEL,'.global +5V',f'V5 +5V 0 {VDD}']
     probes=[]; rng=random.Random(seed)
     real_clock=any(b.startswith('clk') for b in boards)
     if real_clock:
@@ -127,7 +129,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
         if b in ('clk','clkc'):       # the clock board or card: RUN switch closed, pot at minimum, timing capacitor empty at power-up
             ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
             body=["Rrun +5V RUNSW 1m","Rpot RT X 1m","Rj2 Net-_J2-Pin_2_ 0 1G"]+(["Rhd HLT HLTD 100k","Chd HLTD 0 2.2n"] if dev=='dev' else [])      # the RC on HLT is drawn on the sheet (D050)
-            L+=sub[:-1]+body+[sub[-1]]; L.append(f"X{b} "+" ".join(ports)+f" {b}"); L.append(f".ic V(x{b}.X)=0 V(x{b}.POR)=5")
+            L+=sub[:-1]+body+[sub[-1]]; L.append(f"X{b} "+" ".join(ports)+f" {b}"); L.append(f".ic V(x{b}.X)=0 V(x{b}.POR)=0")      # both capacitors empty: the card's power-on reset resets the machine
             probes+=[f'x{b}.X',f'x{b}.VD2']
             continue
         if b=='prog':      # one copy of the program memory board per 16-word page the program needs, switches set from the program
@@ -184,7 +186,8 @@ def deck(program,boards,corner,trace,outfile,seed=1):
         L.append("Rhd HLT HLTD 100k"); L.append("Chd HLTD 0 2.2n")
         L.append("Bclk clkb 0 V = V(clkraw)*pwl(V(HLTD),0,1,2,1,3,0,5,0)"); L.append("Rclk clkb CLK 100")     # pwl() extrapolates outside its points: give it the whole 0..5 V range
     elif not has(boards,'panel'): L.append("Rclkpd CLK 0 1Meg")            # the panel's pull-down on CLK
-    L.append(f"Vrst rstraw 0 PULSE(5 0 {T0*0.4:.6g} 1u 1u 1e4 2e4)"); L.append("Rrst rstraw RST 100")     # released once, for good: a 1 s pulse width re-asserted reset at tick 999 and failed lfsr (1497 ticks)
+    if not real_clock:     # the testbench's reset; with the clock card in the deck the card's power-on reset is the only one (it could not pull RST up against this 100 ohm)
+        L.append(f"Vrst rstraw 0 PULSE(5 0 {T0*0.4:.6g} 1u 1u 1e4 2e4)"); L.append("Rrst rstraw RST 100")     # released once, for good: a 1 s pulse width re-asserted reset at tick 999 and failed lfsr (1497 ticks)
     # program memory model (until the program memory board is in the deck): M = mem[PC] through a diode (the hub pulls M down)
     idx="+".join(f"{1<<i}*u(V(PC{i})-2.5)" for i in range(8))
     for i in range(8) if not any(b.startswith('prog') for b in boards) else []:
@@ -223,11 +226,14 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     if not has(boards,'panel'):     # virtual input port
         for i in range(4):
             L+=od('INP',f'SW{i}',i,'in')
-    tend=edges[-1]+T/2 if not real_clock else T0+len(trace)*3.5e-3      # the real clock runs at 400 to 600 Hz at its fastest
+    tend=edges[-1]+T/2 if not real_clock else 0.2+len(trace)*3.5e-3      # the real clock runs at 400 to 600 Hz at its fastest, after its 121 ms power-on reset
     top=set(tok for l in L if l[0] not in '.*+' and not l.startswith(('.subckt','.ends')) for tok in l.split()[1:])
     probes=[p for p in probes if '.' in p or p in top]     # a bus line no board touches is not a node in the deck
     # the ribbons: eight 64-way cables of about half a metre, 60 to 80 pF per metre per line, lumped at the hub as CABLE_PF per header line
     L+=[f"Ccab{k} {sig} 0 {CABLE_PF}p" for k,sig in enumerate(bus.SIGNALS) if sig in top and sig not in ('+5V','GND')]
+    # crosstalk: the ribbon's conductors run in header pin order, so consecutive signals from BUS0# (pin 9) to INP (pin 62) are neighbours;
+    # CLK and RST (pins 5 and 7) have ground on both sides
+    if CROSS_PF: L+=[f"Ccross{k} {a} {b} {CROSS_PF}p" for k,(a,b) in enumerate(zip(bus.SIGNALS[2:],bus.SIGNALS[3:])) if a in top and b in top]
     # tmax stays at the default (1 us): 10 us is a quarter faster but aborts with "timestep too small" on some decks.
     # cshunt: 1 pF from every node to ground (less than the real stray capacitance), and abstol/chgtol a hundred times looser than
     # the defaults (still far below any current or charge that matters here), keep ngspice's timestep from collapsing at clock edges
@@ -249,7 +255,18 @@ def sample(dat,probes,nticks,tend):
         elif state==1 and lo[k]: state=0                       # so the state has to be sampled before the rise starts, not before its 3.5 V crossing
         elif state==1 and hi[k]: state=2; det.append(tstart)
         elif state==2 and lo[k]: state=0
-    det=[e for e in det if e>T0/2]   # the first edge comes after reset; anything earlier is power-up
+    # Ticks start where reset is released; with the clock card the 121 ms power-on reset runs with the clock free-running, and its
+    # RST does not snap: it drifts from 4 V to 2.4 V over 8 ms (five clock periods) before the Schmitt pair's hysteresis pulls it down,
+    # so which edge first moves the machine depends on the transistors' threshold (Vto 0.8 to 3.0 V). Edges while RST is above 3.5 V
+    # are power-up; from there tick 1 is the first edge after which the sequencer leaves step 0 (release is asynchronous by design:
+    # the machine starts on whichever edge follows its own reset letting go). A deck without the sequencer takes the first edge.
+    rst=col['v(rst)']; rel=np.where((rst[:-1]>3.5)&(rst[1:]<=3.5))[0]
+    det=[e for e in det if e>(t[rel[-1]] if len(rel) else T0/2)]
+    t0=col.get('v(xseq.t0)')
+    if t0 is not None:
+        k0=next((k for k in range(len(det)-1) if np.interp(det[k]-5e-6,t,t0)>2.5 and np.interp(det[k+1]-5e-6,t,t0)<=2.5),None)
+        if k0 is None: print('  reset: the sequencer never left step 0 after RST fell below 3.5 V')
+        else: det=det[k0:]
     rows=[]
     for k in range(nticks):
         if k<len(det): tt=det[k]-5e-6; edge=1

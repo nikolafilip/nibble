@@ -38,3 +38,49 @@ def build():
     d.group='schmitt'
     for b in BUTTONS: d.inv(f'{b}_S1',f'{b}_N'); d.inv(f'{b}_S2',f'{b}_S1')
     return d
+
+# ---- the three panel cards (D042, docs/cards.md) ----
+CARD_A_LEDS=LED_ROWS[0]+LED_ROWS[1]+LED_ROWS[4]      # A3..B0, D3..D0 CF ZF CLK RST, SUB..AB: three rows of eight
+CARD_B_LEDS=LED_ROWS[5]+LED_ROWS[6]                  # OI..MAI, MI..INP: two rows
+CARD_C_LEDS=LED_ROWS[2]+LED_ROWS[3]                  # PC7..0, M7..0: two rows
+CARD_A_PULLS=LEVEL_SW+CTRL_SW1+['CF','ZF','CLK','RST']
+CARD_B_PULLS=CTRL_SW2+CTRL_SW3
+CARD_C_PULLS=DATA_SW+[f'PC{i}' for i in range(8)]     # M0..7 are pulled down on the hub
+CARD_TITLES=dict(GROUP_TITLES,pulls='PULL-DOWNS: 1Meg to ground on every line this card switches or observes, so it reads 0 when no card drives it')
+def column_major(names,rows):
+    """The LEDs in the order the tile packer wants: it fills a tile column top-down, so a panel column (rows of eight
+    across the card) is emitted together and the card reads row by row like the old panel."""
+    return [names[r*8+c] for c in range(8) for r in range(rows)]
+def build_a():
+    """Panel card A: level switches A3..A0 B3..B0 and SUB..AB, their LEDs, the bus data LEDs, CF ZF CLK RST LEDs."""
+    d=nmos.Design('panela')
+    d.inputs=set(n for n in CARD_A_LEDS if not n.startswith('D'))|{'BUS0#','BUS1#','BUS2#','BUS3#'}
+    d.group='leds'
+    for n in column_major(CARD_A_LEDS,3): d.led(f'LED_{n}',n)
+    d.group='busled'
+    for i in range(4): d.inv(f'D{i}',f'BUS{i}#')
+    d.group='pulls'
+    for n in CARD_A_PULLS: d.pulldown(n)
+    return d
+def build_b():
+    """Panel card B: level switches OI..MAI and MI..INP with their LEDs, and the CLK and RST buttons' Schmitt triggers."""
+    d=nmos.Design('panelb')
+    d.inputs=set(CARD_B_LEDS)|{'CLK_N','RST_N'}
+    d.group='leds'
+    for n in column_major(CARD_B_LEDS,2): d.led(f'LED_{n}',n)
+    d.group='schmitt'
+    for b in BUTTONS: d.inv(f'{b}_S1',f'{b}_N'); d.inv(f'{b}_S2',f'{b}_S1')
+    d.group='pulls'
+    for n in CARD_B_PULLS: d.pulldown(n)
+    return d
+def build_c():
+    """Panel card C, the operator's: PC and M LEDs, the DATA switches and input port."""
+    d=nmos.Design('panelc')
+    d.inputs=set(CARD_C_LEDS)|set(DATA_SW)|{'INP','BUS0#','BUS1#','BUS2#','BUS3#'}
+    d.group='leds'
+    for n in column_major(CARD_C_LEDS,2): d.led(f'LED_{n}',n)
+    d.group='inport'
+    for i in range(4): d.nand(f'IN{i}N','INP',f'SW{i}'); d.inv(f'IN{i}',f'IN{i}N'); d.bus(f'BUS{i}#',f'IN{i}')
+    d.group='pulls'
+    for n in CARD_C_PULLS: d.pulldown(n)
+    return d

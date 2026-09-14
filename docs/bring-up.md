@@ -15,7 +15,7 @@ sequencer is in, the switches are the sequencer.
 
 ## Tools you need before the cards arrive
 
-- Bench supply with current limit (5.0 V, limit 300 mA for the first power-on of each board) or the USB supply through the hub once the hub is trusted.
+- Bench supply with current limit (5.0 V, limit 300 mA for the first power-on of each board; 1.5 A for the whole machine on the hub's screw terminal, D052) or a 2 A USB supply through the hub once the hub is trusted.
 - Multimeter with a continuity beeper.
 - 8-channel USB logic analyser (any Saleae-compatible clone) and Sigrok/PulseView, or a scope.
 - Temperature-controlled iron, 0.6 mm solder, flux, brass wool, wick.
@@ -73,8 +73,10 @@ it.
 No logic. Check with the meter, USB unplugged: no short between +5V and
 ground on either header; every one of the 64 pins of the top header beeps
 to the same pin of the bottom header; the four BUS pull-ups read 10k to
-+5V; the eight M pull-downs read 220k to ground. Plug the USB in: the
-power LED lights, the current is under 5 mA. Crimp the first ribbon: a
++5V; the eight M pull-downs read 220k to ground; the screw terminal's +5V
+pin beeps to the USB's VBUS pin, its GND pin to the shield. Power it from the
+bench supply on the terminal (5.0 V, limit 300 mA), then from the USB: the
+power LED lights, the current is under 5 mA either way. Crimp the first ribbon: a
 short piece with three sockets for the bench, then the long ones for the
 column.
 

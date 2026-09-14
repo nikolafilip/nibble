@@ -17,7 +17,8 @@ Neither version logs an unrouted count when it gives up early in the way
 1.9 does on the cards, so KiCad's DRC is the gate in `pcb.py`.
 
 `freerouting-2.4.1.jar` (same releases page) is what the sequencer uses now
-(2026-09-13). It needs Java 25 (`sdk install java 25-tem`); `sim/pcb.py` takes
+(2026-09-13), and the hub since D052 (1.9 dropped a via inside the bundle of
+64 bus lines there and shorted three nets; 2.4.1 routes it clean). It needs Java 25 (`sdk install java 25-tem`); `sim/pcb.py` takes
 the JVM from `NIBBLE_JAVA`. Headless it honours `-mp N` and stops on its own
 when the score has not improved for ten passes. Its optimizer stage can start
 from an older, worse snapshot than the router's last pass and save that, so set

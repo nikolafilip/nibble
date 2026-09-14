@@ -16,7 +16,7 @@ def main():
     R=lambda net,x1,y1,x2,y2,wd=0.5,layer='F.Cu': w.rails.append((net,layer,x1,y1,x2,y2,wd))
     w.T("NIBBLE CARD HUB - BUS HUB: power entry, the four bus pull-ups, the eight M-line pull-downs, and a header for each face's ribbon",10*G,6*G,3.5,True)
     w.T("No logic on this card.  Two 64-pin headers wired pin for pin: the top one takes one column face's ribbon, the bottom one the other's (docs/cards.md, D043).\n"
-        "Power: USB-B 5 V through a 750 mA polyfuse (the USB plug is the power switch).  The BUS0#..BUS3# pull-ups (10k) live here and nowhere else.\n"
+        "Power: 5 V from the USB-B socket or from a bench supply on the screw terminal, through a 1.5 A polyfuse (D052: the machine draws up to about 1.2 A with every LED lit).  The BUS0#..BUS3# pull-ups (10k) live here and nowhere else.\n"
         "The M0..M7 pull-downs (220k) also live here: the program cards diode-OR onto the M lines, so an unselected card leaves them floating and the hub reads them as 0 (D019, D021); 220k, not 1 Meg, so a line falls within the fetch tick against the ribbon and the cards' diodes (D048).\n"
         "Bulk capacitance for the whole machine, a power LED, and test loops on the bus lines and the clock for a logic analyser.\n"
         "Board: ground is a wired ring and bars, not a pour (the 64 lines through the card cut a pour to islands).",10*G,14*G,1.6)
@@ -31,13 +31,21 @@ def main():
     R('GND',12.0,30.0,9.29,30.0); R('GND',9.29,34.77,9.29,YG1)      # USB ground and shields up to the top ground bar
     fx=x+12*G
     w.L('VBUS',fx,y-4*G,180,'input'); w.W(fx,y-4*G,fx,y-3*G)
-    fuse=w.symbol("Device","Polyfuse",w.ref('F'),"750mA",fx,y-1.5*G,0,('1','2'),"Fuse:Fuse_BelFuse_0ZRE0075FF_L11.5mm_W4.8mm",[("Description","resettable fuse",True)],sim=False)
-    w.at(fuse,26.0,16.0,0); w.label("750mA",24.5,21.5,1.0)     # pad 1 (VBUS) at (26,16), pad 2 (+5V) at (31.1,17.9)
+    fuse=w.symbol("Device","Polyfuse",w.ref('F'),"1.5A",fx,y-1.5*G,0,('1','2'),"Fuse:Fuse_BelFuse_0ZRE0150FF_L23.4mm_W5.3mm",[("Description","resettable fuse, 1.5 A hold",True)],sim=False)
+    w.at(fuse,26.0,16.0,0); w.label("1.5A",24.5,21.5,1.0)     # pad 1 (VBUS) at (26,16), pad 2 (+5V) at (36.2,17.9); the body runs 19.4 to 42.8
     w.W(fx,y,fx,y+G); w.W(fx,y+G,fx+4*G,y+G); w.W(fx+4*G,y+G,fx+4*G,y-2*G); w.PW('+5V',fx+4*G,y-2*G)
     w.W(fx+4*G,y+G,fx+8*G,y+G); w.pwr_flag(fx+8*G,y+G)
     R('VBUS',14.0,30.0,20.0,30.0,0.8); R('VBUS',20.0,30.0,20.0,16.0,0.8); R('VBUS',20.0,16.0,26.0,16.0,0.8)     # USB pin 1 to the fuse, wide
-    R('+5V',31.1,17.9,31.1,YV1,0.8)                                                                           # fuse to the top +5V trunk
+    R('+5V',36.2,17.9,36.2,YV1,0.8)                                                                           # fuse to the top +5V trunk
     w.label("USB 5V IN",3.0,18.5,1.0)
+    # bench supply entry (D052): a 5.08 mm screw terminal below the USB socket, wires in over the left edge, on VBUS before the fuse
+    term=w.symbol("Connector","Screw_Terminal_01x02",w.ref('J'),"BENCH 5V",x+4*G,y+10*G,0,('1','2'),"TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal",[("Description","screw terminal, bench supply 5 V in",True)],sim=False)
+    w.at(term,12.0,62.0,90)      # rot 90: pad 1 (VBUS) at (12,62), pad 2 (GND) at (12,56.92), the wire entry toward the left edge
+    w.W(x+2*G,y+10*G,x-G,y+10*G); w.L('VBUS',x-G,y+10*G,180,'output')              # pin 1 (the symbol's pins: 1 at -5.08,0 and 2 at -5.08,+2.54 on the sheet)
+    w.W(x+2*G,y+11*G,x+2*G,y+12*G); w.PW('GND',x+2*G,y+12*G)                      # pin 2
+    R('VBUS',12.0,62.0,20.0,62.0,0.8); R('VBUS',20.0,62.0,20.0,30.0,0.8)            # up to the USB's VBUS run
+    R('GND',12.0,56.92,9.29,56.92,0.8); R('GND',9.29,56.92,9.29,34.77,0.8)          # to the USB shield ground, up to the ring
+    w.label("BENCH IN",17.5,54.5,1.0); w.label("GND",17.5,57.7,1.0); w.label("+5V",17.5,62.8,1.0)
     # power LED, its resistor on the trunk, its cathode on the first ground bar
     lx=fx+22*G
     w.PW('+5V',lx,y-4*G); w.W(lx,y-4*G,lx,y-3*G); w.at(w.R('1k',lx,y-1.5*G),46.0,YV1,270); w.W(lx,y,lx,y+0.5*G); w.at(w.LED(lx,y+2*G),50.0,YV1+7.0,90); w.label("PWR",49.0,YV1+10.0,1.0); w.W(lx,y+3.5*G,lx,y+5*G); w.PW('GND',lx,y+5*G); w.T("power",lx+1.5*G,y+2*G,1.0)
@@ -88,7 +96,7 @@ def main():
     # its ring and bars are wired above, so the lines cannot cut the ground into islands
     W=16*G+2*22*G+10*G; H=hy+24*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
-    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(frame.CARD,frame.CARD),extra=dict(silk_big=[("NIBBLE  BUS HUB",34.0,76.0,1.5)],hide_refs=['R','D','C','J','TP','F'],rules=dict(track=0.2,clearance=0.15),holes=frame.HOLES,no_pour=True))
+    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(frame.CARD,frame.CARD),extra=dict(silk_big=[("NIBBLE  BUS HUB",34.0,76.0,1.5)],hide_refs=['R','D','C','J','TP','F'],rules=dict(track=0.2,clearance=0.15),holes=frame.HOLES,no_pour=True,router=dict(jar='freerouting-2.4.1.jar')))      # freerouting 1.9 drops an M5 via inside the 0.35 mm-pitch bundle of the 64 bus lines (two shorts, both runs); 2.4.1 (Java 25, NIBBLE_JAVA) routes it clean
     open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))
     print("wrote",OUT)
 if __name__=='__main__': main()

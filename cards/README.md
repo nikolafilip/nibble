@@ -158,8 +158,8 @@ Two bus headers, one along the top edge and one along the bottom, one per
 column face's ribbon (D043), the 64 lines routed between them. Ground is
 wired, not poured: a ring above the top header's pads, down the right edge
 and below the bottom header's, with bars for the capacitors, the LED and
-the M pull-downs (the lines cut a pour to islands). USB-B through a 750 mA
-polyfuse, the four bus pull-ups, the eight M-line pull-downs (220k, D048:
+the M pull-downs (the lines cut a pour to islands). USB-B or a bench supply on a
+screw terminal, through a 1.5 A polyfuse (D052), the four bus pull-ups, the eight M-line pull-downs (220k, D048:
 with 1 Meg an M line released by a jump took 0.6 ms to fall), a power LED,
 100 uF, test loops on BUS3..0, CLK and RST. Deck name `hubc`.
 

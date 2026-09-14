@@ -48,7 +48,7 @@ freerouting closes it in one pass with DRC zero.
 | Program: four words, page and word-group jumpers | one per four words | 1 | 41 + 32 diodes | none | 4 DIP-8, six 1x3 jumpers (PC7..2); `list` takes 6 cards, `sort` 20 |
 | Panel | 3 | 3 | 28 + 20 + 32 | none | A: A/B and SUB..AB switches, their LEDs, data, CF, ZF, CLK, RST LEDs. B: OI..INP switches and LEDs, CLK and RST buttons. C: PC and M LEDs, DATA switches and input port |
 | Clock | 1 | 1 | 14 + the Schmitt pair | none | the clock board's circuit on a card; HLT delayed 0.22 ms into the halt gate (D050) |
-| Hub: USB, polyfuse, bus pull-ups, M pull-downs (220k, D048), test loops | 1 | 1 | 0 | none | two bus headers, top and bottom edge, one per face's ribbon; ground wired as a ring and bars, no pour |
+| Hub: USB or bench terminal, 1.5 A polyfuse (D052), bus pull-ups, M pull-downs (220k, D048), test loops | 1 | 1 | 0 | none | two bus headers, top and bottom edge, one per face's ribbon; ground wired as a ring and bars, no pour |
 | Coupon | 1 | 1 | 26 | | powered from the bus header; inputs on a 1x4 header, test loops |
 | **Sequencer** | 1 | 1 | 592 + 87 diodes | link ribbon out to the counter cards | **the one big board, 245 x 255 mm, four layers (D051)** |
 

@@ -51,10 +51,11 @@ are cheaper than by the exact count and you will drop some.
 | 1u | CP_Radial_D5.0mm_P2.00mm | 2 |
 | 2.2u | CP_Radial_D5.0mm_P2.00mm | 2 |
 | 100n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 52 |
+| 2.2n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 1 |
 | 47n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 1 |
 | 1N4148 | D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp | 727 |
 | 1N4148 | D_DO-35_SOD27_P7.62mm_Horizontal | 4 |
-| polyfuse | Fuse_BelFuse_0ZRE0075FF_L11.5mm_W4.8mm | 1 |
+| polyfuse | Fuse_BelFuse_0ZRE0150FF_L23.4mm_W5.3mm | 1 |
 | IDC header | IDC-Header_2x03_P2.54mm_Vertical | 20 |
 | IDC header | IDC-Header_2x06_P2.54mm_Vertical | 18 |
 | IDC header | IDC-Header_2x32_P2.54mm_Vertical | 53 |
@@ -63,12 +64,13 @@ are cheaper than by the exact count and you will drop some.
 | pin header | PinHeader_1x03_P2.54mm_Vertical | 144 |
 | pin header | PinHeader_1x04_P2.54mm_Vertical | 1 |
 | pot | Potentiometer_Alpha_RD901F-40-00D_Single_Vertical | 1 |
-| 100k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 5 |
-| 10k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 214 |
-| 1Meg | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 87 |
+| 100k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 6 |
+| 10k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 134 |
+| 1Meg | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 79 |
 | 1k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 282 |
-| 220k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 2 |
+| 220k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 10 |
 | 22k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 87 |
+| 3.3k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 80 |
 | 4.7k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 2 |
 | 47k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1429 |
 | switch | SW_DIP_SPSTx01_Slide_9.78x4.72mm_W7.62mm_P2.54mm | 1 |
@@ -76,10 +78,11 @@ are cheaper than by the exact count and you will drop some.
 | switch | SW_DIP_SPSTx08_Slide_9.78x22.5mm_W7.62mm_P2.54mm | 84 |
 | switch | SW_PUSH_6mm | 2 |
 | 2N7000 | TO-92_Inline_Wide | 3485 |
+| BENCH 5V | TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal | 1 |
 | test loop | TestPoint_Loop_D2.50mm_Drill1.0mm | 12 |
 | USB-B socket | USB_B_OST_USB-B1HSxx_Horizontal | 1 |
 
-7054 parts on 26 boards: alu0, alu1, alu2, alu3, clock, coupon, ctr0, ctr1, ctr2, ctr3, ctr4, ctr5, ctr6, ctr7, hub, memctl, memslot, panela, panelb, panelc, prog, reg0, reg1, reg2, reg3, 03-sequencer
+7057 parts on 26 boards: alu0, alu1, alu2, alu3, clock, coupon, ctr0, ctr1, ctr2, ctr3, ctr4, ctr5, ctr6, ctr7, hub, memctl, memslot, panela, panelb, panelc, prog, reg0, reg1, reg2, reg3, 03-sequencer
 
 Notes:
 
@@ -90,7 +93,7 @@ Notes:
 - **Capacitors**: 100 nF disc 2.5 mm pitch; electrolytics are 5 mm diameter, 2 mm pitch.
 - **Switches**: DIP-8 slide (the program words and the panel's levels), one DIP-4 (the panel's data), one DIP-1 (RUN); 6 mm tactile buttons for CLK and RST.
 - **Headers**: shrouded 2x32 box headers, 2.54 mm (XFCN BH254V-64P, LCSC C48603668, or any); 2x6 box headers for the sequencer-counter link; 1x3 pin headers for the page jumpers with four jumper caps per page.
-- **Hub**: USB-B horizontal receptacle, 750 mA radial polyfuse (Bel 0ZRE0075FF or similar), 100 µF bulk.
+- **Hub**: USB-B horizontal receptacle, a 2-way 5.08 mm screw terminal for the bench supply (Phoenix MKDS 1,5/2-5.08 or any 5.08 mm block), 1.5 A radial polyfuse (Bel 0ZRE0150FF, D052), 100 µF bulk. The machine draws up to about 1.2 A with every LED lit: run it from the bench supply at 5.0 V with the limit at 1.5 A, or from a USB supply rated 2 A, never a computer port.
 - **Clock**: 1 Meg 9 mm vertical pot (Alpha RD901F), 47 nF and 2.2 µF timing caps.
 - **Test loops**: 2.5 mm wire loops on the hub and the coupon, or bare wire.
 

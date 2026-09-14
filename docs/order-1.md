@@ -6,8 +6,9 @@ Four carts: the fab, the electronic parts, the cables, the frame.
 
 ## 1. Boards
 
-**Rewritten for cards on 2026-09-10 (D042); sizes and the parts table below
-are regenerated once the cards are routed.** The quotes that drove the
+**Rewritten for cards on 2026-09-10 (D042); the parts table below is from
+`bom.py` over the routed cards (2026-09-14). The board quotes still have to be
+read from the calculator with the actual gerbers.** The quotes that drove the
 decision, JLCPCB, 2-layer, five pieces:
 
 | Board as it was | Size (mm) | Quote |

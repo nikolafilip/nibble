@@ -148,8 +148,9 @@ the speed pot and SLOW jumper, the RUN/STEP switch, the halt gate, the
 power-on reset (`sim/clock.py`, drawn by `build_clock_card.py`). HLT
 reaches the halt gate through 100k into 2.2 nF (0.22 ms, D050), so the
 clock pulse that started the halt step completes before the clock stops.
-Deck name `clkc`. On the whole card deck with this card driving CLK, fib
-passes at TYP, 127 ticks, 0 mismatches (`sim/out/cards_clk_fib_TYP_rescore.log`).
+Deck name `clkc`. On the whole card deck with this card driving CLK, fib and
+call pass at TYP, 127 and 84 ticks, 0 mismatches
+(`sim/out/cards_clk_fib_TYP_rescore.log`, `cards_clk_call_TYP_rescore.log`).
 
 ## Hub card (`hub`)
 

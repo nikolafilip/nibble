@@ -322,9 +322,11 @@ def run_trace(words,trace,boards,corner='TYP',tag='machine',seed=1):
         # a deck that aborts with "timestep too small" at a clock edge usually runs with ten times the shunt capacitance
         if attempt: open(cir,'w').write(text.replace("cshunt=1e-12 abstol=1e-10 chgtol=1e-12",opts)); print(f"  {'ngspice aborted; retrying' if attempt>rung else 'starting'} with {opts}")
         r=subprocess.run(['ngspice','-b',cir],capture_output=True,text=True,cwd=HERE)
-        if not os.path.exists(dat): print(r.stdout[-4000:],r.stderr[-4000:]); raise SystemExit('ngspice failed')
+        if not os.path.exists(dat) and 'operating point could not' not in r.stdout+r.stderr: print(r.stdout[-4000:],r.stderr[-4000:]); raise SystemExit('ngspice failed')
         if 'aborted' not in r.stdout+r.stderr: break
-        print("\n".join(l for l in (r.stdout+r.stderr).splitlines() if 'Timestep' in l or 'aborted' in l))
+        # no .dat at all: the operating point failed (fib at MIX seed 2 with the clock card: gmin, source stepping and the transient op all
+        # failed on the first two rungs, converged on the third) and the transient never started; the ladder goes on like a mid-run abort
+        print("\n".join(l for l in (r.stdout+r.stderr).splitlines() if 'Timestep' in l or 'aborted' in l or 'operating point could not' in l))
     else:
         if not rescore: raise SystemExit('ngspice aborted the transient')
     tend=float(text.split('.tran 1u ')[1].split()[0])

@@ -44,6 +44,7 @@ The `fab/` outputs (gerbers, drill, BOM, position file, renders) are committed w
     python3 machine.py programs/fib.asm --boards alu,hub,reg,panel [--corner MIX --seed 2] [--ticks 40]
     python3 gate.py --boards alu,hub,reg,panel -j 2          # all programs, all corners (two decks at a time on a 36 GB machine)
     python3 gate.py --boards aluc,hubc,regc,seq,ctrc,memc,progc,pnl --corners TYP -j 2     # the machine as cards
+    python3 gate.py --boards aluc,hubc,regc,seq,ctrc,memc,progc,pnl,clkc --corners TYP -j 2 --ticks 12     # the smoke gate: first twelve ticks of every program, about three hours; run it before every long queue and after every harness change
 
 Board names: the nine boards (`alu`, `hub`, `reg`, `seq`, `ctr`, `mem`,
 `prog`, `panel`, `clk`) and the cards (`reg0..3` or the group `regc`,

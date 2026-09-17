@@ -339,7 +339,7 @@ def run(prog,boards,corner='TYP',ticks=None,tag=None,seed=1):
     words,labels,meta=asm.assemble(open(prog).read())
     m=emu.Machine(words,inputs=[int(x) for x in meta.get('input','').split()]); m.run()
     trace=m.trace if ticks is None else m.trace[:ticks]
-    tag=tag or f"machine_{os.path.basename(prog).split('.')[0]}_{'-'.join(boards).replace('@','')}_{corner}{seed if corner=='MIX' else ''}"
+    tag=tag or f"machine_{os.path.basename(prog).split('.')[0]}_{'-'.join(boards).replace('@','')}_{corner}{seed if corner=='MIX' else ''}{f'_t{ticks}' if ticks else ''}"     # a --ticks run keeps its own files
     rows,bad=run_trace(words,trace,boards,corner,tag,seed)
     return trace,rows,bad
 

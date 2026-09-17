@@ -1,15 +1,19 @@
 """The machine gate (docs/plan.md): every reference program on a set of boards, at every corner, against the emulator.
-    python3 gate.py --boards alu,hub,panel,reg [--corners TYP,LO,HI,MIX] [--seeds 1,2] [--programs fib,count] [-j 4]
+    python3 gate.py --boards alu,hub,panel,reg [--corners TYP,LO,HI,MIX] [--seeds 1,2] [--programs fib,count] [-j 4] [--ticks 12]
 Writes out/gate_<boards>.md with one row per (program, corner) and exits 1 if anything mismatched.
+--ticks N runs only the first N ticks of every program (the smoke gate: with the clock card a whole deck reports in about half an
+hour instead of hours, and every harness fault so far showed within the first twelve ticks); its files carry a _tN suffix, and a row
+that needed the ngspice retry ladder says so, since a deck that used to converge on the first rung and no longer does is a finding too.
 """
 import sys, os, glob, subprocess, time
 from concurrent.futures import ThreadPoolExecutor
 HERE=os.path.dirname(os.path.abspath(__file__))
 
-def one(prog,boards,corner,seed):
+def one(prog,boards,corner,seed,ticks=None):
     t=time.time()
-    r=subprocess.run([sys.executable,os.path.join(HERE,'machine.py'),prog,'--boards',boards,'--corner',corner,'--seed',str(seed)],capture_output=True,text=True,cwd=HERE)
-    line=[l for l in r.stdout.splitlines() if ' ticks, ' in l]
+    r=subprocess.run([sys.executable,os.path.join(HERE,'machine.py'),prog,'--boards',boards,'--corner',corner,'--seed',str(seed)]+(['--ticks',str(ticks)] if ticks else []),capture_output=True,text=True,cwd=HERE)
+    rung=1+r.stdout.count('retrying with')
+    line=[l+(f" (ladder rung {rung})" if rung>1 else "") for l in r.stdout.splitlines() if ' ticks, ' in l]
     detail="\n".join(r.stdout.splitlines()[1:6])
     return dict(prog=os.path.basename(prog),corner=corner+(str(seed) if corner=='MIX' else ''),ok=r.returncode==0,
                 summary=line[0] if line else (r.stdout+r.stderr)[-300:].strip().replace("\n"," | "),detail=detail,secs=time.time()-t)
@@ -17,13 +21,13 @@ def one(prog,boards,corner,seed):
 def main():
     a=sys.argv; get=lambda k,d: a[a.index(k)+1] if k in a else d
     boards=get('--boards','alu,hub'); corners=get('--corners','TYP,LO,HI,MIX').split(','); seeds=[int(x) for x in get('--seeds','1').split(',')]
-    progs=get('--programs','all'); jobs=int(get('-j','4'))
+    progs=get('--programs','all'); jobs=int(get('-j','4')); ticks=int(get('--ticks',0)) or None
     progs=sorted(glob.glob(os.path.join(HERE,'programs','*.asm'))) if progs=='all' else [os.path.join(HERE,'programs',p+'.asm') for p in progs.split(',')]
     runs=[(p,boards,c,s) for p in progs for c in corners for s in (seeds if c=='MIX' else [1])]
-    with ThreadPoolExecutor(jobs) as ex: res=list(ex.map(lambda r: one(*r),runs))
-    tag=boards.replace(',','-').replace('@','')
+    with ThreadPoolExecutor(jobs) as ex: res=list(ex.map(lambda r: one(*r,ticks=ticks),runs))
+    tag=boards.replace(',','-').replace('@','')+(f'_t{ticks}' if ticks else '')
     out=os.path.join(HERE,'out',f'gate_{tag}.md')
-    L=[f"# Machine gate: boards {boards}",f"Generated {time.strftime('%Y-%m-%d %H:%M')} by sim/gate.py. Corners: {', '.join(corners)}; MIX seeds {seeds}.","",
+    L=[f"# Machine gate: boards {boards}"+(f", first {ticks} ticks of every program (smoke)" if ticks else ""),f"Generated {time.strftime('%Y-%m-%d %H:%M')} by sim/gate.py. Corners: {', '.join(corners)}; MIX seeds {seeds}.","",
        "| program | corner | result | time |","|---|---|---|---|"]
     for r in res: L.append(f"| {r['prog']} | {r['corner']} | {'pass' if r['ok'] else 'FAIL'}: {r['summary'].split(': ',1)[-1]} | {r['secs']:.0f} s |")
     bad=[r for r in res if not r['ok']]

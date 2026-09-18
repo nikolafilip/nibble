@@ -79,14 +79,20 @@ def export(board,dev=False):
         d=getattr(importlib.import_module(spec[0]),spec[1])(*spec[2:]) if isinstance(spec,tuple) else importlib.import_module(spec).build()
         assert not d.check(), d.check()
         return d.spice(vdd='+5V')
-    sch=os.path.join(BOARDS,BOARD[board][0]); cir=os.path.join(OUT,f'{board}_kicad.cir')
-    r=subprocess.run([KICAD_CLI,'sch','export','netlist','--format','spice','-o',cir,sch],capture_output=True,text=True)
-    if not os.path.exists(cir): raise SystemExit(r.stdout+r.stderr)
-    return [l.rstrip() for l in open(cir) if l.strip()]
+    # each process exports to its own file and reads that back: two decks built at once (gate.py -j 2, a queue's parallel runs)
+    # once raced on the shared file, and one of them read alu1..alu3 while kicad-cli was still writing them (empty subcircuits,
+    # an ALU with only bit 0, "ngspice aborted" and a false carry finding). The shared copy stays for inspection.
+    sch=os.path.join(BOARDS,BOARD[board][0]); cir=os.path.join(OUT,f'{board}_kicad.cir'); mine=f'{cir}.{os.getpid()}'
+    r=subprocess.run([KICAD_CLI,'sch','export','netlist','--format','spice','-o',mine,sch],capture_output=True,text=True)
+    if not os.path.exists(mine): raise SystemExit(r.stdout+r.stderr)
+    lines=[l.rstrip() for l in open(mine) if l.strip()]; os.replace(mine,cir)
+    if not any(l[0] in 'MRCDQ' for l in lines): raise SystemExit(f"{board}: the export has no components\n"+r.stdout+r.stderr)
+    return lines
 
 def subckt(board,lines,corner,rng=None):
     """Wrap a board's export as .subckt <board> <bus ports>. Drops directives and testbench parts (refs >= 9000).
     corner TYP/LO/HI gives every transistor that model; MIX gives each transistor a random one (threshold spread between parts)."""
+    assert any(l[0] in 'MRCDQ' for l in lines), f"{board}: empty netlist"      # an empty card never reaches ngspice (the export race of 2026-09-17)
     models={'TYP':'2N7000','LO':'2N7000_LO','HI':'2N7000_HI'}
     body=[]
     for l in lines:

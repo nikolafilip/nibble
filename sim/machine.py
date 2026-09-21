@@ -232,7 +232,11 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     if not has(boards,'panel'):     # virtual input port
         for i in range(4):
             L+=od('INP',f'SW{i}',i,'in')
-    tend=edges[-1]+T/2 if not real_clock else 0.2+len(trace)*3.5e-3      # the real clock runs at 400 to 600 Hz at its fastest, after its 121 ms power-on reset
+    # With the real clock the run is budgeted at 5 ms a tick after the card's 121 ms power-on reset (measured: 1.64 ms at TYP, 2.47 at LO,
+    # 1.72 at HI; a 4.25 V supply will be slower), and ends itself about 7 ms after HLT rises, four clock periods, enough to see the clock
+    # stop: the oscillator keeps swinging behind the gate, so the idle tail after the halt cost two thirds of a running second (40 % of fib's run)
+    tend=edges[-1]+T/2 if not real_clock else 0.2+len(trace)*5e-3
+    if real_clock: L+=["Rstop HLT HSTOP 100k","Cstop HSTOP 0 100n"]
     top=set(tok for l in L if l[0] not in '.*+' and not l.startswith(('.subckt','.ends')) for tok in l.split()[1:])
     probes=[p for p in probes if '.' in p or p in top]     # a bus line no board touches is not a node in the deck
     # the ribbons: eight 64-way cables of about half a metre, 60 to 80 pF per metre per line, lumped at the hub as CABLE_PF per header line
@@ -243,8 +247,10 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     # tmax stays at the default (1 us): 10 us is a quarter faster but aborts with "timestep too small" on some decks.
     # cshunt: 1 pF from every node to ground (less than the real stray capacitance), and abstol/chgtol a hundred times looser than
     # the defaults (still far below any current or charge that matters here), keep ngspice's timestep from collapsing at clock edges
-    L+=[".save "+" ".join(f"v({p})" for p in probes),f".tran 1u {tend:.6g}",".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12",".control","run","set wr_singlescale","set wr_vecnames",
-        f"wrdata {outfile} "+" ".join(f"v({p})" for p in probes),"quit",".endc",".end"]
+    L+=[".save "+" ".join(f"v({p})" for p in probes+(['HSTOP'] if real_clock else [])),      # ngspice evaluates a stop condition only on a saved node
+     f".tran 1u {tend:.6g}",".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12",".control"]
+    if real_clock: L.append(f"stop when v(HSTOP) > {VDD/2:.3g}")
+    L+=["run","set wr_singlescale","set wr_vecnames",f"wrdata {outfile} "+" ".join(f"v({p})" for p in probes),"quit",".endc",".end"]
     return "\n".join(L)+"\n", probes, edges
 
 def sample(dat,probes,nticks,tend):
@@ -266,17 +272,19 @@ def sample(dat,probes,nticks,tend):
     # so which edge first moves the machine depends on the transistors' threshold (Vto 0.8 to 3.0 V). Edges while RST is above 3.5 V
     # are power-up; from there tick 1 is the first edge after which the sequencer leaves step 0 (release is asynchronous by design:
     # the machine starts on whichever edge follows its own reset letting go). A deck without the sequencer takes the first edge.
-    rst=col['v(rst)']; rel=np.where((rst[:-1]>3.5)&(rst[1:]<=3.5))[0]
+    vr=0.7*VDD      # RST reaches 0.88 VDD on the clock card; 3.5 V at 5 V, and the same fraction when the deck runs at 4.25 or 4.5 V
+    rst=col['v(rst)']; rel=np.where((rst[:-1]>vr)&(rst[1:]<=vr))[0]
     det=[e for e in det if e>(t[rel[-1]] if len(rel) else T0/2)]
     t0=col.get('v(xseq.t0)')
     if t0 is not None:
         k0=next((k for k in range(len(det)-1) if np.interp(det[k]-5e-6,t,t0)>2.5 and np.interp(det[k+1]-5e-6,t,t0)<=2.5),None)
-        if k0 is None: print('  reset: the sequencer never left step 0 after RST fell below 3.5 V')
+        if k0 is None: print(f'  reset: the sequencer never left step 0 after RST fell below {vr:.2f} V')
         else: det=det[k0:]
+    if len(det)<nticks-1: print(f"  edges: {len(det)} clock edges for {nticks} ticks: the run ended early (a clock slower than the 5 ms a tick budget, or stopped)")
     rows=[]
     for k in range(nticks):
         if k<len(det): tt=det[k]-5e-6; edge=1
-        else: tt=tend-5e-6; edge=0
+        else: tt=t[-1]-5e-6; edge=0      # the halted state: the run ends at tend, or 7 ms after HLT with the real clock
         r={p:bit(p,tt) for p in probes}; r['edge']=edge; r['t']=tt; rows.append(r)
     return rows, det
 

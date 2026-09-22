@@ -120,6 +120,28 @@ def pwl(times,values,delay):
     for t,v in zip(times,values): pts.append((t+delay-1e-6,pts[-1][1])); pts.append((t+delay+1e-6,v))
     return "PWL("+" ".join(f"{t:.7g} {5*v}" for t,v in pts)+")"
 
+def switch_counter(tbl):
+    """The panel operator as a digital circuit (XSPICE): the switch lines follow the input list tbl, one step per fall of INP."""
+    L=["Rinp INP inp_s 100k","Cinp inp_s 0 1n",
+       "Aadc_inp [ inp_s ] [ d_inp ] sw_adc",".model sw_adc adc_bridge(in_low=2.0 in_high=3.0 rise_delay=1n fall_delay=1n)",
+       "Aadc_rst [ RST ] [ d_rst ] rst_adc",".model rst_adc adc_bridge(in_low=3.5 in_high=4.0 rise_delay=1n fall_delay=1n)",
+       "Ainv_inp d_inp d_inpn sw_inv",".model sw_inv d_inverter(rise_delay=10n fall_delay=10n)",
+       ".model sw_dff d_dff(clk_delay=10n set_delay=10n reset_delay=10n ic=0 rise_delay=10n fall_delay=10n)",
+       ".model sw_and d_and(rise_delay=10n fall_delay=10n)",".model sw_or d_or(rise_delay=10n fall_delay=10n)",
+       ".model sw_dac dac_bridge(out_low=0 out_high=5 t_rise=1u t_fall=1u)"]
+    for k in range(3): L.append(f"Aff{k} d_q{k}n {'d_inpn' if k==0 else f'd_q{k-1}n'} NULL d_rst d_q{k} d_q{k}n sw_dff")     # bit k toggles when bit k-1 falls
+    L.append("Adac_cnt [ d_q0 d_q1 d_q2 ] [ cnt0 cnt1 cnt2 ] sw_dac")
+    val=lambda n: tbl[min(n,len(tbl)-1)]
+    for i in range(4):
+        ones=[n for n in range(8) if (val(n)>>i)&1]
+        if len(ones) in (0,8): L.append(f"Vsw{i} sw{i}_src 0 {5 if ones else 0}")
+        else:
+            for n in ones: L.append(f"Amin{i}_{n} [ "+" ".join(f"d_q{k}"+("" if (n>>k)&1 else "n") for k in range(3))+f" ] d_m{i}_{n} sw_and")
+            if len(ones)>1: L.append(f"Aor{i} [ "+" ".join(f"d_m{i}_{n}" for n in ones)+f" ] d_sw{i} sw_or")     # a d_or wants two inputs at least
+            L.append(f"Adac{i} [ {f'd_sw{i}' if len(ones)>1 else f'd_m{i}_{ones[0]}'} ] [ sw{i}_src ] sw_dac")
+        L.append(f"Rsw{i} sw{i}_src SW{i} 10")
+    return L
+
 def deck(program,boards,corner,trace,outfile,seed=1):
     edges=[T0+k*T for k in range(len(trace))]
     starts=[e-T for e in edges]      # the state of tick k is set up during the period before edge k
@@ -229,24 +251,18 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     # the panel's data switches: what the program expects to read with IN. With the virtual clock they follow the trace's timetable.
     # With the real clock card the ticks are not known in advance (the card's 121 ms power-on reset, then 400 to 600 Hz), so the
     # switches follow the machine the way an operator does: the next input is set once each IN instruction has finished.
-    # INP is debounced through 100k/1n (a glitch shorter than 70 us does not count) and squared up by a tanh, every fall of the
-    # squared line pumps exactly 1 V into cnt (the current is the 20 us lag behind the fall, whose integral is its time constant
-    # whatever the fall's shape), and a staircase of tanh steps on V(cnt) looks up the input list: step n is centred at n-0.5 and
-    # 0.1 V wide, cnt rests at whole volts, five widths from any step, and the last value holds once every input is consumed.
-    # Everything here is smooth: a ternary threshold, a max(0,x) pump or a pwl() lookup is a kink, and ngspice sitting on a kink
-    # (the pump at rest, x = 0) fails to converge at a random quiet moment ("timestep too small" on every rung; gcd at LO went
-    # on the first such moment after its reset). The switch sits behind 10 ohm of contact, not an ideal source on the gate.
+    # INP is debounced through 100k/1n (a glitch shorter than 70 us does not count) and read by an XSPICE analog-to-digital
+    # bridge; a three-bit ripple counter of digital flip-flops counts its falls (the value must hold through the IN), is held
+    # clear while the card's reset is above 3.5 V, and a sum of minterms decodes the count into the input list, the last value
+    # holding once every input is consumed; a digital-to-analog bridge drives the switch lines through 10 ohm of contact. The
+    # digital part is event-driven and adds no analog state: an analog counter (a current pumped into a capacitor, however
+    # smooth its functions) gave the solver a floating node fed from a machine node, and the deck died at a random clock
+    # edge at LO and MIX ("timestep too small" on every rung) while the same deck without the counter ran through.
     tbl=[trace[0]['sw']]+[trace[k+1]['sw'] for k,s in enumerate(trace[:-1]) if 'INP' in s['ctl']]
     if not real_clock or len(tbl)==1:
         for i in range(4): L.append(f"Vsw{i} SW{i} 0 "+pwl(starts,[(s['sw']>>i)&1 for s in trace],STEP_DELAY))
     else:
-        L+=["Rinp INP inp_s 100k","Cinp inp_s 0 1n","Binp inp_p 0 V = 0.5*(1+tanh(4*(V(inp_s)-2.5)))","Rdb inp_p inp_f 1k","Cdb inp_f 0 20n",
-            "Bcnt 0 cnt I = 0.025*(V(inp_f)-V(inp_p))*(1+tanh(1000*(V(inp_f)-V(inp_p))))","Ccnt cnt 0 1u","Rcnt cnt 0 1T"]
-        for i in range(4):
-            b=[(v>>i)&1 for v in tbl]
-            steps="".join(f"{'+' if b[n]>b[n-1] else '-'}0.5*(1+tanh(10*(V(cnt)-{n-0.5})))" for n in range(1,len(b)) if b[n]!=b[n-1])
-            L+=[f"Bsw{i} sw{i}_src 0 V = 5*({b[0]}{steps})",f"Rsw{i} sw{i}_src SW{i} 10"]
-        probes.append('cnt')
+        L+=switch_counter(tbl); probes+=['cnt0','cnt1','cnt2']
     if not has(boards,'panel'):     # virtual input port
         for i in range(4):
             L+=od('INP',f'SW{i}',i,'in')
@@ -265,8 +281,12 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     # tmax stays at the default (1 us): 10 us is a quarter faster but aborts with "timestep too small" on some decks.
     # cshunt: 1 pF from every node to ground (less than the real stray capacitance), and abstol/chgtol a hundred times looser than
     # the defaults (still far below any current or charge that matters here), keep ngspice's timestep from collapsing at clock edges
+    # With the clock card the deck has no operating point to find: the oscillator runs free and every node between two off
+    # transistors floats, so ngspice's OP methods all fail and its transient fallback finds one by luck (gcd at MIX2 did not).
+    # uic skips the OP: the run is a power-up from 0 V, the card's reset does the rest, and A, B and OUT come up in whatever
+    # state the latches fall into, as on the bench (compare() checks them only once the program has written them).
     L+=[".save "+" ".join(f"v({p})" for p in probes+(['HSTOP'] if real_clock else [])),      # ngspice evaluates a stop condition only on a saved node
-     f".tran 1u {tend:.6g}",".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12",".control"]
+     f".tran 1u {tend:.6g}"+(" uic" if real_clock else ""),".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12",".control"]
     if real_clock: L.append(f"stop when v(HSTOP) > {VDD/2:.3g}")
     L+=["run","set wr_singlescale","set wr_vecnames",f"wrdata {outfile} "+" ".join(f"v({p})" for p in probes),"quit",".endc",".end"]
     return "\n".join(L)+"\n", probes, edges

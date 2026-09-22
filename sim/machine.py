@@ -226,9 +226,25 @@ def deck(program,boards,corner,trace,outfile,seed=1):
         for i in range(4):
             L.append(f"Vmo{i} mo{i} 0 "+pwl(starts,[(s['bus']>>i)&1 if 'MO' in s['ctl'] else 0 for s in trace],STEP_DELAY))
             L+=od('MO',f'mo{i}',i,'mo')
-    # the panel's data switches: driven from the trace (what the program expects to read with IN)
-    for i in range(4):
-        L.append(f"Vsw{i} SW{i} 0 "+pwl(starts,[(s['sw']>>i)&1 for s in trace],STEP_DELAY))
+    # the panel's data switches: what the program expects to read with IN. With the virtual clock they follow the trace's timetable.
+    # With the real clock card the ticks are not known in advance (the card's 121 ms power-on reset, then 400 to 600 Hz), so the
+    # switches follow the machine the way an operator does: the next input is set once each IN instruction has finished.
+    # INP is debounced through 100k/1n (a glitch shorter than 70 us does not count) and squared up by a tanh (a ternary would
+    # be a zero-time step, and ngspice cannot converge on it: "timestep too small" on every rung), every fall of the squared
+    # line pumps exactly 1 V into cnt (the current is the 20 us lag behind the fall, whose integral is its time constant
+    # whatever the fall's shape), and pwl(V(cnt)) looks up the input list: value n from 0.7 V past n-1 to 0.3 V past n,
+    # holding the last value once every input is consumed.
+    tbl=[trace[0]['sw']]+[trace[k+1]['sw'] for k,s in enumerate(trace[:-1]) if 'INP' in s['ctl']]
+    if not real_clock or len(tbl)==1:
+        for i in range(4): L.append(f"Vsw{i} SW{i} 0 "+pwl(starts,[(s['sw']>>i)&1 for s in trace],STEP_DELAY))
+    else:
+        L+=["Rinp INP inp_s 100k","Cinp inp_s 0 1n","Binp inp_p 0 V = 0.5*(1+tanh(4*(V(inp_s)-2.5)))","Rdb inp_p inp_f 1k","Cdb inp_f 0 20n",
+            "Bcnt 0 cnt I = 0.05*max(0,V(inp_f)-V(inp_p))","Ccnt cnt 0 1u","Rcnt cnt 0 1T"]
+        for i in range(4):
+            b=[(v>>i)&1 for v in tbl]; pts=[(-1,b[0])]
+            for n in range(len(b)): pts+=[(n+0.3,b[n])]+([(n+0.7,b[n+1])] if n+1<len(b) else [(1000,b[n])])
+            L.append(f"Bsw{i} SW{i} 0 V = 5*pwl(V(cnt),"+",".join(f"{x:g},{y}" for x,y in pts)+")")
+        probes.append('cnt')
     if not has(boards,'panel'):     # virtual input port
         for i in range(4):
             L+=od('INP',f'SW{i}',i,'in')

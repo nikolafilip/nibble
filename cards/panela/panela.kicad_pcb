@@ -24444,7 +24444,7 @@
 				)
 			)
 		)
-		(property "Value" "1Meg"
+		(property "Value" "10k"
 			(at 2.54 2.37 0)
 			(layer "F.Fab")
 			(uuid "8b9f09b2-d509-4c64-afad-2da5de9058a2")
@@ -26298,7 +26298,7 @@
 				)
 			)
 		)
-		(property "Value" "1Meg"
+		(property "Value" "10k"
 			(at 2.54 2.37 0)
 			(layer "F.Fab")
 			(uuid "96856a03-1d3e-4f77-9cd7-24ce138df46e")

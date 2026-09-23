@@ -1,6 +1,7 @@
 """Board 05: clock. A Schmitt-trigger RC oscillator with a speed pot, RUN/STEP switch, halt gate, power-on reset.
 Header in : HLT.   Header out: CLK (pulled up through the RUN switch, pulled low by a transistor), RST (power-on pulse).
-RUN: the switch puts 10k from +5V on CLK; the clock's transistor pulls CLK low for the low half of each cycle and
+RUN: the switch puts 1k from +5V on CLK (D053: 1k, not 10k, so the edge into the cards' gates and the ribbon, about 3 nF, takes a few
+microseconds instead of 35: cards with different thresholds then see the edge within a microsecond or two of each other); the clock's transistor pulls CLK low for the low half of each cycle and
 whenever HLT is high. STEP: the switch is open, the transistor is held off, and the panel's CLK button owns the line.
 
 The oscillator (drawn in build_clock.py) is a source-coupled Schmitt trigger: Q1 (gate = the RC node X) and Q2
@@ -13,7 +14,9 @@ until the pair snaps, so the outer loop cannot settle half way (reading Q1's dra
 let it: another mixed-threshold find). SA = NOT VD2 with a 4.7k pull-up drives R (100k plus the 1M pot) back to X;
 C is 47 nF on X. Measured at the fastest setting: 1.6 to 2.5 ms per cycle over the corners (400 to 600 Hz); with the pot
 up about 20 to 30 ms (40 Hz); the SLOW jumper adds 2.2 uF for 0.1 to 1.2 s (10 Hz to 0.8 Hz).
-Power-on reset: 2.2 uF charging through 100k into a Schmitt trigger holds RST high for a tenth of a second.
+Power-on reset: 2.2 uF charging through 100k into a Schmitt trigger holds RST high for a tenth of a second; RD = NOT PB (a 1k pull-up)
+drives RST through 100 ohm and a diode against the panel's 10k pull-down, so RST releases in tens of microseconds (D053; with PA's own 47k
+lowered instead, the Schmitt lost its gain and RST followed the capacitor's ramp for milliseconds).
 This file is the logic; the Schmitt pair and the RC parts are on the sheet.
 """
 import nmos
@@ -21,7 +24,7 @@ import nmos
 GROUP_TITLES={
  'osc':'OSCILLATOR BUFFERS: SA = NOT VD2 (VD2 is Q2\'s drain, high while X is above the trip point) with a 4.7k pull-up: SA charges and discharges X through R.  SB = NOT SA is the clock phase',
  'gate':'CLOCK GATE: the CLK pull-down transistor is on while RUN and (oscillator low or HLTD).  HLTD is HLT through 100k / 2.2n (0.22 ms), so the clock pulse that started the halt step completes before the clock stops (D050)',
- 'por':'POWER-ON RESET SCHMITT: PA = NOT PN, PB = NOT PA; PN is the RC node through 100k with 1 Meg from PB (drawn on the sheet).  While PA is high (the capacitor still low) RST is pulled high through 10k and a diode',
+ 'por':'POWER-ON RESET SCHMITT: PA = NOT PN, PB = NOT PA; PN is the RC node through 100k with 1 Meg from PB (drawn on the sheet).  While PA is high (the capacitor still low) RD = NOT PB, a 1k pull-up, drives RST through 100 ohm and a diode; the panel\'s 10k pull-down releases it in tens of microseconds (D053)',
  'leds':'INDICATORS: RUN, OSC',
 }
 
@@ -34,10 +37,10 @@ def build():
     d.inv('HLTN','HLTD'); d.nand('OSCGN','SB','HLTN'); d.inv('OSCG','OSCGN'); d.inv('RUNN','RUNSW')
     d.nor('PULL','RUNN','OSCG'); d.bus('CLK','PULL')
     d.group='por'
-    d.inv('PA','PN'); d.inv('PB','PA')
+    d.inv('PA','PN'); d.inv('PB','PA'); d.inv('RD','PB',pu='1k')      # RD = NOT PB = PA's polarity with a 1k pull-up: drives RST through 100 ohm and a diode against the panel's 10k pull-down (D053); PA keeps 47k, the Schmitt's gain
     d.group='leds'
     d.led('LED_RUN','RUNSW'); d.led('LED_OSC','SB')
-    d.ext_loads['PA']+=1; d.ext_loads['PB']+=1; d.ext_loads['SA']+=1
+    d.ext_loads['PB']+=1; d.ext_loads['SA']+=1; d.ext_loads['RD']+=1
     return d
 
 if __name__=='__main__':

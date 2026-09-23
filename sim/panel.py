@@ -18,11 +18,11 @@ LED_ROWS=[['A3','A2','A1','A0','B3','B2','B1','B0'],
           ['MI','MO','WRL','WRH','ONE','F0','F1','INP']]
 LEDS=[n for row in LED_ROWS for n in row if not n.startswith('D')]
 # every line the panel switches or observes reads 0 when no board drives it; the M lines are pulled down on the hub (D021)
-PULLDOWNS=LEVEL_SW+CTRL_SW1+CTRL_SW2+CTRL_SW3+DATA_SW+[s for s in OBSERVED if not s.startswith('M')]+BUTTONS
+PULLDOWNS=LEVEL_SW+CTRL_SW1+CTRL_SW2+CTRL_SW3+DATA_SW+[s for s in OBSERVED if not s.startswith('M')]+BUTTONS      # CLK and RST get 10k, the rest 1 Meg (D053)
 GROUP_TITLES={
  'busled':'BUS DATA: BUS_i# is active-low, so an inverter turns it into the data bit D_i for its LED',
  'inport':'INPUT PORT: when INP=1 each closed DATA switch (SW_i=1) pulls BUS_i# low, i.e. puts a 1 on the bus.  NAND(INP, SW_i) -> inverter -> open-drain transistor, the same driver every board uses',
- 'schmitt':'BUTTON DEBOUNCE: RC-filtered button -> Schmitt trigger (two inverters with a 1Meg feedback resistor) -> 10k -> diode -> line.  One clean edge per press.',
+ 'schmitt':'BUTTON DEBOUNCE: RC-filtered button -> Schmitt trigger (two inverters with a 1Meg feedback resistor, the second with a 1k pull-up) -> 100 -> diode -> line.  One clean edge per press, driven hard (D053: CLK and RST have 10k pull-downs, so their edges take microseconds)',
  'leds':'INDICATORS: one LED per bus line.  A MOSFET gate draws no current, so the LEDs load nothing.',
 }
 def build():
@@ -36,7 +36,7 @@ def build():
     d.group='inport'
     for i in range(4): d.nand(f'IN{i}N','INP',f'SW{i}'); d.inv(f'IN{i}',f'IN{i}N'); d.bus(f'BUS{i}#',f'IN{i}')
     d.group='schmitt'
-    for b in BUTTONS: d.inv(f'{b}_S1',f'{b}_N'); d.inv(f'{b}_S2',f'{b}_S1')
+    for b in BUTTONS: d.inv(f'{b}_S1',f'{b}_N'); d.inv(f'{b}_S2',f'{b}_S1',pu='1k')      # 1k: S2 drives the line through 100 ohm and a diode against its 10k pull-down (D053)
     return d
 
 # ---- the three panel cards (D042, docs/cards.md) ----
@@ -60,7 +60,7 @@ def build_a():
     d.group='busled'
     for i in range(4): d.inv(f'D{i}',f'BUS{i}#')
     d.group='pulls'
-    for n in CARD_A_PULLS: d.pulldown(n)
+    for n in CARD_A_PULLS: d.pulldown(n,'10k' if n in BUTTONS else '1Meg')      # CLK and RST: 10k (D053), their falling edges are this resistor into 3 nF
     return d
 def build_b():
     """Panel card B: level switches OI..MAI and MI..INP with their LEDs, and the CLK and RST buttons' Schmitt triggers."""
@@ -69,7 +69,7 @@ def build_b():
     d.group='leds'
     for n in column_major(CARD_B_LEDS,2): d.led(f'LED_{n}',n)
     d.group='schmitt'
-    for b in BUTTONS: d.inv(f'{b}_S1',f'{b}_N'); d.inv(f'{b}_S2',f'{b}_S1')
+    for b in BUTTONS: d.inv(f'{b}_S1',f'{b}_N'); d.inv(f'{b}_S2',f'{b}_S1',pu='1k')      # 1k: S2 drives the line through 100 ohm and a diode against its 10k pull-down (D053)
     d.group='pulls'
     for n in CARD_B_PULLS: d.pulldown(n)
     return d

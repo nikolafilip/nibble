@@ -17,7 +17,7 @@ hand-edit the schematics.
 | Memory control | `memctl` | 59 | in: BUS3..0#, MAI, MI, MO, CLK | 2x6 chained ribbon to the slot cards: MAR3..0 and complements, MIN, MON |
 | Memory slot pair | `memslot` (x8) | 91 | BUS3..0# in (MI) and out (MO, open drain) | the ribbon from memory control; jumpers A3 A2 A1 pick the pair |
 | Program, four words | `prog` (one per four words) | 41 + 32 diodes | in: PC7..0. out: M7..0 through diodes | none; jumpers P7 P6 P5 P4 G3 G2 pick the addresses 4c..4c+3 |
-| Clock | `clock` | 14 + the Schmitt pair | in: HLT. out: CLK, RST | none |
+| Clock | `clock` | 15 + the Schmitt pair | in: HLT. out: CLK, RST | none |
 | Hub | `hub` | 0 | every line, on two headers | none |
 | Panel A, B, C | `panela`, `panelb`, `panelc` | 28, 20, 32 | A: A3..B0, SUB..AB switched and shown, D3..0 CF ZF CLK RST shown. B: OI..MAI, MI..INP switched and shown, CLK and RST buttons. C: PC7..0, M7..0 shown, DATA switches driven onto BUS# while INP | none |
 | Coupon | `coupon` | 26 | power only | none |
@@ -148,6 +148,16 @@ the speed pot and SLOW jumper, the RUN/STEP switch, the halt gate, the
 power-on reset (`sim/clock.py`, drawn by `build_clock_card.py`). HLT
 reaches the halt gate through 100k into 2.2 nF (0.22 ms, D050), so the
 clock pulse that started the halt step completes before the clock stops.
+CLK's pull-up in RUN is 1k and RST comes from a 1k inverter stage (RD = NOT
+PB) through 100 ohm and a diode, against the panel's 10k pull-downs (D053):
+into the machine's 3 nF CLK rises 0.5 to 3.5 V in about 6 us (the first card
+took 35 to 43 us, and the cards, each reading the edge with its own
+transistors, saw it up to 25 us apart) and RST releases in 45 us (the first
+card's drifted for 8 ms and more, so cards left reset on different edges).
+`sim/tb_clock.py` measures both under that load and requires them
+(TYP, LO, HI, MIX 1..2 pass: `sim/out/tb_clock_cards54_*.log`; the first
+card under the same bench: CLK rise 43 us, RST never released cleanly,
+`sim/out/tb_clock_cards_oldD053_TYP.log`).
 Deck name `clkc`. On the whole card deck with this card driving CLK, fib and
 call pass at TYP, 127 and 84 ticks, 0 mismatches
 (`sim/out/cards_clk_fib_TYP_rescore.log`, `cards_clk_call_TYP_rescore.log`).
@@ -170,10 +180,13 @@ A: DIP-8 level switches for A3..A0 B3..B0 and SUB EO AI AO BI BO BA AB
 those lines, for the bus data (an inverter per BUS<i>#), CF, ZF, CLK and
 RST. B: switches and LEDs for OI IO II PCE PCL FI HLT MAI and MI MO WRL
 WRH ONE F0 F1 INP, and the CLK and RST buttons with their RC debounce and
-Schmitt triggers. C, the operator's card: PC7..0 and M7..0 LEDs, the four
-DATA switches and the input port (driven onto BUS# while INP). Every
-switched or observed line has a 1Meg pull-down on the tile (`PD` cells)
-except M, pulled down on the hub. The LEDs read row by row like the old
+Schmitt triggers (the second inverter has a 1k pull-up and drives the line
+through 100 ohm and a diode, D053). C, the operator's card: PC7..0 and M7..0
+LEDs, the four DATA switches and the input port (driven onto BUS# while
+INP). Every switched or observed line has a 1Meg pull-down on the tile
+(`PD` cells) except M, pulled down on the hub, and CLK and RST, whose
+pull-downs on card A are 10k (D053: they set the falling edges of both
+lines, 30 us into 3 nF). The LEDs read row by row like the old
 panel: a tile column holds one panel column (three LEDs on A, two on B and
 C). Group `pnl`.
 

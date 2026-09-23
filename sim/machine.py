@@ -213,7 +213,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
         # so the counter's last increment (in flight in its master-slave latch) lands before the clock stops
         L.append("Rhd HLT HLTD 100k"); L.append("Chd HLTD 0 2.2n")
         L.append("Bclk clkb 0 V = V(clkraw)*pwl(V(HLTD),0,1,2,1,3,0,5,0)"); L.append("Rclk clkb CLK 100")     # pwl() extrapolates outside its points: give it the whole 0..5 V range
-    elif not has(boards,'panel'): L.append("Rclkpd CLK 0 1Meg")            # the panel's pull-down on CLK
+    elif not has(boards,'panel'): L.append("Rclkpd CLK 0 10k"); L.append("Rrstpd RST 0 10k")            # the panel's pull-downs on CLK and RST (10k, D053)
     if not real_clock:     # the testbench's reset; with the clock card in the deck the card's power-on reset is the only one (it could not pull RST up against this 100 ohm)
         L.append(f"Vrst rstraw 0 PULSE(5 0 {T0*0.4:.6g} 1u 1u 1e4 2e4)"); L.append("Rrst rstraw RST 100")     # released once, for good: a 1 s pulse width re-asserted reset at tick 999 and failed lfsr (1497 ticks)
     # program memory model (until the program memory board is in the deck): M = mem[PC] through a diode (the hub pulls M down)
@@ -301,16 +301,16 @@ def sample(dat,probes,nticks,tend):
         return 0 if v is None else int(np.interp(tt,t,v)>2.5)
     clk=col['v(clk)']; hi=clk>3.5; lo=clk<1.5; state=0; det=[]; tstart=0
     for k in range(len(t)):          # rising edges with hysteresis: low (<1.5 V) then high (>3.5 V), timed where the rise leaves 1.5 V:
-        if state==0 and not lo[k]: state=1; tstart=t[k]       # the clock card's edge takes 35 us from 0.5 V to 3.5 V and the boards step at 2.4 V,
+        if state==0 and not lo[k]: state=1; tstart=t[k]       # the first clock card's edge took 35 us from 0.5 V to 3.5 V (about 6 us since D053) and the boards step at 2.4 V,
         elif state==1 and lo[k]: state=0                       # so the state has to be sampled before the rise starts, not before its 3.5 V crossing
         elif state==1 and hi[k]: state=2; det.append(tstart)
         elif state==2 and lo[k]: state=0
-    # Ticks start where reset is released; with the clock card the 121 ms power-on reset runs with the clock free-running, and its
-    # RST does not snap: it drifts from 4 V to 2.4 V over 8 ms (five clock periods) before the Schmitt pair's hysteresis pulls it down,
-    # so which edge first moves the machine depends on the transistors' threshold (Vto 0.8 to 3.0 V). Edges while RST is above 3.5 V
+    # Ticks start where reset is released; with the clock card the 121 ms power-on reset runs with the clock free-running. The first
+    # clock card's RST drifted from 4 V to 2.4 V over 8 ms (five clock periods; since D053 it releases in about 45 us), so which edge
+    # first moves the machine depends on the transistors' threshold (Vto 0.8 to 3.0 V). Edges while RST is above 0.7 VDD
     # are power-up; from there tick 1 is the first edge after which the sequencer leaves step 0 (release is asynchronous by design:
     # the machine starts on whichever edge follows its own reset letting go). A deck without the sequencer takes the first edge.
-    vr=0.7*VDD      # RST reaches 0.88 VDD on the clock card; 3.5 V at 5 V, and the same fraction when the deck runs at 4.25 or 4.5 V
+    vr=0.7*VDD      # RST reaches 0.8 VDD on the clock card (1k stage, diode, the panel's 10k); 3.5 V at 5 V, and the same fraction when the deck runs at 4.25 or 4.5 V
     rst=col['v(rst)']; rel=np.where((rst[:-1]>vr)&(rst[1:]<=vr))[0]
     det=[e for e in det if e>(t[rel[-1]] if len(rel) else T0/2)]
     t0=col.get('v(xseq.t0)')

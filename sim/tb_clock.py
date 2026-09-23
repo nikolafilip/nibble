@@ -1,6 +1,8 @@
 """Testbench for board 05 (clock). RUN switch closed and the pot at minimum (about 860 Hz), then HLT for 30 ms,
 then STEP mode with the panel button pressed once. Measures the period and duty at each corner, that CLK stops
 within one cycle of HLT, that the power-on reset pulse lasts long enough, and that STEP releases the line.
+The lines carry the machine's load (3 nF: seventeen cards' gates and the ribbons) and the panel's 10k pull-downs (D053);
+the bench measures CLK's rise (0.5 to 3.5 V) and RST's release (0.7 VDD to 0.8 V) and requires both under 10 us and 100 us.
 Usage: python3 tb_clock.py <netlist.cir|dev> <outdir> [--corner TYP|LO|HI|MIX] [--seed N]
 """
 import sys, os, subprocess, random, json, numpy as np
@@ -21,8 +23,8 @@ def deck(lines,corner,outfile,kicad,seed):
     L.append(".ic V(POR)=0 V(X)=0")                                             # power-up: the reset and timing capacitors are empty (the DC solution would sit exactly on the trip point)
     L.append(f"Brun runsw 0 V = time<{T_STEP} ? 5 : 0"); L.append("Srun +5V RUNSW runsw 0 ODRV")    # RUN switch closed until T_STEP
     L.append(f"Vhlt HLT 0 PWL(0 0 {T_HLT} 0 {T_HLT+2e-6} 5 {T_STEP} 5 {T_STEP+2e-6} 0)")
-    L.append("Rpd CLK 0 1Meg"); L.append("Cline CLK 0 100p"); L.append("Rrpd RST 0 1Meg")      # the panel's pull-downs and the ribbon
-    L.append(f"Vbtn btn 0 PWL(0 0 {T_BTN} 0 {T_BTN+1e-3} 5 {T_BTN+5e-3} 5 {T_BTN+6e-3} 0)"); L.append("Rbtn btn btna 10k"); L.append("Dbtn btna CLK D1N4148")   # the panel button in STEP mode
+    L.append("Rpd CLK 0 10k"); L.append("Cline CLK 0 3n"); L.append("Rrpd RST 0 10k"); L.append("Crst RST 0 3n")      # the panel's pull-downs (D053) and the machine's load on each line
+    L.append(f"Vbtn btn 0 PWL(0 0 {T_BTN} 0 {T_BTN+1e-3} 5 {T_BTN+5e-3} 5 {T_BTN+6e-3} 0)"); L.append("Rbtn btn btna 1.1k"); L.append("Dbtn btna CLK D1N4148")   # the panel button in STEP mode: its Schmitt's 1k pull-up and 100 ohm
     L+=body
     L+=[f".tran 2u {TEND:.6g}",".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12",".control","run","set wr_singlescale","set wr_vecnames",
         f"wrdata {outfile} v(CLK) v(RST) v(HLT) v(X) v(VD2) v(VS) v(POR) v(RUNSW)","quit",".endc",".end"]
@@ -47,12 +49,16 @@ def run(lines,corner,outdir,tag,seed=1):
     rst=col['v(rst)']>2.5; rst_end=t[np.argmax(~rst)] if rst[0] else 0.0
     step_rises=[x for x in rises if x>T_STEP]
     clk_low_in_step=float(np.max(clk[(t>T_STEP+1e-3)&(t<T_BTN)]))
+    def cross(v,level,rising,t0):      # first time after t0 that v crosses level in that direction
+        m=(t[1:]>t0)&(((v[:-1]<level)&(v[1:]>=level)) if rising else ((v[:-1]>level)&(v[1:]<=level))); i=np.argmax(m); return t[i+1] if m[i] else float('nan')
+    r0=run_r[2]-0.2e-3 if len(run_r)>3 else 0; rise_us=(cross(clk,3.5,True,r0)-cross(clk,0.5,True,r0))*1e6      # a RUN edge: 0.5 to 3.5 V
+    rstv=col['v(rst)']; rel_us=(cross(rstv,0.8,False,rst_end-1e-3)-cross(rstv,3.5,False,rst_end-1e-3))*1e6      # RST's release: 0.7 VDD to 0.8 V
     res=dict(tag=tag,corner=corner,seed=seed,period_ms=period*1e3,freq_hz=1/period,duty=duty,rises_in_run=len(run_r),
-             rises_after_hlt=len(after_hlt),rst_pulse_ms=rst_end*1e3,step_rises=len(step_rises),clk_max_in_step_idle=clk_low_in_step)
-    ok=(len(run_r)>=8 and len(after_hlt)==0 and 20e-3<rst_end<TEND and len(step_rises)==1 and clk_low_in_step<0.5 and 0.1<duty<0.9)
+             rises_after_hlt=len(after_hlt),rst_pulse_ms=rst_end*1e3,step_rises=len(step_rises),clk_max_in_step_idle=clk_low_in_step,clk_rise_us=rise_us,rst_release_us=rel_us)
+    ok=(len(run_r)>=8 and len(after_hlt)==0 and 20e-3<rst_end<TEND and len(step_rises)==1 and clk_low_in_step<0.5 and 0.1<duty<0.9 and rise_us<10 and rel_us<100)
     res['ok']=bool(ok)
     json.dump(res,open(os.path.join(outdir,f'{tag}.json'),'w'),indent=1)
-    print(f"{tag}: {'PASS' if ok else 'FAIL'} period {period*1e3:.2f} ms ({1/period:.0f} Hz) duty {duty:.2f}, {len(run_r)} edges in RUN, {len(after_hlt)} after HLT, RST pulse {rst_end*1e3:.0f} ms, STEP: {len(step_rises)} edge from the button, idle CLK max {clk_low_in_step:.2f} V")
+    print(f"{tag}: {'PASS' if ok else 'FAIL'} period {period*1e3:.2f} ms ({1/period:.0f} Hz) duty {duty:.2f}, {len(run_r)} edges in RUN, {len(after_hlt)} after HLT, RST pulse {rst_end*1e3:.0f} ms, STEP: {len(step_rises)} edge from the button, idle CLK max {clk_low_in_step:.2f} V, CLK rise {rise_us:.1f} us, RST release {rel_us:.0f} us")
     return res
 
 if __name__=='__main__':

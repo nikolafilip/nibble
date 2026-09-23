@@ -36,7 +36,7 @@ def dip_levels(w,x,y,names,title,px,py):
     return sw
 
 def button(w,x,y,name,px,py,xr):
-    """+5V -> button -> 10k -> X (1u, 220k to GND) -> 100k -> N (label name_N); name_S2 -> 1Meg -> N; name_S2 -> 10k -> diode -> name.
+    """+5V -> button -> 10k -> X (1u, 220k to GND) -> 100k -> N (label name_N); name_S2 -> 1Meg -> N; name_S2 (1k pull-up) -> 100 -> diode -> name (D053: the 1k pull-up is the current limit, the line's 10k pull-down the load).
     On the board the button's +5V pad (px+6.5, py) sits under the +5V rail xr, brought down from the tiles."""
     w.T(name+" button",x-4*G,y-4*G,1.27,True)
     w.PW('+5V',x-4*G,y-2*G); w.W(x-4*G,y-2*G,x-4*G,y); w.W(x-4*G,y,x-2*G,y)
@@ -50,7 +50,7 @@ def button(w,x,y,name,px,py,xr):
     w.L(name+'_N',xn,y,0,'output')
     w.L(name+'_S2',xn-G,y-4*G,180,'input'); w.W(xn-G,y-4*G,xn,y-4*G); w.W(xn,y-4*G,xn,y-3*G); w.at(w.R('1Meg',xn,y-1.5*G),px+34,py-2,270); w.W(xn,y-0*G,xn,y)
     xo=xn+6*G
-    w.L(name+'_S2',xo,y,180,'input'); w.W(xo,y,xo+G,y); w.at(w.R('10k',xo+2.5*G,y,90),px+39,py-2,270); w.W(xo+4*G,y,xo+5*G,y)
+    w.L(name+'_S2',xo,y,180,'input'); w.W(xo,y,xo+G,y); w.at(w.R('100',xo+2.5*G,y,90),px+39,py-2,270); w.W(xo+4*G,y,xo+5*G,y)
     w.at(w.diode(xo+6.5*G,y,180),px+14,py+7,0); w.W(xo+8*G,y,xo+9*G,y); w.L(name,xo+9*G,y,0,'output')
     w.rails.append(('GND','F.Cu',px+19,py,px+24,py+3.08,0.5))      # debounce cap ground -> 220k ground (pre-routed)
 

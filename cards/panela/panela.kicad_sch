@@ -23257,7 +23257,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "1Meg"
+		(property "Value" "10k"
 			(at 127 359.41 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -23463,7 +23463,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "1Meg"
+		(property "Value" "10k"
 			(at 165.1 359.41 0)
 			(show_name no)
 			(do_not_autoplace no)

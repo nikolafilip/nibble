@@ -1,22 +1,27 @@
 """Board 08: data memory, 16 slots of 4 bits, with its own address register.
-Header in : BUS0..3# (data and address), MAI (load the address register from the bus), MI (write), MO (read), CLK.
+Header in : BUS0..3# (data and address), MAI (load the address register from the bus), MI (write), MO (read), CLK (and CLKD, CLK through an RC on the sheet).
 Bus       : BUS0..3# driven (open drain) with the addressed slot while MO is high.
 
-MAR is four transparent latches open while MAI and PH1 (the address is on the bus for the whole S3 tick of a
-memory instruction). A 4-to-16 decoder selects the slot; per slot a write line WR = slot AND MI AND PH1 and a read
-line RD = slot AND MO. The write is gated by PH1 (the second half of the tick) so it ends at the clock edge, before
-MI and the bus data change: a write line that outlasted the data by a microsecond flipped cells at the mixed
-threshold corner (the write stacks briefly saw the next tick's bus with WR still high). A cell is a pair of cross-coupled inverters (the latch) plus two write pull-downs that force it
+MAR is four transparent latches open while MAI and MPH (the address is on the bus for the whole S3 tick of a
+memory instruction). A 4-to-16 decoder selects the slot; per slot a write line WR = slot AND MI AND MPH and a read
+line RD = slot AND MO. MPH is a pulse in the middle of the tick: CLKD is CLK through 100k into 2.2 nF (0.22 ms) and
+MPH = NOR(CLK, NOT CLKD), high from the falling edge of CLK until CLKD has decayed below a threshold, 60 to 350 us.
+So the address latch closes and the write ends hundreds of microseconds before the next rising edge, with the bus
+and the control lines long settled (D054). The first memory gated its writes with PH1, the low half of CLK, which
+ends AT the rising edge: with the clock card's edge and the threshold spread between cards, the sequencer stepped
+and the next tick's data reached the bus 10 us before this card's PH1 fell, and the address latch took the data
+as the address (gcd, list and logic at one mixed-threshold seed wrote to slot 12, 9 and 15 instead of 0).
+A cell is a pair of cross-coupled inverters (the latch) plus two write pull-downs that force it
 to the bus data while WR is high, and a read pull-down that puts its content on the bus while RD is high. Every
 cell has an LED: the memory is visible.
 """
 import nmos
 
 GROUP_TITLES={
- 'clock':'TWO-PHASE CLOCK: only PH1 is used here, to close the address latches and end the write before the rising edge',
- 'mar':'ADDRESS REGISTER: four transparent latches, open while MAI and PH1',
+ 'clock':'MID-TICK PULSE (D054): CLKD is CLK through 100k into 2.2 nF (drawn on the sheet); MPH = NOR(CLK, NOT CLKD) is high from the falling edge of CLK until CLKD decays past a threshold, 60 to 350 us: the address latch closes and the write ends in the middle of the tick, far from both edges',
+ 'mar':'ADDRESS REGISTER: four transparent latches, open while MAI and MPH',
  'dec':'ADDRESS DECODER: MAR3..0 -> W0#..W15# (active low), through 2-to-4 predecoders',
- 'wl':'WORD LINES: WRn = slot n AND MI AND PH1 (write, ends at the clock edge), RDn = slot n AND MO (read)',
+ 'wl':'WORD LINES: WRn = slot n AND MI AND MPH (write, mid-tick), RDn = slot n AND MO (read)',
  'data':'DATA IN: D_i = NOT BUS_i# (a 1 on the bus); BUS_i# itself is the inverted data',
  'cells':'CELLS: Q and QN cross-coupled inverters.  While WR: D pulls QN low (writes 1), BUS# pulls Q low (writes 0).  While RD and Q: BUS_i# pulled low (reads 1).',
  'leds':'INDICATORS: the address, and every cell',
@@ -24,13 +29,13 @@ GROUP_TITLES={
 
 def build():
     d=nmos.Design('memory')
-    d.inputs={'BUS0#','BUS1#','BUS2#','BUS3#','MAI','MI','MO','CLK'}
+    d.inputs={'BUS0#','BUS1#','BUS2#','BUS3#','MAI','MI','MO','CLK','CLKD'}
     d.group='clock'
-    d.inv('CLKN','CLK'); d.nor('PH1','CLK','PH2',pu='10k'); d.nor('PH2','CLKN','PH1',pu='10k')
+    d.inv('CLKDN','CLKD'); d.nor('MPH','CLK','CLKDN',pu='10k')
     d.group='data'
     for i in range(4): d.inv(f'D{i}',f'BUS{i}#',pu='10k')       # 16 cells and the address latch each
     d.group='mar'
-    d.nand('ENMN','MAI','PH1'); d.inv('ENM','ENMN')
+    d.nand('ENMN','MAI','MPH'); d.inv('ENM','ENMN')
     for i in range(4): d.latch(f'MAR{i}',f'D{i}','ENM')
     d.group='dec'
     for i in range(4): d.inv(f'MAR{i}N',f'MAR{i}')
@@ -38,7 +43,7 @@ def build():
     d.nor('H0','MAR3','MAR2'); d.nor('H1','MAR3','MAR2N'); d.nor('H2','MAR3N','MAR2'); d.nor('H3','MAR3N','MAR2N')
     for n in range(16): d.nand(f'W{n}#',f'H{n>>2}',f'L{n&3}')
     d.group='wl'
-    d.nand('MIN','MI','PH1',pu='4.7k'); d.inv('MON','MO',pu='22k')    # MIN low (write allowed) only while MI and PH1; 4.7k so the 16 write lines drop within microseconds of the edge
+    d.nand('MIN','MI','MPH',pu='4.7k'); d.inv('MON','MO',pu='22k')    # MIN low (write allowed) only while MI and MPH; 4.7k so the 16 write lines drop within microseconds of the pulse's end
     for n in range(16): d.nor(f'WR{n}',f'W{n}#','MIN',pu='22k'); d.nor(f'RD{n}',f'W{n}#','MON')
     d.group='cells'
     for n in range(16):
@@ -59,8 +64,8 @@ MLINK=['MAR0','MAR0N','MAR1','MAR1N','MAR2','MAR2N','MAR3','MAR3N','MIN','MON','
 CTL_TITLES={
  'clock':GROUP_TITLES['clock'],
  'data':'DATA IN: D_i = NOT BUS_i#, for the address latches',
- 'mar':'ADDRESS REGISTER: four transparent latches, open while MAI and PH1.  MAR3..0 and their complements go to the slot cards over the ribbon; each card picks its address with jumpers.',
- 'wl':'WRITE AND READ GATES for all slots: MIN low (write allowed) only while MI and PH1, so a write ends at the clock edge; MON low while MO.  4.7k on MIN: sixteen write lines on eight cards drop within microseconds of the edge.',
+ 'mar':'ADDRESS REGISTER: four transparent latches, open while MAI and MPH.  MAR3..0 and their complements go to the slot cards over the ribbon; each card picks its address with jumpers.',
+ 'wl':'WRITE AND READ GATES for all slots: MIN low (write allowed) only while MI and MPH, so a write ends in the middle of the tick; MON low while MO.  4.7k on MIN: sixteen write lines on eight cards drop within microseconds of the pulse\'s end.',
  'leds':'INDICATORS: the address',
 }
 SLOT_TITLES={
@@ -74,17 +79,17 @@ SLOT_TITLES={
 def build_ctl():
     """Memory control card: PH1, the address register with both polarities out, the write and read gates (docs/cards.md)."""
     d=nmos.Design('memctl')
-    d.inputs={'BUS0#','BUS1#','BUS2#','BUS3#','MAI','MI','MO','CLK'}
+    d.inputs={'BUS0#','BUS1#','BUS2#','BUS3#','MAI','MI','MO','CLK','CLKD'}      # CLKD: CLK through 100k into 2.2 nF, drawn on the sheet
     d.group='clock'
-    d.inv('CLKN','CLK'); d.nor('PH1','CLK','PH2',pu='10k'); d.nor('PH2','CLKN','PH1',pu='10k')
+    d.inv('CLKDN','CLKD'); d.nor('MPH','CLK','CLKDN',pu='10k')
     d.group='data'
     for i in range(4): d.inv(f'D{i}',f'BUS{i}#')
     d.group='mar'
-    d.nand('ENMN','MAI','PH1'); d.inv('ENM','ENMN')
+    d.nand('ENMN','MAI','MPH'); d.inv('ENM','ENMN')
     for i in range(4): d.latch(f'MAR{i}',f'D{i}','ENM',qpu='22k'); 
     for i in range(4): d.inv(f'MAR{i}N',f'MAR{i}',pu='22k')
     d.group='wl'
-    d.nand('MIN','MI','PH1',pu='4.7k'); d.inv('MON','MO',pu='22k')
+    d.nand('MIN','MI','MPH',pu='4.7k'); d.inv('MON','MO',pu='22k')
     d.group='leds'
     for n in ['MAR3','MAR2','MAR1','MAR0']: d.led('LED_'+n,n)
     for i in range(4): d.ext_loads[f'MAR{i}']+=8; d.ext_loads[f'MAR{i}N']+=8      # a jumper on each of the eight slot cards, worst case all on one polarity

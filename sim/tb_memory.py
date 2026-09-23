@@ -1,16 +1,21 @@
 """Testbench for board 08 (data memory). A clocked script writes every slot and reads it back, three fills
 (slot number, its complement, a scrambled pattern) plus interleaved single writes between reads, so every cell holds
 both values, every address decodes, and a write never disturbs another slot.
-Usage: python3 tb_memory.py <netlist.cir|dev|cards|cards@dev> <outdir> [--corner TYP|LO|HI|MIX] [--seed N] [--rescore]
+Usage: python3 tb_memory.py <netlist.cir|dev|cards|cards@dev> <outdir> [--corner TYP|LO|HI|MIX] [--seed N] [--rescore] [--race]
   cards: the kicad-cli exports of cards/memctl and cards/memslot, the slot card eight times with its pair jumpers set (cards@dev: from the gate lists)
-The machine's timing: the address rides the bus during a MAI tick (the address latch is open while PH1 is high),
+  --race: the machine's edge as the memory card sees it (D054): CLK rises over 35 us (the first clock card's edge into the machine's
+  3 nF), the bus switches 10 us after the rise starts (the sequencer, at a low threshold, has stepped and a register drives the next
+  tick's data) and the control lines only 100 us after it (they lag every edge by 60 to 170 us in the machine: MAI and MI are still
+  high when the data changes). The memory gated by PH1 takes the next tick's data into its address latch and its cells at TYP, HI and mixed
+  seeds 1 and 2 (121 to 170 of 217 pass; only LO passes); the mid-tick pulse passes at every corner.
+The machine's timing: the address rides the bus during a MAI tick (the address latch is open while MPH, the mid-tick pulse, is high),
 the data rides the bus during an MI tick, the board drives the bus during an MO tick.
 """
 import sys, os, subprocess, random, json, numpy as np
 import spicedat
 import nmos, memory
 
-T=1e-3; T0=2e-3; DELAY=20e-6
+T=1e-3; T0=2e-3; DELAY=20e-6; DELAY_CTL=20e-6; RISE=1e-6      # DELAY: the bus switches this long after a rising edge starts; DELAY_CTL: the control lines
 CTL=['MAI','MI','MO']
 HUB_PU='10k'
 
@@ -49,11 +54,12 @@ def deck(lines,s,corner,outfile,probes,kicad,seed):
         if kicad and l[0] not in '.*+' and int(''.join(c for c in l.split()[0] if c.isdigit()) or 0)>=9000: continue
         if l[0] in 'Mm': l=l.replace(' 2N7000',' '+(models[rng.choice(['LO','TYP','HI'])] if corner=='MIX' else models[corner]))
         body.append(l)
-    edges=[T0+k*T for k in range(len(s))]; starts=[e-T+DELAY for e in edges]
+    edges=[T0+k*T for k in range(len(s))]; starts=[e-T+DELAY for e in edges]; cstarts=[e-T+DELAY_CTL for e in edges]
     lib=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','lib','2N7000.lib')
     L=["* data memory testbench",f'.include "{lib}"',nmos.LED_MODEL,nmos.SW_MODEL,".global +5V","VDD +5V 0 5"]+[f"RHUB{i} +5V BUS{i}# {HUB_PU}" for i in range(4)]
-    L.append(f"Vclk CLK 0 PULSE(0 5 {T0:.6g} 1u 1u {T/2-1e-6:.6g} {T:.6g})")
-    for c in CTL: L.append(f"V{c} {c} 0 "+pwl(starts,[int(c in ctl) for ctl,v in s]))
+    L.append(f"Vclk CLK 0 PULSE(0 5 {T0-T:.6g} {RISE:.6g} 1u {T/2-1e-6:.6g} {T:.6g})")      # the clock runs a cycle before the first case: every tick, the first included, has its falling edge (the mid-tick pulse, D054)
+    if not any(' CLKD ' in ' '+l+' ' for l in body if l[0] in 'RrCc'): L+=["Rclkd CLK CLKD 100k","Cclkd CLKD 0 2.2n"]      # the pulse's RC is on the card's sheet; the gate list has it as an input
+    for c in CTL: L.append(f"V{c} {c} 0 "+pwl(cstarts,[int(c in ctl) for ctl,v in s]))
     for i in range(4):
         L.append(f"Vd{i} d{i} 0 "+pwl(starts,[((v or 0)>>i)&1 for ctl,v in s]))
         L.append(f"Sd{i} BUS{i}# 0 d{i} 0 ODRV")
@@ -67,7 +73,7 @@ def deck(lines,s,corner,outfile,probes,kicad,seed):
 def run(lines,corner,outdir,tag,seed=1,rescore=False,cards=False):
     os.makedirs(outdir,exist_ok=True); s=script(); exp=expected(s)
     pre='xmemctl.' if cards else ''
-    probes=[f'MAR{i}' for i in range(4)]+[f'BUS{i}#' for i in range(4)]+['CLK',f'{pre}PH1',f'{pre}PH2']      # MAR is on the link ribbon, a port of the memctl card: a top-level node
+    probes=[f'MAR{i}' for i in range(4)]+[f'BUS{i}#' for i in range(4)]+['CLK',f'{pre}MPH',f'{pre}CLKD']      # MAR is on the link ribbon, a port of the memctl card: a top-level node
     dat=os.path.join(outdir,f'{tag}.dat'); cir=os.path.join(outdir,f'{tag}.cir')
     text,edges=deck(lines,s,corner,dat,probes,tag.startswith('kicad'),seed); open(cir,'w').write(text)
     if not (rescore and os.path.exists(dat)):
@@ -96,6 +102,7 @@ if __name__=='__main__':
     src=sys.argv[1]; outdir=sys.argv[2]
     corner=sys.argv[sys.argv.index('--corner')+1] if '--corner' in sys.argv else 'TYP'
     seed=int(sys.argv[sys.argv.index('--seed')+1]) if '--seed' in sys.argv else 1
+    if '--race' in sys.argv: RISE=35e-6; DELAY=10e-6; DELAY_CTL=100e-6
     cards=src.startswith('cards')
     if src=='dev':
         d=memory.build(); assert not d.check(), d.check(); lines=d.spice(vdd='+5V')
@@ -108,5 +115,5 @@ if __name__=='__main__':
             ports=machine.ports_of(sub[1:-1]+body)      # the jumpers bring MAR1..3 (or their complements) onto the card: ports too, else they float inside
             lines+=[f".subckt memslot{p} "+" ".join(ports)]+sub[1:-1]+body+[sub[-1]]+[f"Xmemslot{p} "+" ".join(ports)+f" memslot{p}"]
     else: lines=[l.rstrip() for l in open(src) if l.strip() and not l.startswith('*')]
-    tag={'dev':'dev','cards':'cards','cards@dev':'cardsdev'}.get(src,'kicad')
+    tag={'dev':'dev','cards':'cards','cards@dev':'cardsdev'}.get(src,'kicad')+('_race' if '--race' in sys.argv else '')
     run(lines,corner,outdir,f"{tag}_{corner}{seed if corner=='MIX' else ''}",seed,rescore='--rescore' in sys.argv,cards=cards)

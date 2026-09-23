@@ -14,7 +14,7 @@ hand-edit the schematics.
 | Register bit 0..3 | `reg0` .. `reg3` | 99 each | in: BUS<i>#, CLK, AI, AO, BI, BO, BA, AB, OI. out: A<i>, B<i>. BUS<i># driven open-drain when AO or BO | none |
 | ALU bit 0..3 | `alu0` .. `alu3` | 66, 68, 68, 73 | in: A<i>, B<i>, SUB, ONE, F1, F0, EO. out: BUS<i># (open drain); bit 3 also CF, ZF | 2x3: carry C<i+1> and zero-so-far ZS<i> to bit i+1 |
 | Counter bit 0..7 | `ctr0` .. `ctr7` | 62 (59 for bit 7) | in: PCL, CLK, RST (bit 0 also PCE). out: PC<i> | 2x3: count carry TC<i+1> to bit i+1; 2x6 chained ribbon from the sequencer: OPR<i>, PCR, RAI |
-| Memory control | `memctl` | 59 | in: BUS3..0#, MAI, MI, MO, CLK | 2x6 chained ribbon to the slot cards: MAR3..0 and complements, MIN, MON |
+| Memory control | `memctl` | 57 | in: BUS3..0#, MAI, MI, MO, CLK | 2x6 chained ribbon to the slot cards: MAR3..0 and complements, MIN, MON |
 | Memory slot pair | `memslot` (x8) | 91 | BUS3..0# in (MI) and out (MO, open drain) | the ribbon from memory control; jumpers A3 A2 A1 pick the pair |
 | Program, four words | `prog` (one per four words) | 41 + 32 diodes | in: PC7..0. out: M7..0 through diodes | none; jumpers P7 P6 P5 P4 G3 G2 pick the addresses 4c..4c+3 |
 | Clock | `clock` | 15 + the Schmitt pair | in: HLT. out: CLK, RST | none |
@@ -102,9 +102,18 @@ the counter cards.
 ## Memory control and slot cards (`memctl`, `memslot`)
 
 Control: the four-bit address register MAR (transparent latches open while
-MAI and PH1) and the write and read gates MIN (low while MI and PH1, so a
-write ends at the clock edge) and MON (low while MO), sent to the slot
-cards over a chained 2x6 ribbon with MAR and its complements. Slot pair:
+MAI and MPH) and the write and read gates MIN (low while MI and MPH) and
+MON (low while MO), sent to the slot cards over a chained 2x6 ribbon with
+MAR and its complements. MPH is a pulse in the middle of the tick (D054):
+CLKD is CLK through 100k into 2.2 nF on the sheet, and MPH = NOR(CLK, NOT
+CLKD) is high from the falling edge of CLK until CLKD decays past a
+threshold, 60 to 350 us, so the address latch closes and the write ends
+hundreds of microseconds before the next rising edge. The first card gated
+both with PH1, the low half of CLK, which ends at the rising edge: with the
+clock card's 35 us edge and the threshold spread between cards, the
+sequencer stepped and the next tick's data reached the bus 10 us before this
+card saw the edge, and the address latch took the data as the address (gcd,
+list and logic at mixed seed 2 wrote slots 12, 9 and 15 instead of 0). Slot pair:
 two 4-bit slots (even: MAR0 = 0, odd: MAR0 = 1) of the pair the three
 jumpers select (A3 A2 A1: the centre pin to '1' where the address bit is 1),
 eight cross-coupled cells with their write and read pull-downs, and an LED
@@ -116,13 +125,17 @@ inside they float, and every read came from slot pair 7.
 
 Verification, `sim/tb_memory.py cards`: three fills of all sixteen slots
 and reads back, single writes between reads, bus noise while nothing loads,
-217 steps.
+217 steps. `--race` is the edge as the memory card saw it in the machine:
+CLK rises over 35 us, the bus switches 10 us into the rise and the control
+lines 100 us after it (they lag every edge by 60 to 170 us).
 
 | Netlist | Corner | Result |
 |---|---|---|
-| kicad-cli exports, control + eight slot cards | TYP, LO, HI | 217 / 217 each |
-| kicad-cli exports, control + eight slot cards | MIX seed 1 | 217 / 217 |
-| gate lists (`cards@dev`) | TYP | 217 / 217 |
+| PH1-gated card (before D054), gate list, `--race` | TYP, HI, MIX 1, MIX 2 | 121, 121, 121, 170 / 217 (`sim/out/tb_memory_oldD054_race.log`) |
+| PH1-gated card (before D054), gate list, `--race` | LO | 217 / 217 (the card sees the edge at 0.8 V, before the bus moves) |
+| D054 card, gate list (`dev`) | TYP, LO, HI, MIX 1..4 | 217 / 217 each (`sim/out/tbmem54_dev.log`, `tbmem54_mix.log`) |
+| D054 card, gate list (`dev`), `--race` | TYP, LO, HI, MIX 1..4 | 217 / 217 each |
+| D054 card, kicad-cli exports, control + eight slot cards | TYP; `--race` TYP, LO, HI, MIX 1, MIX 2 | 217 / 217 each (`sim/out/tbmem54_cards.log`) |
 
 Layout: both cards route DRC clean in one pass, 0 unconnected.
 

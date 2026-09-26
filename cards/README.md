@@ -96,8 +96,8 @@ operand and load lines come down a chained 2x6 ribbon (`frame.card_ribbon`),
 each card taking its own OPR line. Group `ctrc`.
 
 Verification: `call.asm` on the eight cards from the gate lists, 0
-mismatches; the machine gate with the exports is in the commit that closes
-the counter cards.
+mismatches; the exports carry every program of the step 9 gate
+(`sim/results/gate25_*.md`).
 
 ## Memory control and slot cards (`memctl`, `memslot`)
 
@@ -152,7 +152,8 @@ and switches set from the assembled program; `prog.map.json` says which
 diode is word w bit i.
 
 Verification: `fib.asm` on the card gate lists with the ALU and hub, 0
-mismatches; the whole-machine gate is in the commit that closes the cards.
+mismatches; the exports carry every program of the step 9 gate
+(`sim/results/gate25_*.md`).
 
 ## Clock card (`clock`)
 
@@ -171,9 +172,13 @@ card's drifted for 8 ms and more, so cards left reset on different edges).
 (TYP, LO, HI, MIX 1..2 pass: `sim/out/tb_clock_cards54_*.log`; the first
 card under the same bench: CLK rise 43 us, RST never released cleanly,
 `sim/out/tb_clock_cards_oldD053_TYP.log`).
-Deck name `clkc`. On the whole card deck with this card driving CLK, fib and
-call pass at TYP, 127 and 84 ticks, 0 mismatches
-(`sim/out/cards_clk_fib_TYP_rescore.log`, `cards_clk_call_TYP_rescore.log`).
+Deck name `clkc`. The step 9 gate runs with this card driving CLK and RST
+and no testbench clock or reset, every deck a power-up from 0 V: all
+thirteen programs at TYP and the 24 corners, 0 mismatches
+(`sim/results/gate25_TYP.md`, `gate25_corners.md`). The first card, in the
+same deck, passed all thirteen at TYP and lost gcd, list and logic at MIX
+seed 2 to the address-latch race its slow edge opened
+(`sim/results/gate_clk_corners_oldclock.md`, D053, D054).
 
 ## Hub card (`hub`)
 

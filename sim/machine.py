@@ -123,8 +123,8 @@ def pwl(times,values,delay):
 def switch_counter(tbl):
     """The panel operator as a digital circuit (XSPICE): the switch lines follow the input list tbl, one step per fall of INP."""
     L=["Rinp INP inp_s 100k","Cinp inp_s 0 1n",
-       "Aadc_inp [ inp_s ] [ d_inp ] sw_adc",".model sw_adc adc_bridge(in_low=2.0 in_high=3.0 rise_delay=1n fall_delay=1n)",
-       "Aadc_rst [ RST ] [ d_rst ] rst_adc",".model rst_adc adc_bridge(in_low=3.5 in_high=4.0 rise_delay=1n fall_delay=1n)",
+       "Aadc_inp [ inp_s ] [ d_inp ] sw_adc",f".model sw_adc adc_bridge(in_low={0.4*VDD:.3g} in_high={0.6*VDD:.3g} rise_delay=1n fall_delay=1n)",
+       "Aadc_rst [ RST ] [ d_rst ] rst_adc",f".model rst_adc adc_bridge(in_low={0.6*VDD:.3g} in_high={0.7*VDD:.3g} rise_delay=1n fall_delay=1n)",
        "Ainv_inp d_inp d_inpn sw_inv",".model sw_inv d_inverter(rise_delay=10n fall_delay=10n)",
        ".model sw_dff d_dff(clk_delay=10n set_delay=10n reset_delay=10n ic=0 rise_delay=10n fall_delay=10n)",
        ".model sw_and d_and(rise_delay=10n fall_delay=10n)",".model sw_or d_or(rise_delay=10n fall_delay=10n)",
@@ -253,7 +253,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     # switches follow the machine the way an operator does: the next input is set once each IN instruction has finished.
     # INP is debounced through 100k/1n (a glitch shorter than 70 us does not count) and read by an XSPICE analog-to-digital
     # bridge; a three-bit ripple counter of digital flip-flops counts its falls (the value must hold through the IN), is held
-    # clear while the card's reset is above 3.5 V, and a sum of minterms decodes the count into the input list, the last value
+    # clear while the card's reset is above 0.7 VDD, and a sum of minterms decodes the count into the input list, the last value
     # holding once every input is consumed; a digital-to-analog bridge drives the switch lines through 10 ohm of contact. The
     # digital part is event-driven and adds no analog state: an analog counter (a current pumped into a capacitor, however
     # smooth its functions) gave the solver a floating node fed from a machine node, and the deck died at a random clock
@@ -293,14 +293,16 @@ def deck(program,boards,corner,trace,outfile,seed=1):
 
 def sample(dat,probes,nticks,tend):
     """One row of probe bits per tick, sampled 5 us before each rising CLK edge found in the waveform, the edge timed
-    where CLK leaves 1.5 V (so the same code serves the pulse-source clock and the real clock card). The tick after the last edge, if any, is the halted state,
+    where CLK leaves 0.3 VDD (so the same code serves the pulse-source clock and the real clock card). The tick after the last edge, if any, is the halted state,
     sampled at the end of the run. rows[k]['edge'] = 1 if an edge ended tick k."""
     names,a=spicedat.read(dat); t=a[:,0]; col={n.lower():a[:,k] for k,n in enumerate(names)}
     def bit(name,tt):
         v=col.get(f'v({name.lower()})')
-        return 0 if v is None else int(np.interp(tt,t,v)>2.5)
-    clk=col['v(clk)']; hi=clk>3.5; lo=clk<1.5; state=0; det=[]; tstart=0
-    for k in range(len(t)):          # rising edges with hysteresis: low (<1.5 V) then high (>3.5 V), timed where the rise leaves 1.5 V:
+        return 0 if v is None else int(np.interp(tt,t,v)>0.5*VDD)
+    # Every level here is a fraction of VDD: the card's CLK high is (VDD - a diode) * 10/11 (the RUN switch's diode and 1k against the panel's
+    # 10k), 4.05 V at 5 V and 3.38 V at 4.25 V, where a fixed 3.5 V found no edges at all in a run that had reached its halt
+    clk=col['v(clk)']; hi=clk>0.7*VDD; lo=clk<0.3*VDD; state=0; det=[]; tstart=0
+    for k in range(len(t)):          # rising edges with hysteresis: low (<0.3 VDD) then high (>0.7 VDD), timed where the rise leaves 0.3 VDD:
         if state==0 and not lo[k]: state=1; tstart=t[k]       # the first clock card's edge took 35 us from 0.5 V to 3.5 V (about 6 us since D053) and the boards step at 2.4 V,
         elif state==1 and lo[k]: state=0                       # so the state has to be sampled before the rise starts, not before its 3.5 V crossing
         elif state==1 and hi[k]: state=2; det.append(tstart)
@@ -315,7 +317,7 @@ def sample(dat,probes,nticks,tend):
     det=[e for e in det if e>(t[rel[-1]] if len(rel) else T0/2)]
     t0=col.get('v(xseq.t0)')
     if t0 is not None:
-        k0=next((k for k in range(len(det)-1) if np.interp(det[k]-5e-6,t,t0)>2.5 and np.interp(det[k+1]-5e-6,t,t0)<=2.5),None)
+        k0=next((k for k in range(len(det)-1) if np.interp(det[k]-5e-6,t,t0)>0.5*VDD and np.interp(det[k+1]-5e-6,t,t0)<=0.5*VDD),None)
         if k0 is None: print(f'  reset: the sequencer never left step 0 after RST fell below {vr:.2f} V')
         else: det=det[k0:]
     if len(det)<nticks-1: print(f"  edges: {len(det)} clock edges for {nticks} ticks: the run ended early (a clock slower than the 5 ms a tick budget, or stopped)")

@@ -21,7 +21,7 @@ sequencer is in, the switches are the sequencer.
 
 ## Tools you need before the cards arrive
 
-- Bench supply with current limit (5.0 V, limit 300 mA for the first power-on of each board; 1.5 A for the whole machine on the hub's screw terminal, D052). The machine has no other power entry (D057).
+- Bench supply with current limit (5.0 V, limit 300 mA for the first power-on of each board; 1.5 A for the whole machine into the hub's banana sockets, D052, D058) with a pair of banana-to-banana leads. The machine has no other power entry (D057).
 - Multimeter with a continuity beeper.
 - 8-channel USB logic analyser (any Saleae-compatible clone) and Sigrok/PulseView, or a scope.
 - Temperature-controlled iron, 0.6 mm solder, flux, brass wool, wick.
@@ -43,7 +43,7 @@ the table, power off and look for a bridge between the three TO-92 pads.
 | Card | Transistors | Expected current (5 V) | Soldering time |
 |---|---|---|---|
 | coupon | 57 | 5 to 8 mA with IN low, 11 to 14 mA with IN high (the oscillator's 1k driver runs always; the LED and the row when IN is up) | 1.5 h |
-| hub | 0 | under 5 mA (the LED) | 1 h (the headers, the terminal) |
+| hub | 0 | under 5 mA (the LED) | 1 h (the headers, the two sockets) |
 | panel A, B, C | 28, 20, 32 | 5 to 40 mA depending on the LEDs lit; B 10 mA more, its two button drivers idle low through 1k (D053) | 2 h each |
 | register bit | 99 | 5 to 12 mA | 2.5 h each |
 | ALU bit | 66 to 73 | 4 to 9 mA | 2 h each |
@@ -100,11 +100,11 @@ edge is not a failure.
 No logic. Check with the meter, nothing connected: no short between +5V
 and ground on either header; every one of the 64 pins of the top header
 beeps to the same pin of the bottom header; the four BUS pull-ups read 10k
-to +5V; the eight M pull-downs read 220k to ground; the screw terminal's
-+5V pin beeps to the fuse's first pad and, through the fuse, to header
-pin 1; its GND pin to header pin 3. Power it from the bench supply on the
-terminal (5.0 V, limit 300 mA): the power LED lights, the current is under
-5 mA. Crimp the first ribbon: a short piece with three sockets for the
+to +5V; the eight M pull-downs read 220k to ground; the red banana
+socket beeps to the fuse's first pad and, through the fuse, to header
+pin 1; the black one to header pin 3. Plug the bench supply's leads into
+the sockets (red +5V, black GND; 5.0 V, limit 300 mA): the power LED
+lights, the current is under 5 mA. Crimp the first ribbon: a short piece with three sockets for the
 bench, then the long ones for the column.
 
 ## 3. Panel A, B, C

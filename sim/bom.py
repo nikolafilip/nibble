@@ -19,7 +19,7 @@ def load(cards=True):
         c=collections.Counter()
         for r in csv.DictReader(open(f)):
             fp=r['Footprint'].split(':')[-1]; v=r['Value']
-            if fp.startswith(('SW_','TestPoint','PinHeader','IDC-Header','USB_','Fuse','Potentiometer')): v={'SW_':'switch','Tes':'test loop','Pin':'pin header','IDC':'IDC header','USB':'USB-B socket','Fus':'polyfuse','Pot':'pot'}[fp[:3]]   # their values are labels, not part numbers
+            if fp.startswith(('SW_','TestPoint','PinHeader','IDC-Header','Banana','Fuse','Potentiometer')): v={'SW_':'switch','Tes':'test loop','Pin':'pin header','IDC':'IDC header','Ban':'banana socket','Fus':'polyfuse','Pot':'pot'}[fp[:3]]   # their values are labels, not part numbers
             c[(v,fp)]+=int(r['QUANTITY'])*COPIES.get(name,1)
         boards[name]=c
     return boards

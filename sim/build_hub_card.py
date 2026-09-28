@@ -1,4 +1,4 @@
-"""Generate cards/hub (KiCad project): the bus hub card (docs/cards.md, D043). Power entry, the four bus pull-ups, the
+"""Generate cards/hub (KiCad project): the bus hub card (docs/cards.md, D043). Power entry (two 4 mm banana sockets, a polyfuse), the four bus pull-ups, the
 eight M-line pull-downs, test loops, and two bus headers, one per column face's ribbon, wired pin for pin. No logic.
 The 64 lines are routed; ground is wired on the front as a ring and bars instead of a pour, which the lines cut to islands. Run from sim/:  python3 build_hub_card.py"""
 import os, ksch, frame, bus
@@ -16,19 +16,22 @@ def main():
     R=lambda net,x1,y1,x2,y2,wd=0.5,layer='F.Cu': w.rails.append((net,layer,x1,y1,x2,y2,wd))
     w.T("NIBBLE CARD HUB - BUS HUB: power entry, the four bus pull-ups, the eight M-line pull-downs, and a header for each face's ribbon",10*G,6*G,3.5,True)
     w.T("No logic on this card.  Two 64-pin headers wired pin for pin: the top one takes one column face's ribbon, the bottom one the other's (docs/cards.md, D043).\n"
-        "Power: 5 V from the bench supply on the screw terminal, through a 1.5 A polyfuse (D052, D057: no USB, the machine draws up to about 1.2 A with every LED lit).  The BUS0#..BUS3# pull-ups (10k) live here and nowhere else.\n"
+        "Power: 5 V from the bench supply, its banana leads into the two 4 mm sockets (D058; no USB, D057), through a 1.5 A polyfuse (D052: the machine draws up to about 1.2 A with every LED lit).  The BUS0#..BUS3# pull-ups (10k) live here and nowhere else.\n"
         "The M0..M7 pull-downs (220k) also live here: the program cards diode-OR onto the M lines, so an unselected card leaves them floating and the hub reads them as 0 (D019, D021); 220k, not 1 Meg, so a line falls within the fetch tick against the ribbon and the cards' diodes (D048).\n"
         "Bulk capacitance for the whole machine, a power LED, and test loops on the bus lines and the clock for a logic analyser.\n"
         "Board: ground is a wired ring and bars, not a pour (the 64 lines through the card cut a pour to islands).",10*G,14*G,1.6)
-    # power entry (D052, D057): the bench supply on a 5.08 mm screw terminal at the left edge -> polyfuse -> +5V. No USB: the machine is bench-powered.
+    # power entry (D052, D057, D058): the bench supply's banana leads into two 4 mm sockets standing on the front face, 19.05 mm apart
+    # (a dual banana plug fits too), red +5V above black GND at the left edge -> polyfuse -> +5V. No USB, no terminal: the machine is bench-powered.
     x,y=16*G,30*G
-    term=w.symbol("Connector","Screw_Terminal_01x02",w.ref('J'),"BENCH 5V",x,y,0,('1','2'),"TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal",[("Description","screw terminal, bench supply 5 V in",True)],sim=False)
-    w.at(term,12.0,30.0,90)      # rot 90: pad 1 (VBUS) at (12,30), pad 2 (GND) at (12,24.92), the wire entry toward the left edge
-    w.W(x-2*G,y,x-5*G,y); w.L('VBUS',x-5*G,y,180,'output')                        # pin 1 (the symbol's pins: 1 at -5.08,0 and 2 at -5.08,+2.54 on the sheet)
-    w.W(x-2*G,y+G,x-2*G,y+3*G); w.PW('GND',x-2*G,y+3*G); w.W(x-2*G,y+3*G,x-5*G,y+3*G); w.pwr_flag(x-5*G,y+3*G)     # pin 2: ground, flagged as the machine's source of it
-    R('VBUS',12.0,30.0,20.0,30.0,0.8); R('VBUS',20.0,30.0,20.0,16.0,0.8); R('VBUS',20.0,16.0,26.0,16.0,0.8)     # terminal to the fuse, wide
-    R('GND',12.0,24.92,9.29,24.92,0.8); R('GND',9.29,24.92,9.29,YG1)              # terminal ground up to the ring (0.5 wide past the top header's pin 1)
-    w.label("BENCH IN",17.5,22.5,1.0); w.label("GND",17.5,25.7,1.0); w.label("+5V",17.5,30.8,1.0)
+    BAN="Connector:Banana_Jack_1Pin"     # a panel-type 4 mm socket on a 6 mm hole (Cliff S16, Hirschmann BIL 20 or any red/black pair), the board as its panel
+    red=w.symbol("Connector_Generic","Conn_01x01",w.ref('J'),"BENCH +5V",x,y,0,('1',),BAN,[("Description","4 mm banana socket, red: bench supply +5 V",True)],sim=False)
+    blk=w.symbol("Connector_Generic","Conn_01x01",w.ref('J'),"BENCH GND",x,y+6*G,0,('1',),BAN,[("Description","4 mm banana socket, black: bench supply ground",True)],sim=False)
+    w.at(red,14.0,26.0,0); w.at(blk,14.0,45.05,0)
+    w.W(x-2*G,y,x-5*G,y); w.L('VBUS',x-5*G,y,180,'output')
+    w.W(x-2*G,y+6*G,x-5*G,y+6*G); w.PW('GND',x-5*G,y+6*G); w.W(x-5*G,y+6*G,x-5*G,y+8*G); w.pwr_flag(x-5*G,y+8*G)     # flagged as the machine's source of ground
+    R('VBUS',14.0,26.0,20.0,26.0,0.8); R('VBUS',20.0,26.0,20.0,16.0,0.8); R('VBUS',20.0,16.0,26.0,16.0,0.8)     # red socket to the fuse, wide
+    R('GND',14.0,45.05,3.0,45.05,0.8); R('GND',3.0,45.05,3.0,YG1,0.8)                                            # black socket along the left edge up to the ring (nothing else lives there)
+    w.label("BENCH IN",20.5,23.0,1.0); w.label("+5V",20.5,26.8,1.0); w.label("GND",20.5,45.8,1.0)
     fx=x+12*G
     w.L('VBUS',fx,y-4*G,180,'input'); w.W(fx,y-4*G,fx,y-3*G)
     fuse=w.symbol("Device","Polyfuse",w.ref('F'),"1.5A",fx,y-1.5*G,0,('1','2'),"Fuse:Fuse_BelFuse_0ZRE0150FF_L23.4mm_W5.3mm",[("Description","resettable fuse, 1.5 A hold",True)],sim=False)
@@ -69,7 +72,7 @@ def main():
     for k,(hyy,yv) in enumerate([(frame.HY,YV1),(HY2,YV2)]):
         w.T(f"face {'A' if k==0 else 'B'} ribbon",30*G+k*22*G-4*G,hy-16*G,1.6,True)
         j=frame.bus_header(w,30*G+k*22*G,hy,used,through=True); w.at(j,frame.HX,hyy,90); w.label("1",frame.HX-7.0,hyy+0.9,1.0)
-        w.label("BUS  FACE A" if k==0 else "BUS  FACE B  (pin 1 left)",3.0 if k==0 else frame.HX+30,20.8 if k==0 else 84.0,1.0)      # A's short, left of the fuse's body (x 19 to 43) and above the terminal
+        w.label("BUS  FACE A" if k==0 else "BUS  FACE B  (pin 1 left)",3.0 if k==0 else frame.HX+30,19.0 if k==0 else 84.0,1.0)      # A's short, left of the fuse's body (x 19 to 43) and above the red socket
         (x1,y1),(x2,y2),(x3,y3),(x4,y4),(x8,y8),(x63,y63),(x64,y64)=[P(frame.HX,hyy,n) for n in (1,2,3,4,8,63,64)]
         R('+5V',x1,y1,x2,y2); R('GND',x4,y4,x8,y8); R('GND',x3,y3,x4,y4)      # pins 1-2 joined; 4-6-8 along the even row; 3-4
         R('+5V',frame.HX,yv,XT,yv,0.8)                                            # the trunk
@@ -81,7 +84,7 @@ def main():
             R('+5V',x63,y63,x63,95.5); w.vias.append(('+5V',x63,95.5)); R('+5V',x63,95.5,XV,95.5,0.8,'B.Cu'); R('+5V',XV,95.5,XV,YV1,0.8,'B.Cu')
             R('GND',x3,y3,x3,YG2); R('GND',x64,y64,XG,y64)
     for yv in (YV1,YV2): R('+5V',XT,yv,XV,yv,0.8,'B.Cu'); w.vias.append(('+5V',XT,yv))      # the trunks' ends meet the back-side link
-    R('GND',9.29,YG1,XG,YG1); R('GND',XG,YG1,XG,YG2); R('GND',13.17,YG2,XG,YG2)              # the ground ring
+    R('GND',3.0,YG1,XG,YG1); R('GND',XG,YG1,XG,YG2); R('GND',13.17,YG2,XG,YG2)                # the ground ring (its top bar starts at the black socket's run)
     # the 64 lines are the router's (through-hole pads sit on both layers, so no straight pre-route can pass the parts): no ground pour,
     # its ring and bars are wired above, so the lines cannot cut the ground into islands
     W=16*G+2*22*G+10*G; H=hy+24*G

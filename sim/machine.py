@@ -33,6 +33,8 @@ CONTROL=['SUB','EO','AI','AO','BI','BO','BA','AB','OI','IO','II','PCE','PCL','FI
 CABLE_PF=int(os.environ.get('CABLE_PF','300'))      # ribbon capacitance per header line, all cables together (see docs/mounting.md); CABLE_PF=500 in the environment for the margin rerun
 CROSS_PF=int(os.environ.get('CROSS_PF','0'))        # coupling capacitance between ribbon neighbours (consecutive header pins), 0 = not modelled; about 100 pF for 3 m of 1.27 mm ribbon
 VDD=float(os.environ.get('VDD','5'))                 # the supply at the hub; VDD=4.5 for a USB port at its minimum less the polyfuse and the ribbon
+POR_V0=float(os.environ.get('POR_V0','0'))           # volts on the clock card's power-on reset capacitor at t=0: the release comes earlier by 220 ms * ln(VDD/(VDD-POR_V0)),
+                                                     # 44 us per mV, so a sweep of POR_V0 walks the reset release across a clock period (the release is asynchronous to the clock)
 SW=[f'SW{i}' for i in range(4)]   # the panel's data switch levels, ports of the panel subcircuit so the deck can set them
 LINK=[f'OPR{i}' for i in range(8)]+['PCR','RAI']   # the sequencer-to-counter link header (D035); PCL is on the bus header
 ALINK=['C1','C2','C3','ZS0','ZS1','ZS2']             # the ALU cards' carry and zero-so-far chain (2x3 links between neighbours)
@@ -157,7 +159,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
         if b in ('clk','clkc'):       # the clock board or card: RUN switch closed, pot at minimum, timing capacitor empty at power-up
             ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
             body=["Rrun +5V RUNSW 1m","Rpot RT X 1m","Rj2 Net-_J2-Pin_2_ 0 1G"]+(["Rhd HLT HLTD 100k","Chd HLTD 0 2.2n"] if dev=='dev' else [])      # the RC on HLT is drawn on the sheet (D050)
-            L+=sub[:-1]+body+[sub[-1]]; L.append(f"X{b} "+" ".join(ports)+f" {b}"); L.append(f".ic V(x{b}.X)=0 V(x{b}.POR)=0")      # both capacitors empty: the card's power-on reset resets the machine
+            L+=sub[:-1]+body+[sub[-1]]; L.append(f"X{b} "+" ".join(ports)+f" {b}"); L.append(f".ic V(x{b}.X)=0 V(x{b}.POR)={POR_V0:g}")      # both capacitors empty (POR_V0 shifts the release): the card's power-on reset resets the machine
             probes+=[f'x{b}.X',f'x{b}.VD2']
             continue
         if b=='prog':      # one copy of the program memory board per 16-word page the program needs, switches set from the program
@@ -314,6 +316,9 @@ def sample(dat,probes,nticks,tend):
     # the machine starts on whichever edge follows its own reset letting go). A deck without the sequencer takes the first edge.
     vr=0.7*VDD      # RST reaches 0.8 VDD on the clock card (1k stage, diode, the panel's 10k); 3.5 V at 5 V, and the same fraction when the deck runs at 4.25 or 4.5 V
     rst=col['v(rst)']; rel=np.where((rst[:-1]>vr)&(rst[1:]<=vr))[0]
+    if len(rel) and len(det)>2:      # where the release fell against the clock: the cards let go of their reset over the 45 us after this, an edge in that window is a straddle
+        trel=t[rel[-1]]; near=min(det,key=lambda e:abs(e-trel)); per=float(np.median(np.diff(det)))
+        print(f"  reset: released at {trel*1e3:.3f} ms, the nearest clock edge {(near-trel)*1e6:+.0f} us from it (period {per*1e3:.3f} ms)")
     det=[e for e in det if e>(t[rel[-1]] if len(rel) else T0/2)]
     t0=col.get('v(xseq.t0)')
     if t0 is not None:
@@ -393,7 +398,7 @@ def run(prog,boards,corner='TYP',ticks=None,tag=None,seed=1):
     words,labels,meta=asm.assemble(open(prog).read())
     m=emu.Machine(words,inputs=[int(x) for x in meta.get('input','').split()]); m.run()
     trace=m.trace if ticks is None else m.trace[:ticks]
-    tag=tag or f"machine_{os.path.basename(prog).split('.')[0]}_{'-'.join(boards).replace('@','')}_{corner}{seed if corner=='MIX' else ''}{f'_t{ticks}' if ticks else ''}"     # a --ticks run keeps its own files
+    tag=tag or f"machine_{os.path.basename(prog).split('.')[0]}_{'-'.join(boards).replace('@','')}_{corner}{seed if corner=='MIX' else ''}{f'_t{ticks}' if ticks else ''}{f'_por{POR_V0*1e6:.0f}uV' if POR_V0 else ''}"     # a --ticks run keeps its own files, so does a shifted reset
     rows,bad=run_trace(words,trace,boards,corner,tag,seed)
     return trace,rows,bad
 

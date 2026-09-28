@@ -16,36 +16,26 @@ def main():
     R=lambda net,x1,y1,x2,y2,wd=0.5,layer='F.Cu': w.rails.append((net,layer,x1,y1,x2,y2,wd))
     w.T("NIBBLE CARD HUB - BUS HUB: power entry, the four bus pull-ups, the eight M-line pull-downs, and a header for each face's ribbon",10*G,6*G,3.5,True)
     w.T("No logic on this card.  Two 64-pin headers wired pin for pin: the top one takes one column face's ribbon, the bottom one the other's (docs/cards.md, D043).\n"
-        "Power: 5 V from the USB-B socket or from a bench supply on the screw terminal, through a 1.5 A polyfuse (D052: the machine draws up to about 1.2 A with every LED lit).  The BUS0#..BUS3# pull-ups (10k) live here and nowhere else.\n"
+        "Power: 5 V from the bench supply on the screw terminal, through a 1.5 A polyfuse (D052, D057: no USB, the machine draws up to about 1.2 A with every LED lit).  The BUS0#..BUS3# pull-ups (10k) live here and nowhere else.\n"
         "The M0..M7 pull-downs (220k) also live here: the program cards diode-OR onto the M lines, so an unselected card leaves them floating and the hub reads them as 0 (D019, D021); 220k, not 1 Meg, so a line falls within the fetch tick against the ribbon and the cards' diodes (D048).\n"
         "Bulk capacitance for the whole machine, a power LED, and test loops on the bus lines and the clock for a logic analyser.\n"
         "Board: ground is a wired ring and bars, not a pour (the 64 lines through the card cut a pour to islands).",10*G,14*G,1.6)
-    # power entry: USB_B -> polyfuse -> +5V
+    # power entry (D052, D057): the bench supply on a 5.08 mm screw terminal at the left edge -> polyfuse -> +5V. No USB: the machine is bench-powered.
     x,y=16*G,30*G
-    usb=w.symbol("Connector","USB_B",w.ref('J'),"USB_B",x,y,0,('1','2','3','4','SH'),"Connector_USB:USB_B_OST_USB-B1HSxx_Horizontal",[("Description","USB-B receptacle, power only",True)],sim=False)
-    w.at(usb,14.0,30.0,180)      # rot 180: the socket opens 1.5 mm past the left edge; pin 1 (VBUS) at (14,30), pin 4 (GND) at (12,30), shields at (9.29, 22.73 and 34.77)
-    w.W(x+3*G,y-2*G,x+5*G,y-2*G); w.L('VBUS',x+5*G,y-2*G,0,'output')
-    w.body+=f'\t(no_connect\n\t\t(at {ksch.f(x+3*G)} {ksch.f(y)})\n\t\t(uuid "{ksch.U()}")\n\t)\n'
-    w.body+=f'\t(no_connect\n\t\t(at {ksch.f(x+3*G)} {ksch.f(y+G)})\n\t\t(uuid "{ksch.U()}")\n\t)\n'
-    w.W(x,y+4*G,x,y+5*G); w.PW('GND',x,y+5*G); w.W(x-G,y+4*G,x-G,y+5*G); w.W(x-G,y+5*G,x,y+5*G)
-    R('GND',12.0,30.0,9.29,30.0); R('GND',9.29,34.77,9.29,YG1)      # USB ground and shields up to the top ground bar
+    term=w.symbol("Connector","Screw_Terminal_01x02",w.ref('J'),"BENCH 5V",x,y,0,('1','2'),"TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal",[("Description","screw terminal, bench supply 5 V in",True)],sim=False)
+    w.at(term,12.0,30.0,90)      # rot 90: pad 1 (VBUS) at (12,30), pad 2 (GND) at (12,24.92), the wire entry toward the left edge
+    w.W(x-2*G,y,x-5*G,y); w.L('VBUS',x-5*G,y,180,'output')                        # pin 1 (the symbol's pins: 1 at -5.08,0 and 2 at -5.08,+2.54 on the sheet)
+    w.W(x-2*G,y+G,x-2*G,y+3*G); w.PW('GND',x-2*G,y+3*G); w.W(x-2*G,y+3*G,x-5*G,y+3*G); w.pwr_flag(x-5*G,y+3*G)     # pin 2: ground, flagged as the machine's source of it
+    R('VBUS',12.0,30.0,20.0,30.0,0.8); R('VBUS',20.0,30.0,20.0,16.0,0.8); R('VBUS',20.0,16.0,26.0,16.0,0.8)     # terminal to the fuse, wide
+    R('GND',12.0,24.92,9.29,24.92,0.8); R('GND',9.29,24.92,9.29,YG1)              # terminal ground up to the ring (0.5 wide past the top header's pin 1)
+    w.label("BENCH IN",17.5,22.5,1.0); w.label("GND",17.5,25.7,1.0); w.label("+5V",17.5,30.8,1.0)
     fx=x+12*G
     w.L('VBUS',fx,y-4*G,180,'input'); w.W(fx,y-4*G,fx,y-3*G)
     fuse=w.symbol("Device","Polyfuse",w.ref('F'),"1.5A",fx,y-1.5*G,0,('1','2'),"Fuse:Fuse_BelFuse_0ZRE0150FF_L23.4mm_W5.3mm",[("Description","resettable fuse, 1.5 A hold",True)],sim=False)
-    w.at(fuse,26.0,16.0,0); w.label("1.5A",24.5,21.5,1.0)     # pad 1 (VBUS) at (26,16), pad 2 (+5V) at (36.2,17.9); the body runs 19.4 to 42.8
+    w.at(fuse,26.0,16.0,0); w.label("1.5A",30.0,21.5,1.0)     # pad 1 (VBUS) at (26,16), pad 2 (+5V) at (36.2,17.9); the body runs 19.4 to 42.8
     w.W(fx,y,fx,y+G); w.W(fx,y+G,fx+4*G,y+G); w.W(fx+4*G,y+G,fx+4*G,y-2*G); w.PW('+5V',fx+4*G,y-2*G)
     w.W(fx+4*G,y+G,fx+8*G,y+G); w.pwr_flag(fx+8*G,y+G)
-    R('VBUS',14.0,30.0,20.0,30.0,0.8); R('VBUS',20.0,30.0,20.0,16.0,0.8); R('VBUS',20.0,16.0,26.0,16.0,0.8)     # USB pin 1 to the fuse, wide
     R('+5V',36.2,17.9,36.2,YV1,0.8)                                                                           # fuse to the top +5V trunk
-    w.label("USB 5V IN",3.0,18.5,1.0)
-    # bench supply entry (D052): a 5.08 mm screw terminal below the USB socket, wires in over the left edge, on VBUS before the fuse
-    term=w.symbol("Connector","Screw_Terminal_01x02",w.ref('J'),"BENCH 5V",x+4*G,y+10*G,0,('1','2'),"TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal",[("Description","screw terminal, bench supply 5 V in",True)],sim=False)
-    w.at(term,12.0,62.0,90)      # rot 90: pad 1 (VBUS) at (12,62), pad 2 (GND) at (12,56.92), the wire entry toward the left edge
-    w.W(x+2*G,y+10*G,x-G,y+10*G); w.L('VBUS',x-G,y+10*G,180,'output')              # pin 1 (the symbol's pins: 1 at -5.08,0 and 2 at -5.08,+2.54 on the sheet)
-    w.W(x+2*G,y+11*G,x+2*G,y+12*G); w.PW('GND',x+2*G,y+12*G)                      # pin 2
-    R('VBUS',12.0,62.0,20.0,62.0,0.8); R('VBUS',20.0,62.0,20.0,30.0,0.8)            # up to the USB's VBUS run
-    R('GND',12.0,56.92,9.29,56.92,0.8); R('GND',9.29,56.92,9.29,34.77,0.8)          # to the USB shield ground, up to the ring
-    w.label("BENCH IN",17.5,54.5,1.0); w.label("GND",17.5,57.7,1.0); w.label("+5V",17.5,62.8,1.0)
     # power LED, its resistor on the trunk, its cathode on the first ground bar
     lx=fx+22*G
     w.PW('+5V',lx,y-4*G); w.W(lx,y-4*G,lx,y-3*G); w.at(w.R('1k',lx,y-1.5*G),46.0,YV1,270); w.W(lx,y,lx,y+0.5*G); w.at(w.LED(lx,y+2*G),50.0,YV1+7.0,90); w.label("PWR",49.0,YV1+10.0,1.0); w.W(lx,y+3.5*G,lx,y+5*G); w.PW('GND',lx,y+5*G); w.T("power",lx+1.5*G,y+2*G,1.0)
@@ -79,7 +69,7 @@ def main():
     for k,(hyy,yv) in enumerate([(frame.HY,YV1),(HY2,YV2)]):
         w.T(f"face {'A' if k==0 else 'B'} ribbon",30*G+k*22*G-4*G,hy-16*G,1.6,True)
         j=frame.bus_header(w,30*G+k*22*G,hy,used,through=True); w.at(j,frame.HX,hyy,90); w.label("1",frame.HX-7.0,hyy+0.9,1.0)
-        w.label(f"BUS  FACE {'A' if k==0 else 'B'}  (pin 1 left)",frame.HX+3.0 if k==0 else frame.HX+30,12.0 if k==0 else 84.0,1.0)
+        w.label("BUS  FACE A" if k==0 else "BUS  FACE B  (pin 1 left)",3.0 if k==0 else frame.HX+30,20.8 if k==0 else 84.0,1.0)      # A's short, left of the fuse's body (x 19 to 43) and above the terminal
         (x1,y1),(x2,y2),(x3,y3),(x4,y4),(x8,y8),(x63,y63),(x64,y64)=[P(frame.HX,hyy,n) for n in (1,2,3,4,8,63,64)]
         R('+5V',x1,y1,x2,y2); R('GND',x4,y4,x8,y8); R('GND',x3,y3,x4,y4)      # pins 1-2 joined; 4-6-8 along the even row; 3-4
         R('+5V',frame.HX,yv,XT,yv,0.8)                                            # the trunk

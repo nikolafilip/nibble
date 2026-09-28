@@ -46,11 +46,10 @@ of each card built, from `bom.py` (`--per`):
 | 2N7000 | TO-92_Inline_Wide | 57 | 99 |  | 156 |
 | BENCH 5V | TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal |  |  | 1 | 1 |
 | test loop | TestPoint_Loop_D2.50mm_Drill1.0mm | 15 |  | 6 | 21 |
-| USB-B socket | USB_B_OST_USB-B1HSxx_Horizontal |  |  | 1 | 1 |
 
-320 parts. The machine's totals in section 2 cover these, so buy the
+319 parts. The machine's totals in section 2 cover these, so buy the
 2N7000, the 47k and the 100 nF by the hundred once and the pilot uses the
-first of them; the polyfuse, the terminal, the USB socket and the 100 µF
+first of them; the polyfuse, the terminal and the 100 µF
 are the hub's alone. A short 64-way ribbon with three sockets (section 3)
 is the pilot's bus.
 
@@ -133,9 +132,8 @@ are cheaper than by the exact count and you will drop some.
 | 2N7000 | TO-92_Inline_Wide | 3515 |
 | BENCH 5V | TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal | 1 |
 | test loop | TestPoint_Loop_D2.50mm_Drill1.0mm | 21 |
-| USB-B socket | USB_B_OST_USB-B1HSxx_Horizontal | 1 |
 
-7129 parts on 26 boards: alu0, alu1, alu2, alu3, clock, coupon, ctr0, ctr1, ctr2, ctr3, ctr4, ctr5, ctr6, ctr7, hub, memctl, memslot, panela, panelb, panelc, prog, reg0, reg1, reg2, reg3, 03-sequencer
+7128 parts on 26 boards: alu0, alu1, alu2, alu3, clock, coupon, ctr0, ctr1, ctr2, ctr3, ctr4, ctr5, ctr6, ctr7, hub, memctl, memslot, panela, panelb, panelc, prog, reg0, reg1, reg2, reg3, 03-sequencer
 
 Notes:
 
@@ -146,7 +144,7 @@ Notes:
 - **Capacitors**: 100 nF disc 2.5 mm pitch; electrolytics are 5 mm diameter, 2 mm pitch.
 - **Switches**: DIP-8 slide (the program words and the panel's levels), one DIP-4 (the panel's data), one DIP-1 (RUN); 6 mm tactile buttons for CLK and RST.
 - **Headers**: shrouded 2x32 box headers, 2.54 mm (XFCN BH254V-64P, LCSC C48603668, or any); 2x6 box headers for the sequencer-counter link; 1x3 pin headers for the page jumpers with four jumper caps per page.
-- **Hub**: USB-B horizontal receptacle, a 2-way 5.08 mm screw terminal for the bench supply (Phoenix MKDS 1,5/2-5.08 or any 5.08 mm block), 1.5 A radial polyfuse (Bel 0ZRE0150FF, D052), 100 µF bulk. The machine draws up to about 1.2 A with every LED lit: run it from the bench supply at 5.0 V with the limit at 1.5 A, or from a USB supply rated 2 A, never a computer port.
+- **Hub**: a 2-way 5.08 mm screw terminal for the bench supply (Phoenix MKDS 1,5/2-5.08 or any 5.08 mm block; no USB, D057), 1.5 A radial polyfuse (Bel 0ZRE0150FF, D052), 100 µF bulk. The machine draws up to about 1.2 A with every LED lit: run it from the bench supply at 5.0 V with the limit at 1.5 A, or from a USB supply rated 2 A, never a computer port.
 - **Clock**: 1 Meg 9 mm vertical pot (Alpha RD901F), 47 nF and 2.2 µF timing caps.
 - **Test loops**: 2.5 mm wire loops on the hub and the coupon, or bare wire. The coupon also wants a 3.3 nF capacitor with clip leads (the ribbon's load for its DRV loop) and a x10 scope probe; the expected readings assume both (`sim/results/coupon_expected.md`).
 

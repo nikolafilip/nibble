@@ -42,7 +42,7 @@ the table, power off and look for a bridge between the three TO-92 pads.
 
 | Card | Transistors | Expected current (5 V) | Soldering time |
 |---|---|---|---|
-| coupon | 26 | under 3 mA | 1 h |
+| coupon | 57 | 5 to 8 mA with IN low, 11 to 14 mA with IN high (the oscillator's 1k driver runs always; the LED and the row when IN is up) | 1.5 h |
 | hub | 0 | under 5 mA (the LED) | 1 h (the headers, the USB socket) |
 | panel A, B, C | 28, 20, 32 | 5 to 40 mA depending on the LEDs lit; B 10 mA more, its two button drivers idle low through 1k (D053) | 2 h each |
 | register bit | 99 | 5 to 12 mA | 2.5 h each |
@@ -56,23 +56,44 @@ the table, power off and look for a bridge between the three TO-92 pads.
 
 ## 1. Coupon
 
-One of every cell, with test loops, plus a ring oscillator: it measures
-the transistor and the cell in copper, which the simulation only assumed.
-Power it from the bus header (pins 1-2 +5 V, 3-4 ground) on the bench
-supply, or from the hub once the hub is trusted. Expected current under
-3 mA.
+Every cell the machine is built from, with a test loop on each (D056): it
+measures the transistor and the cells in copper, which the simulation only
+assumed. Power it from the bench supply on the 2-pin POWER header (5.00 V,
+limit 300 mA), or from the bus header (pins 1-2 +5 V, 3-4 ground) once the
+hub is trusted. Drive the inputs from the 6-pin INPUTS header: each has a
+1 Meg pull-down, so an open pin is 0; a wire from the +5V loop is a 1. RST
+open lets the flip-flop run. Clip a 3.3 nF capacitor from the DRV loop to
+GND (the ribbon and seventeen cards' gates, as the clock card sees them)
+and use a x10 probe: the expected numbers assume both.
 
-| Measure | Where | Simulated | Write it in `gate-cell.md` |
+The numbers to expect are in `sim/results/coupon_expected.md`, from
+`sim/tb_coupon.py` on the routed card's own netlist at the model's three
+threshold corners (0.8, 2.0, 3.0 V) and three mixed-threshold seeds; the
+band is the lowest to the highest over those runs. What each loop stands
+for and what a reading outside its band would mean:
+
+| Measure | Loop | Expected (5 V, x10 probe) | What it stands for |
 |---|---|---|---|
-| Ring period | RING | about 14 us (70 kHz) | gate delay = period / 10 |
-| Rise time, fan-out 1 vs 10 | FO1, FO10 | 1 us vs 3 us | the 47k pull-up against the gate capacitance |
-| NAND and NOR output low, all inputs high | NAND, NOR | under 0.2 V | three transistors in series still pull low |
-| Bus driver low with the 10k pull-up | BUS | under 0.1 V | |
-| Supply current, all inputs low | the supply | under 3 mA | |
+| Ring period | RING0 (the ring node), RING (buffered) | 6 to 24 us; a low-threshold ring swings only 1.6 to 3 V, and RING may then show nothing while RING0 runs | the gate delay of the 47k cell: the corner this batch of transistors sits at. Slower than the band: the cell is slower than any corner simulated |
+| Rise 10-90 %, fan-out 1 and 10 | FO1, FO10 (IN toggled by hand or a 1 kHz square) | 10 to 12 us and 67 to 77 us | the pull-up against the gate capacitance with its Miller part: what every control line's rising edge costs. Slower than the band: the input capacitance is above the model's |
+| Delay IN edge to FO1 / FO10 half way | FO1, FO10 | 5 to 6.5 us / 14 to 29 us | the same, as a delay |
+| NAND and NOR output low, N1 N2 N3 = 111 | NAND, NOR | under 0.01 V | three transistors in series still pull low: every decoder's stack. Above 0.5 V: stop |
+| Bus driver low, IN high | BUS | under 0.01 V (10k pull-up) | the register and ALU drivers against the hub's pull-up |
+| Schmitt trip points | X | lower 0.8 to 3.0 V, upper 0.4 V above it | the clock card's Schmitt pair (the same parts): the hysteresis is 0.4 V whatever the threshold. No oscillation, or X stuck: the pair's dead point the design was meant to exclude |
+| Oscillator period and duty | OSC | 1.6 to 2.6 ms, high 34 to 80 % | the clock card at its fastest setting (100k + 47 nF, the pot at zero) |
+| Toggle flip-flop | Q with RST open | half the OSC rate, one Q edge per OSC rising edge | the master-slave cell of the counters and the sequencer, clocked by a real edge |
+| Reset | Q with RST wired to +5V | 0 V between clock edges; at a rising clock edge a pulse of up to 4 V and 10 us can appear at some threshold mixes (the master's release racing the slave's copy; the machine's masters are closed at that moment) | the asynchronous reset of the counter and sequencer flops |
+| Line driver edge into 3.3 nF | DRV (clip the capacitor on) | high 4.0 V (5 V less a diode, through 1.1k against 10k); rise 0.5 to 3.5 V in 6 to 8 us; fall 3.5 to 0.8 V in 45 to 55 us | the CLK edge every card sees and the RST release (D053); the capacitor's tolerance moves both by its own percentage |
+| Threshold | VTO (a meter) | 0.9 to 3.0 V: about 0.1 V above this one transistor's threshold | Vgs(th) of one 2N7000 at 0.6 mA. Also measure twenty loose ones on a component tester or with a 4.7k and the meter: the spread of the batch is what MIX simulated |
+| Program row | ROM | 4.5 V with IN low, 0 V with IN high | the M-line high through a row's diode into the hub's 220k (D048) |
+| Supply current | the supply | 5 to 8 mA with IN low, 11 to 14 mA with IN high | about 0.1 mA per gate that is on, the oscillator's 1k driver half the time, the LED and the 3.3k row when IN is up |
 
-If the ring is slower than 30 us or an output low is above 0.5 V, stop:
-the cell is not what the simulation modelled, and every card depends on
-it.
+A reading outside its band means the cell in copper is not the cell the
+whole machine was simulated with. Stop there: the second order waits until
+the model in `lib/2N7000.lib` is corrected to the measurement and the
+machine gate (docs/cards.md step 9) is rerun on it. A low ring peak or a
+blind RING loop is not a failure (read RING0); the reset pulse at a clock
+edge is not a failure.
 
 ## 2. Hub
 

@@ -11,7 +11,7 @@ frame.
 
 | Design | Pieces | Why this one |
 |---|---|---|
-| coupon | 5 | one of every cell with test loops and a ring oscillator: the transistor and the cell in copper |
+| coupon | 5 | every cell with a test loop on it: the ring, fan-out, the stacks, the bus driver, the clock card's oscillator, a flip-flop with its reset, the D053 line driver, a threshold fixture, a program row (D056) |
 | reg0 | 5 | one full logic card (99 transistors), run by hand on the panel's switches; the same design four times in the machine |
 | hub | 5 | the power entry, the bus pull-ups, both 64-way headers; the first ribbon is crimped against it |
 
@@ -26,22 +26,29 @@ of each card built, from `bom.py` (`--per`):
 | 100u | CP_Radial_D5.0mm_P2.00mm |  |  | 1 | 1 |
 | 10u | CP_Radial_D5.0mm_P2.00mm | 1 | 1 |  | 2 |
 | 100n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 1 | 1 | 1 | 3 |
+| 47n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 1 |  |  | 1 |
+| 1N4148 | D_DO-35_SOD27_P7.62mm_Horizontal | 2 |  |  | 2 |
 | polyfuse | Fuse_BelFuse_0ZRE0150FF_L23.4mm_W5.3mm |  |  | 1 | 1 |
 | IDC header | IDC-Header_2x32_P2.54mm_Vertical | 1 | 1 | 2 | 4 |
 | LED | LED_D3.0mm | 1 | 3 | 1 | 5 |
-| pin header | PinHeader_1x04_P2.54mm_Vertical | 1 |  |  | 1 |
-| 10k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1 | 2 | 4 | 7 |
-| 1Meg | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 4 |  |  | 4 |
-| 1k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1 | 3 | 1 | 5 |
-| 220k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical |  |  | 8 | 8 |
+| pin header | PinHeader_1x02_P2.54mm_Vertical | 1 |  |  | 1 |
+| pin header | PinHeader_1x06_P2.54mm_Vertical | 1 |  |  | 1 |
+| 100 | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1 |  |  | 1 |
+| 100k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1 |  |  | 1 |
+| 10k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 3 | 2 | 4 | 9 |
+| 1Meg | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 5 |  |  | 5 |
+| 1k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 3 | 3 | 1 | 7 |
+| 220k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1 |  | 8 | 9 |
 | 22k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical |  | 2 |  | 2 |
-| 47k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 20 | 47 |  | 67 |
-| 2N7000 | TO-92_Inline_Wide | 26 | 99 |  | 125 |
+| 3.3k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1 |  |  | 1 |
+| 4.7k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 2 |  |  | 2 |
+| 47k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 36 | 47 |  | 83 |
+| 2N7000 | TO-92_Inline_Wide | 57 | 99 |  | 156 |
 | BENCH 5V | TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal |  |  | 1 | 1 |
-| test loop | TestPoint_Loop_D2.50mm_Drill1.0mm | 6 |  | 6 | 12 |
+| test loop | TestPoint_Loop_D2.50mm_Drill1.0mm | 15 |  | 6 | 21 |
 | USB-B socket | USB_B_OST_USB-B1HSxx_Horizontal |  |  | 1 | 1 |
 
-249 parts. The machine's totals in section 2 cover these, so buy the
+320 parts. The machine's totals in section 2 cover these, so buy the
 2N7000, the 47k and the 100 nF by the hundred once and the pilot uses the
 first of them; the polyfuse, the terminal, the USB socket and the 100 µF
 are the hub's alone. A short 64-way ribbon with three sockets (section 3)
@@ -97,38 +104,38 @@ are cheaper than by the exact count and you will drop some.
 | 2.2u | CP_Radial_D5.0mm_P2.00mm | 2 |
 | 100n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 52 |
 | 2.2n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 2 |
-| 47n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 1 |
+| 47n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 2 |
 | 1N4148 | D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp | 727 |
-| 1N4148 | D_DO-35_SOD27_P7.62mm_Horizontal | 4 |
+| 1N4148 | D_DO-35_SOD27_P7.62mm_Horizontal | 6 |
 | polyfuse | Fuse_BelFuse_0ZRE0150FF_L23.4mm_W5.3mm | 1 |
 | IDC header | IDC-Header_2x03_P2.54mm_Vertical | 20 |
 | IDC header | IDC-Header_2x06_P2.54mm_Vertical | 18 |
 | IDC header | IDC-Header_2x32_P2.54mm_Vertical | 53 |
 | LED | LED_D3.0mm | 281 |
-| pin header | PinHeader_1x02_P2.54mm_Vertical | 1 |
+| pin header | PinHeader_1x02_P2.54mm_Vertical | 2 |
 | pin header | PinHeader_1x03_P2.54mm_Vertical | 144 |
-| pin header | PinHeader_1x04_P2.54mm_Vertical | 1 |
+| pin header | PinHeader_1x06_P2.54mm_Vertical | 1 |
 | pot | Potentiometer_Alpha_RD901F-40-00D_Single_Vertical | 1 |
-| 100 | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 3 |
-| 100k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 7 |
-| 10k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 131 |
-| 1Meg | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 77 |
-| 1k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 286 |
-| 220k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 10 |
+| 100 | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 4 |
+| 100k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 8 |
+| 10k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 133 |
+| 1Meg | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 78 |
+| 1k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 288 |
+| 220k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 11 |
 | 22k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 87 |
-| 3.3k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 80 |
-| 4.7k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 2 |
-| 47k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1427 |
+| 3.3k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 81 |
+| 4.7k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 4 |
+| 47k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1443 |
 | switch | SW_DIP_SPSTx01_Slide_9.78x4.72mm_W7.62mm_P2.54mm | 1 |
 | switch | SW_DIP_SPSTx04_Slide_9.78x12.34mm_W7.62mm_P2.54mm | 1 |
 | switch | SW_DIP_SPSTx08_Slide_9.78x22.5mm_W7.62mm_P2.54mm | 84 |
 | switch | SW_PUSH_6mm | 2 |
-| 2N7000 | TO-92_Inline_Wide | 3484 |
+| 2N7000 | TO-92_Inline_Wide | 3515 |
 | BENCH 5V | TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal | 1 |
-| test loop | TestPoint_Loop_D2.50mm_Drill1.0mm | 12 |
+| test loop | TestPoint_Loop_D2.50mm_Drill1.0mm | 21 |
 | USB-B socket | USB_B_OST_USB-B1HSxx_Horizontal | 1 |
 
-7058 parts on 26 boards: alu0, alu1, alu2, alu3, clock, coupon, ctr0, ctr1, ctr2, ctr3, ctr4, ctr5, ctr6, ctr7, hub, memctl, memslot, panela, panelb, panelc, prog, reg0, reg1, reg2, reg3, 03-sequencer
+7129 parts on 26 boards: alu0, alu1, alu2, alu3, clock, coupon, ctr0, ctr1, ctr2, ctr3, ctr4, ctr5, ctr6, ctr7, hub, memctl, memslot, panela, panelb, panelc, prog, reg0, reg1, reg2, reg3, 03-sequencer
 
 Notes:
 
@@ -141,7 +148,7 @@ Notes:
 - **Headers**: shrouded 2x32 box headers, 2.54 mm (XFCN BH254V-64P, LCSC C48603668, or any); 2x6 box headers for the sequencer-counter link; 1x3 pin headers for the page jumpers with four jumper caps per page.
 - **Hub**: USB-B horizontal receptacle, a 2-way 5.08 mm screw terminal for the bench supply (Phoenix MKDS 1,5/2-5.08 or any 5.08 mm block), 1.5 A radial polyfuse (Bel 0ZRE0150FF, D052), 100 µF bulk. The machine draws up to about 1.2 A with every LED lit: run it from the bench supply at 5.0 V with the limit at 1.5 A, or from a USB supply rated 2 A, never a computer port.
 - **Clock**: 1 Meg 9 mm vertical pot (Alpha RD901F), 47 nF and 2.2 µF timing caps.
-- **Test loops**: 2.5 mm wire loops on the hub and the coupon, or bare wire.
+- **Test loops**: 2.5 mm wire loops on the hub and the coupon, or bare wire. The coupon also wants a 3.3 nF capacitor with clip leads (the ribbon's load for its DRV loop) and a x10 scope probe; the expected readings assume both (`sim/results/coupon_expected.md`).
 
 ## 3. Cables
 

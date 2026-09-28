@@ -9,7 +9,7 @@
 | `registers.py`, `build_registers.py`, `tb_registers.py` | Board 02: logic, generator, testbench (a clocked script through every register path; `cards` runs it on the four bit cards) |
 | `build_reg_card.py` | Register bit cards `cards/reg<i>/` (docs/cards.md) from `registers.build_bit`, on the dense tile (`ksch.DenseWriter`) in the 100 x 100 card frame (`frame.card_frame`) |
 | `panel.py`, `build_panel.py` | Board 06: switches, buttons, LEDs, input port |
-| `build_hub.py`, `coupon.py`, `build_coupon.py` | Board 07 (hub) and the gate coupon |
+| `build_hub.py`, `coupon.py`, `build_coupon.py` | Board 07 (hub) and the gate coupon (`build_coupon_card.py`, `tb_coupon.py`: the coupon card and its expected readings, D056) |
 | `plots_alu.py` | Transient plots from a testbench run |
 | `emu.py` | Tick-accurate ISA emulator; the reference for the whole-machine simulation |
 | `asm.py` | Assembler; `programs/*.asm` are the reference programs, `test_emu.py` runs them on the emulator |

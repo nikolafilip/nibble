@@ -20,7 +20,7 @@ hand-edit the schematics.
 | Clock | `clock` | 15 + the Schmitt pair | in: HLT. out: CLK, RST | none |
 | Hub | `hub` | 0 | every line, on two headers | none |
 | Panel A, B, C | `panela`, `panelb`, `panelc` | 28, 20, 32 | A: A3..B0, SUB..AB switched and shown, D3..0 CF ZF CLK RST shown. B: OI..MAI, MI..INP switched and shown, CLK and RST buttons. C: PC7..0, M7..0 shown, DATA switches driven onto BUS# while INP | none |
-| Coupon | `coupon` | 26 | power only | none |
+| Coupon | `coupon` | 57 | power only (a 2-pin header for the bench supply) | none |
 
 ## Register bit cards (`reg0` .. `reg3`)
 
@@ -210,7 +210,40 @@ C). Group `pnl`.
 
 ## Coupon card (`coupon`)
 
-The gate cell in copper, powered from the bus header: ring oscillator,
-fan-out 1 vs 10, 3-input NAND and NOR, a bus driver with the hub-style
-pull-up, an LED; inputs on a 1x4 header with pull-downs, test loops
-(`sim/coupon.py`). Its own testbench sheet is excluded from the board.
+Every cell in copper, each with a test loop, powered from a 2-pin header
+on the bench supply or from the bus header (D056, `sim/coupon.py`,
+`sim/build_coupon_card.py`): the 5-inverter ring (a buffered loop and a raw
+one on the ring node), fan-out 1 and 10, 3-input NAND and NOR, a bus driver
+with the hub-style 10k pull-up, the clock card's oscillator (the Schmitt
+pair and its 100k + 47 nF, drawn on the sheet as on `clock`), a master-slave
+flip-flop wired as a toggle with its asynchronous reset (RST on the input
+header), the D053 line driver (1k inverter, 100 ohm, diode, 10k pull-down;
+the bench clips 3.3 nF on its loop), a diode-connected transistor on 4.7k
+that reads its own threshold, a program row (3.3k, 1N4148, 220k), an LED.
+Inputs IN, N1..N3, RST on a 1x6 header with 1 Meg pull-downs (PD tiles);
+fifteen loops including GND and +5V. 57 transistors on six tile columns,
+routed in one freerouting pass, DRC clean.
+
+`sim/tb_coupon.py kicad` simulates the routed card's export at TYP, LO, HI
+and MIX seeds 1..3 with a x10 probe on every loop and writes the bands
+the bench must land in: `sim/results/coupon_expected.md` (ring 5.9 to
+23.6 us, fan-out-10 rise 67 to 77 us, oscillator 1.64 to 2.55 ms, Q at
+half that, DRV rise 6.6 us and fall 49 us into 3.3 nF, VTO 0.88 to 3.02 V,
+5 to 14 mA). `dev` runs the gate list plus the sheet-drawn parts and gives
+the same numbers at the uniform corners, so the sheet matches the design.
+Two things the testbench found that the bench should know: with
+low-threshold transistors the ring swings only to about 2 V and a
+high-threshold buffer never switches (hence the raw RING0 loop), and while
+RST holds the flip-flop a pulse of up to 4 V and 10 us can appear on Q at a
+rising clock edge at some threshold mixes (the master's release racing the
+slave's copy; the machine's masters are closed then, and every MIX run of
+the machine gate passed with it). Its own testbench sheet is excluded from
+the board.
+
+Reproduce from `sim/`:
+
+```
+python3 build_coupon_card.py
+<kicad python> pcb.py ../cards/coupon coupon
+python3 tb_coupon.py kicad out/tb_coupon --all
+```

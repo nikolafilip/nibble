@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "2350f380-000b-4a7a-847a-c5bd990c72ea")
+	(uuid "a512470f-c678-47f9-aee0-cb9c2033f0ce")
 	(paper "User" 203.2 127)
 	(lib_symbols
 		(symbol "Simulation_SPICE:VDC"
@@ -880,7 +880,7 @@
 			(embedded_fonts no)
 		)
 	)
-	(text "TESTBENCH: IN toggles at 1 kHz, N1..N3 are stepped through 000,100,110,111.  Excluded from the board."
+	(text "TESTBENCH: IN toggles at 1 kHz, N1..N3 are stepped through 000,100,110,111, RST is high for the first millisecond.  Excluded from the board; sim/tb_coupon.py is the measured bench."
 		(exclude_from_sim no)
 		(at 25.4 15.24 0)
 		(effects
@@ -890,9 +890,9 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "7ec44afb-ea68-4391-9ad5-f22140f67d38")
+		(uuid "5d65da6a-707d-40ef-8b66-b49b5b02689b")
 	)
-	(text ".tran 0.2u 4m"
+	(text ".tran 0.5u 12m"
 		(exclude_from_sim no)
 		(at 25.4 35.56 0)
 		(effects
@@ -901,9 +901,9 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "a15d5778-48c0-4f5d-b6dd-85ed60f6b891")
+		(uuid "5a264bf6-7e63-41ac-aad5-059715604199")
 	)
-	(text ".ic v(RING0)=0"
+	(text ".ic v(RING0)=0 v(X)=0"
 		(exclude_from_sim no)
 		(at 25.4 43.18 0)
 		(effects
@@ -912,7 +912,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "c5d986fd-3107-49fd-a0f0-daff293a43ad")
+		(uuid "cafb64cb-99f5-47ce-8dcf-10364ff4db74")
 	)
 	(text "5 V supply (the hub board / bench supply)"
 		(exclude_from_sim no)
@@ -923,7 +923,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "be36aa62-49ff-4786-8c78-1ddc0f6f9662")
+		(uuid "f6b0368b-eeab-468e-9107-f8ec76a145c9")
 	)
 	(symbol
 		(lib_id "Simulation_SPICE:VDC")
@@ -936,7 +936,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "7c1f0463-5fa7-457e-8f08-433b050785da")
+		(uuid "e72575bd-93fd-42bb-8816-2e5cd8a3181d")
 		(property "Reference" "V9001"
 			(at 38.1 74.93 0)
 			(show_name no)
@@ -1026,14 +1026,14 @@
 			)
 		)
 		(pin "1"
-			(uuid "3c870c07-78a5-4334-8a46-0f1db5c8b498")
+			(uuid "9427a43f-1399-4708-a06d-54090f6548ca")
 		)
 		(pin "2"
-			(uuid "41872892-6298-448e-bb7a-28091def6a5c")
+			(uuid "263c8f35-a5a6-4cb8-8852-d73b5cd23ee4")
 		)
 		(instances
 			(project "coupon"
-				(path "/b97487ed-8336-4c2a-9cc2-72825f7e138c/2350f380-000b-4a7a-847a-c5bd990c72ea"
+				(path "/d59f4a01-09e5-4bfd-bf6e-177742d3e35b/a512470f-c678-47f9-aee0-cb9c2033f0ce"
 					(reference "V9001")
 					(unit 1)
 				)
@@ -1048,7 +1048,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "61d0d5f5-6b66-4193-b30c-684bc8fb68f9")
+		(uuid "e00efc39-ffa9-46e5-b806-e99e2aeb808c")
 	)
 	(symbol
 		(lib_id "power:+5V")
@@ -1061,7 +1061,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "162226db-7479-456f-89de-45efbd749c7b")
+		(uuid "a3c9c584-203b-4cde-a3d5-708cead45b9b")
 		(property "Reference" "#PWR9001"
 			(at 38.1 67.31 0)
 			(hide yes)
@@ -1119,11 +1119,11 @@
 			)
 		)
 		(pin "1"
-			(uuid "7814e5c2-8cb4-4ff7-91b9-6a4e63666526")
+			(uuid "83d07cc7-b4f1-414d-b24a-a9ea190ee7b4")
 		)
 		(instances
 			(project "coupon"
-				(path "/b97487ed-8336-4c2a-9cc2-72825f7e138c/2350f380-000b-4a7a-847a-c5bd990c72ea"
+				(path "/d59f4a01-09e5-4bfd-bf6e-177742d3e35b/a512470f-c678-47f9-aee0-cb9c2033f0ce"
 					(reference "#PWR9001")
 					(unit 1)
 				)
@@ -1138,7 +1138,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "cbda463d-8302-4ba1-9394-0dd96f06da20")
+		(uuid "f2ddc36b-c44a-4c7e-83a1-5651c164bffb")
 	)
 	(symbol
 		(lib_id "power:GND")
@@ -1151,7 +1151,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "40fb5f18-1265-4b04-85d6-c020ca0d5c2b")
+		(uuid "7b01092c-494f-48d3-ad3d-c45fe2994d72")
 		(property "Reference" "#PWR9002"
 			(at 38.1 82.55 0)
 			(hide yes)
@@ -1209,11 +1209,11 @@
 			)
 		)
 		(pin "1"
-			(uuid "fc9e10c9-2ec9-4254-84e9-3c2b7ba2218e")
+			(uuid "39a51027-c0ac-445c-a4ca-457e9ef513d3")
 		)
 		(instances
 			(project "coupon"
-				(path "/b97487ed-8336-4c2a-9cc2-72825f7e138c/2350f380-000b-4a7a-847a-c5bd990c72ea"
+				(path "/d59f4a01-09e5-4bfd-bf6e-177742d3e35b/a512470f-c678-47f9-aee0-cb9c2033f0ce"
 					(reference "#PWR9002")
 					(unit 1)
 				)
@@ -1231,7 +1231,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "7a46fbe4-b638-4f61-a1d2-8bcd1c32bbfa")
+		(uuid "db314c6b-80b5-4542-9330-57e921575e4c")
 		(property "Reference" "V9002"
 			(at 68.58 74.93 0)
 			(show_name no)
@@ -1331,14 +1331,14 @@
 			)
 		)
 		(pin "1"
-			(uuid "9947100d-20f7-4c48-aa8a-92f8548442c8")
+			(uuid "cc290861-bca5-4275-ab0f-1dc81c338014")
 		)
 		(pin "2"
-			(uuid "9007688b-06d1-4488-91e9-242f37d37101")
+			(uuid "3752d588-f4d7-4aff-b4b6-ba2c4aa761b8")
 		)
 		(instances
 			(project "coupon"
-				(path "/b97487ed-8336-4c2a-9cc2-72825f7e138c/2350f380-000b-4a7a-847a-c5bd990c72ea"
+				(path "/d59f4a01-09e5-4bfd-bf6e-177742d3e35b/a512470f-c678-47f9-aee0-cb9c2033f0ce"
 					(reference "V9002")
 					(unit 1)
 				)
@@ -1353,7 +1353,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "1daa2d41-59f5-4028-acc8-e94019e1849d")
+		(uuid "058d5c5a-5f4a-44a4-90b6-e28808b3e2c7")
 	)
 	(global_label "IN"
 		(shape output)
@@ -1365,7 +1365,7 @@
 			)
 			(justify right)
 		)
-		(uuid "63e85384-2c8a-46e9-aff6-bca4de38df35")
+		(uuid "24fc845b-9054-4e1d-9363-21fabce89747")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 66.04 68.58 0)
 			(hide yes)
@@ -1390,7 +1390,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "a293a968-609d-45ca-b3d6-4d4ae8901f94")
+		(uuid "88b571a1-008a-44c5-bb8a-5310d9d1cc4e")
 		(property "Reference" "#PWR9003"
 			(at 68.58 80.01 0)
 			(hide yes)
@@ -1448,11 +1448,11 @@
 			)
 		)
 		(pin "1"
-			(uuid "d9a44971-703e-4dd3-ab81-ad1a4a00d755")
+			(uuid "b8d369ea-0275-48ef-89e3-07a4e44f15b7")
 		)
 		(instances
 			(project "coupon"
-				(path "/b97487ed-8336-4c2a-9cc2-72825f7e138c/2350f380-000b-4a7a-847a-c5bd990c72ea"
+				(path "/d59f4a01-09e5-4bfd-bf6e-177742d3e35b/a512470f-c678-47f9-aee0-cb9c2033f0ce"
 					(reference "#PWR9003")
 					(unit 1)
 				)
@@ -1470,7 +1470,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "f4c3487d-6ba3-4860-91bf-08c026d65449")
+		(uuid "1e79d7b1-6899-472d-980a-4fbb551e2950")
 		(property "Reference" "V9003"
 			(at 91.44 74.93 0)
 			(show_name no)
@@ -1559,7 +1559,7 @@
 				)
 			)
 		)
-		(property "Sim.Params" "pwl=\"0 0 0.9995m 0 1.0005m 5 4m 5\""
+		(property "Sim.Params" "pwl=\"0 0 0.9995m 0 1.0005m 5 12m 5\""
 			(at 88.9 76.2 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1570,14 +1570,14 @@
 			)
 		)
 		(pin "1"
-			(uuid "ad5b6c98-5075-4c3d-90fb-7793af016b14")
+			(uuid "2134d32b-8d3e-4fa9-b2e0-8a82b05041c6")
 		)
 		(pin "2"
-			(uuid "31d6c7f2-efb7-420a-9581-6c458dc34f42")
+			(uuid "da71f583-2cc7-4424-b752-de40562d9327")
 		)
 		(instances
 			(project "coupon"
-				(path "/b97487ed-8336-4c2a-9cc2-72825f7e138c/2350f380-000b-4a7a-847a-c5bd990c72ea"
+				(path "/d59f4a01-09e5-4bfd-bf6e-177742d3e35b/a512470f-c678-47f9-aee0-cb9c2033f0ce"
 					(reference "V9003")
 					(unit 1)
 				)
@@ -1592,7 +1592,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "db3743f2-61b1-40c2-bb51-2b32bd62e062")
+		(uuid "c05bab58-f881-40ce-aaeb-75b00ad6addc")
 	)
 	(global_label "N1"
 		(shape output)
@@ -1604,7 +1604,7 @@
 			)
 			(justify right)
 		)
-		(uuid "dcb7519c-9686-46e0-a6e5-86580337afba")
+		(uuid "d3b0243d-478e-4a69-8def-520f0d8268ec")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 88.9 68.58 0)
 			(hide yes)
@@ -1629,7 +1629,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "e00b393c-b174-4361-ab5d-ad2ac93a46cb")
+		(uuid "e71416aa-147a-44ce-9793-4716bef6496c")
 		(property "Reference" "#PWR9004"
 			(at 91.44 80.01 0)
 			(hide yes)
@@ -1687,11 +1687,11 @@
 			)
 		)
 		(pin "1"
-			(uuid "5f748404-eb2e-4cd4-a38f-f0e44ad3aee3")
+			(uuid "42e4b9e9-c9aa-43ff-be2f-63679794c519")
 		)
 		(instances
 			(project "coupon"
-				(path "/b97487ed-8336-4c2a-9cc2-72825f7e138c/2350f380-000b-4a7a-847a-c5bd990c72ea"
+				(path "/d59f4a01-09e5-4bfd-bf6e-177742d3e35b/a512470f-c678-47f9-aee0-cb9c2033f0ce"
 					(reference "#PWR9004")
 					(unit 1)
 				)
@@ -1709,7 +1709,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "df0af70a-82f1-409a-bb11-b5f6e9a5d354")
+		(uuid "65f0a5d0-cdd0-449e-a44a-11377d07b873")
 		(property "Reference" "V9004"
 			(at 114.3 74.93 0)
 			(show_name no)
@@ -1798,7 +1798,7 @@
 				)
 			)
 		)
-		(property "Sim.Params" "pwl=\"0 0 1.9995m 0 2.0005m 5 4m 5\""
+		(property "Sim.Params" "pwl=\"0 0 1.9995m 0 2.0005m 5 12m 5\""
 			(at 111.76 76.2 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1809,14 +1809,14 @@
 			)
 		)
 		(pin "1"
-			(uuid "3deb4ad4-639e-471b-afce-a303f5bbeb6a")
+			(uuid "86c412c7-2f85-444c-8812-bee1dcdd540a")
 		)
 		(pin "2"
-			(uuid "b454d518-a1ce-4e62-8942-550f85834c68")
+			(uuid "15717a3d-fea8-4433-9359-13a3aa061268")
 		)
 		(instances
 			(project "coupon"
-				(path "/b97487ed-8336-4c2a-9cc2-72825f7e138c/2350f380-000b-4a7a-847a-c5bd990c72ea"
+				(path "/d59f4a01-09e5-4bfd-bf6e-177742d3e35b/a512470f-c678-47f9-aee0-cb9c2033f0ce"
 					(reference "V9004")
 					(unit 1)
 				)
@@ -1831,7 +1831,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "88228922-1d77-41f3-b3f0-03bd2da6918e")
+		(uuid "c5a5c00b-278d-406e-888a-9cf941cd447c")
 	)
 	(global_label "N2"
 		(shape output)
@@ -1843,7 +1843,7 @@
 			)
 			(justify right)
 		)
-		(uuid "ca159bd0-27d0-4761-965b-21cb53ac2147")
+		(uuid "8353dcf3-e206-4a4e-8d0e-bf7845827422")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 111.76 68.58 0)
 			(hide yes)
@@ -1868,7 +1868,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "cb744e65-3df5-420f-9062-a66bcccb8cf9")
+		(uuid "91096166-775e-4037-ab30-aafb12314560")
 		(property "Reference" "#PWR9005"
 			(at 114.3 80.01 0)
 			(hide yes)
@@ -1926,11 +1926,11 @@
 			)
 		)
 		(pin "1"
-			(uuid "be65ea1e-bb3b-4409-b015-fd58f9ae209f")
+			(uuid "75d414b7-3cb7-4957-9600-60859fe8f3aa")
 		)
 		(instances
 			(project "coupon"
-				(path "/b97487ed-8336-4c2a-9cc2-72825f7e138c/2350f380-000b-4a7a-847a-c5bd990c72ea"
+				(path "/d59f4a01-09e5-4bfd-bf6e-177742d3e35b/a512470f-c678-47f9-aee0-cb9c2033f0ce"
 					(reference "#PWR9005")
 					(unit 1)
 				)
@@ -1948,7 +1948,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "69436923-5077-47a3-9960-7ec5d0d128a0")
+		(uuid "057801e5-7925-47bc-8acb-9b6e577b7ea8")
 		(property "Reference" "V9005"
 			(at 137.16 74.93 0)
 			(show_name no)
@@ -2037,7 +2037,7 @@
 				)
 			)
 		)
-		(property "Sim.Params" "pwl=\"0 0 2.9995m 0 3.0005m 5 4m 5\""
+		(property "Sim.Params" "pwl=\"0 0 2.9995m 0 3.0005m 5 12m 5\""
 			(at 134.62 76.2 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2048,14 +2048,14 @@
 			)
 		)
 		(pin "1"
-			(uuid "e7c8858a-44f2-4e6c-ab87-88adf3bb3cc7")
+			(uuid "b4062798-3173-408d-9a4f-720a2cd8fbec")
 		)
 		(pin "2"
-			(uuid "cdb6a5d2-7b43-4695-8627-843b1a843e19")
+			(uuid "7fc1452f-b71f-4bca-ba94-f8ed19e21daf")
 		)
 		(instances
 			(project "coupon"
-				(path "/b97487ed-8336-4c2a-9cc2-72825f7e138c/2350f380-000b-4a7a-847a-c5bd990c72ea"
+				(path "/d59f4a01-09e5-4bfd-bf6e-177742d3e35b/a512470f-c678-47f9-aee0-cb9c2033f0ce"
 					(reference "V9005")
 					(unit 1)
 				)
@@ -2070,7 +2070,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "21c28727-44ef-4cd7-8f31-b9502617752d")
+		(uuid "3cc24133-6d22-4ef4-86af-181feb835bbd")
 	)
 	(global_label "N3"
 		(shape output)
@@ -2082,7 +2082,7 @@
 			)
 			(justify right)
 		)
-		(uuid "8b1587ff-f12e-4585-b942-75d523361ee7")
+		(uuid "d73fcc03-4ce4-429a-ad42-9e43a611c210")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 134.62 68.58 0)
 			(hide yes)
@@ -2107,7 +2107,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "416c0844-5d82-429a-9be9-e8d0b1a00756")
+		(uuid "73d6e484-3a63-41c6-8c00-d5fe6288871d")
 		(property "Reference" "#PWR9006"
 			(at 137.16 80.01 0)
 			(hide yes)
@@ -2165,12 +2165,251 @@
 			)
 		)
 		(pin "1"
-			(uuid "31e869c4-7092-40c2-9080-ba5315a6c02d")
+			(uuid "2ea292da-c9ec-4a72-9428-166b9278a185")
 		)
 		(instances
 			(project "coupon"
-				(path "/b97487ed-8336-4c2a-9cc2-72825f7e138c/2350f380-000b-4a7a-847a-c5bd990c72ea"
+				(path "/d59f4a01-09e5-4bfd-bf6e-177742d3e35b/a512470f-c678-47f9-aee0-cb9c2033f0ce"
 					(reference "#PWR9006")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Simulation_SPICE:VPWL")
+		(at 157.48 76.2 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "a71f71d3-d881-4f08-8f9f-62db3d3d3a5d")
+		(property "Reference" "V9006"
+			(at 160.02 74.93 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "VPWL"
+			(at 160.02 77.47 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 157.48 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 157.48 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Voltage source"
+			(at 157.48 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sim.Pins" "1=+ 2=-"
+			(at 157.48 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sim.Type" "PWL"
+			(at 157.48 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sim.Device" "V"
+			(at 157.48 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sim.Params" "pwl=\"0 5 0.9995m 5 1.0005m 0 12m 0\""
+			(at 157.48 76.2 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "e05278a1-a280-4966-ab80-3551f0cbcccc")
+		)
+		(pin "2"
+			(uuid "5d277389-04fa-4aeb-810a-5166ac5aa89a")
+		)
+		(instances
+			(project "coupon"
+				(path "/d59f4a01-09e5-4bfd-bf6e-177742d3e35b/a512470f-c678-47f9-aee0-cb9c2033f0ce"
+					(reference "V9006")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 157.48 71.12) (xy 157.48 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1b9de762-54ce-41c0-9057-58f54291e87b")
+	)
+	(global_label "RST"
+		(shape output)
+		(at 157.48 68.58 90)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "8e595337-674b-428c-a96a-fb5b8a7d6309")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 157.48 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 157.48 81.28 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "10e8b2cc-664d-4aa8-8a09-23c190357d87")
+		(property "Reference" "#PWR9007"
+			(at 160.02 80.01 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "GND"
+			(at 160.02 82.55 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 157.48 81.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 157.48 81.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\""
+			(at 157.48 81.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "3a1352e4-558c-484a-bc4a-cc01a689feb4")
+		)
+		(instances
+			(project "coupon"
+				(path "/d59f4a01-09e5-4bfd-bf6e-177742d3e35b/a512470f-c678-47f9-aee0-cb9c2033f0ce"
+					(reference "#PWR9007")
 					(unit 1)
 				)
 			)

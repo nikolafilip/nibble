@@ -6,9 +6,15 @@ tested the way the register board was, one bit at a time, and a machine
 that already works gets one more card at each step, so a failure points at
 one card.
 
-The order (docs/order-1.md) brings the gate coupon, the sequencer board and
-the cards: 25 designs, most in fives. Solder and test them in the order
-below. The panel cards are the test fixture for every other card: a switch
+The pilot order (docs/order-1.md, D055) brings the coupon, one register
+bit card and the hub: sections 1, 2 and 4 below, with a short ribbon and
+the bench supply in place of the panel. Without the panel nothing pulls
+the control lines down (its 1 Meg pull-downs), so on the hub's second
+header jumper the register's control lines and CLK and RST to ground, raise
+one at a time through 1k from +5V, and read the bus bit and the A, B, OUT
+LEDs; the card's currents are the table's. The
+second order brings the sequencer board and the other cards: 25 designs,
+most in fives. Solder and test them in the order below. The panel cards are the test fixture for every other card: a switch
 on every control line, an LED on every bus line, buttons for CLK and RST.
 Until the clock card is in, the CLK button is the clock. Until the
 sequencer is in, the switches are the sequencer.
@@ -38,14 +44,14 @@ the table, power off and look for a bridge between the three TO-92 pads.
 |---|---|---|---|
 | coupon | 26 | under 3 mA | 1 h |
 | hub | 0 | under 5 mA (the LED) | 1 h (the headers, the USB socket) |
-| panel A, B, C | 28, 20, 32 | 5 to 40 mA depending on the LEDs lit | 2 h each |
+| panel A, B, C | 28, 20, 32 | 5 to 40 mA depending on the LEDs lit; B 10 mA more, its two button drivers idle low through 1k (D053) | 2 h each |
 | register bit | 99 | 5 to 12 mA | 2.5 h each |
 | ALU bit | 66 to 73 | 4 to 9 mA | 2 h each |
 | counter bit | 62 | 4 to 8 mA | 2 h each |
-| memory control | 59 | 3 to 7 mA | 1.5 h |
+| memory control | 57 | 3 to 7 mA | 1.5 h |
 | memory slots | 91 | 5 to 12 mA | 2.5 h each |
 | program | 41 + 32 diodes | 3 to 6 mA | 1.5 h each |
-| clock | 16 | under 5 mA | 1 h |
+| clock | 17 | 5 to 12 mA in RUN (the 1k CLK and RST drivers, D053) | 1 h |
 | sequencer | 592 + 87 diodes | 30 to 70 mA | 12 h |
 
 ## 1. Coupon
@@ -84,12 +90,14 @@ column.
 
 Plug the three onto the ribbon with the hub. Every level switch up puts a
 1 on its line: the LED of that line lights on card A or B, and the meter
-reads 5 V on the header pin. Switch down: 0 V (the 1 Meg pull-down). Card
-C: the CLK and RST buttons each give one clean edge per press on the
-header (scope or logic analyser: no bounce after the Schmitt trigger); the
-DATA switches show on the D3..D0 LEDs of card A only while INP is up
-(card B's switch): that is the input port driving the bus. PC and M LEDs
-follow the PC and M lines, which nothing drives yet.
+reads 5 V on the header pin. Switch down: 0 V (the 1 Meg pull-down; 10k on
+CLK and RST, D053). Card B: the CLK and RST buttons each give one clean
+edge per press on the header (scope or logic analyser: no bounce after the
+Schmitt trigger; the rise into the ribbon's few nF takes microseconds, the
+fall through the 10k about 30 us); card C's DATA switches show on the
+D3..D0 LEDs of card A only while INP is up (card B's switch): that is the
+input port driving the bus. PC and M LEDs follow the PC and M lines, which
+nothing drives yet.
 
 ## 4. Register bit cards
 
@@ -128,8 +136,11 @@ passed; the machine gate proves the rest.
 Memory control on the ribbon, the 2x6 link ribbon from it along the eight
 slot cards, each slot card's jumpers set to its pair (A3 A2 A1 = the
 pair number 0..7 in binary, the centre pin to '1' where the bit is 1).
-MAI with an address on the data switches, then MI with a value: the cell
-LEDs of that slot show the value. Change the address, MO: the value comes
+On the scope, probe CLKD (the top of the control card's 2.2 nF) and MPH
+(the output of the NOR that reads CLK and CLKD): a pulse from each falling
+edge of CLK, 60 to 350 us long (D054); the address latch and the write
+happen inside it, in the middle of the tick, never at an edge. MAI with an address on the data
+switches, then MI with a value: the cell LEDs of that slot show the value. Change the address, MO: the value comes
 back on the bus. Fill all sixteen, read all sixteen (the testbench's
 script). A slot that always reads another slot's value is a jumper on the
 wrong side.
@@ -150,7 +161,11 @@ RUN switch off, STEP: the panel's CLK button owns the line. RUN: the OSC
 LED blinks and the CLK line runs at the pot's speed (500 Hz down to 40 Hz,
 the SLOW jumper 10 Hz to 0.8 Hz); HLT high stops it a quarter of a
 millisecond later, after the pulse in flight (D050). Power-on: RST high
-for a tenth of a second, then low.
+for a tenth of a second, then low. On the scope, with the ribbon and the
+cards on it (about 3 nF): CLK rises 0.5 to 3.5 V in under 10 us, RST falls
+3.5 to 0.8 V in under 100 us (D053; the simulation says 6 and 45 us). RST
+lets go wherever the free-running clock happens to be, so on a few
+power-ups in a hundred the machine may start a step off: press RST.
 
 ## 10. Sequencer
 

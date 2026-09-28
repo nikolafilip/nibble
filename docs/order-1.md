@@ -1,15 +1,60 @@
 # The order: boards, parts, cables, frame
 
-One order for the whole machine (D032): every board has passed its three
-gates (docs/plan.md), so nothing here is a guess that a second order fixes.
-Four carts: the fab, the electronic parts, the cables, the frame.
+Two orders (D055): a pilot of three designs, built and bench-checked, then
+everything else. Every card has passed the machine gate (docs/cards.md step
+9 and the added corners, `sim/results/`), so nothing in the second order is
+a guess that the pilot fixes; the pilot checks the fab, the parts and the
+hands. Four carts in the end: the fab, the electronic parts, the cables, the
+frame.
+
+## 0. The pilot
+
+| Design | Pieces | Why this one |
+|---|---|---|
+| coupon | 5 | one of every cell with test loops and a ring oscillator: the transistor and the cell in copper |
+| reg0 | 5 | one full logic card (99 transistors), run by hand on the panel's switches; the same design four times in the machine |
+| hub | 5 | the power entry, the bus pull-ups, both 64-way headers; the first ribbon is crimped against it |
+
+Three five-packs on the 100 x 100 mm tier, about $10 of boards plus
+shipping. Upload the three zips from `cards/<name>/fab/` (the gerbers and
+the drill file; JLCPCB, 2 layers, 1.6 mm, HASL, any colour); read the quote
+from the calculator and keep the cart out of git. Parts for the pilot, one
+of each card built, from `bom.py` (`--per`):
+
+| Part | Footprint | coupon | reg0 | hub | Total |
+|---|---|---|---|---|---|
+| 100u | CP_Radial_D5.0mm_P2.00mm |  |  | 1 | 1 |
+| 10u | CP_Radial_D5.0mm_P2.00mm | 1 | 1 |  | 2 |
+| 100n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 1 | 1 | 1 | 3 |
+| polyfuse | Fuse_BelFuse_0ZRE0150FF_L23.4mm_W5.3mm |  |  | 1 | 1 |
+| IDC header | IDC-Header_2x32_P2.54mm_Vertical | 1 | 1 | 2 | 4 |
+| LED | LED_D3.0mm | 1 | 3 | 1 | 5 |
+| pin header | PinHeader_1x04_P2.54mm_Vertical | 1 |  |  | 1 |
+| 10k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1 | 2 | 4 | 7 |
+| 1Meg | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 4 |  |  | 4 |
+| 1k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1 | 3 | 1 | 5 |
+| 220k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical |  |  | 8 | 8 |
+| 22k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical |  | 2 |  | 2 |
+| 47k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 20 | 47 |  | 67 |
+| 2N7000 | TO-92_Inline_Wide | 26 | 99 |  | 125 |
+| BENCH 5V | TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal |  |  | 1 | 1 |
+| test loop | TestPoint_Loop_D2.50mm_Drill1.0mm | 6 |  | 6 | 12 |
+| USB-B socket | USB_B_OST_USB-B1HSxx_Horizontal |  |  | 1 | 1 |
+
+249 parts. The machine's totals in section 2 cover these, so buy the
+2N7000, the 47k and the 100 nF by the hundred once and the pilot uses the
+first of them; the polyfuse, the terminal, the USB socket and the 100 µF
+are the hub's alone. A short 64-way ribbon with three sockets (section 3)
+is the pilot's bus.
 
 ## 1. Boards
 
 **Rewritten for cards on 2026-09-10 (D042); the parts table below is from
-`bom.py` over the routed cards (2026-09-14). The board quotes still have to be
-read from the calculator with the actual gerbers.** The quotes that drove the
-decision, JLCPCB, 2-layer, five pieces:
+`bom.py` over the routed cards, regenerated 2026-09-28 after D053 and D054
+(the clock card's extra stage, the panel's 10k pull-downs and 1k button
+drivers with their 100 ohm, the memory control card's mid-tick pulse). The
+board quotes still have to be read from the calculator with the actual
+gerbers.** The quotes that drove the decision, JLCPCB, 2-layer, five pieces:
 
 | Board as it was | Size (mm) | Quote |
 |---|---|---|
@@ -51,7 +96,7 @@ are cheaper than by the exact count and you will drop some.
 | 1u | CP_Radial_D5.0mm_P2.00mm | 2 |
 | 2.2u | CP_Radial_D5.0mm_P2.00mm | 2 |
 | 100n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 52 |
-| 2.2n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 1 |
+| 2.2n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 2 |
 | 47n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 1 |
 | 1N4148 | D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp | 727 |
 | 1N4148 | D_DO-35_SOD27_P7.62mm_Horizontal | 4 |
@@ -64,30 +109,31 @@ are cheaper than by the exact count and you will drop some.
 | pin header | PinHeader_1x03_P2.54mm_Vertical | 144 |
 | pin header | PinHeader_1x04_P2.54mm_Vertical | 1 |
 | pot | Potentiometer_Alpha_RD901F-40-00D_Single_Vertical | 1 |
-| 100k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 6 |
-| 10k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 134 |
-| 1Meg | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 79 |
-| 1k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 282 |
+| 100 | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 3 |
+| 100k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 7 |
+| 10k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 131 |
+| 1Meg | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 77 |
+| 1k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 286 |
 | 220k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 10 |
 | 22k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 87 |
 | 3.3k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 80 |
 | 4.7k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 2 |
-| 47k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1429 |
+| 47k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1427 |
 | switch | SW_DIP_SPSTx01_Slide_9.78x4.72mm_W7.62mm_P2.54mm | 1 |
 | switch | SW_DIP_SPSTx04_Slide_9.78x12.34mm_W7.62mm_P2.54mm | 1 |
 | switch | SW_DIP_SPSTx08_Slide_9.78x22.5mm_W7.62mm_P2.54mm | 84 |
 | switch | SW_PUSH_6mm | 2 |
-| 2N7000 | TO-92_Inline_Wide | 3485 |
+| 2N7000 | TO-92_Inline_Wide | 3484 |
 | BENCH 5V | TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal | 1 |
 | test loop | TestPoint_Loop_D2.50mm_Drill1.0mm | 12 |
 | USB-B socket | USB_B_OST_USB-B1HSxx_Horizontal | 1 |
 
-7057 parts on 26 boards: alu0, alu1, alu2, alu3, clock, coupon, ctr0, ctr1, ctr2, ctr3, ctr4, ctr5, ctr6, ctr7, hub, memctl, memslot, panela, panelb, panelc, prog, reg0, reg1, reg2, reg3, 03-sequencer
+7058 parts on 26 boards: alu0, alu1, alu2, alu3, clock, coupon, ctr0, ctr1, ctr2, ctr3, ctr4, ctr5, ctr6, ctr7, hub, memctl, memslot, panela, panelb, panelc, prog, reg0, reg1, reg2, reg3, 03-sequencer
 
 Notes:
 
 - **2N7000**: Onsemi or Diodes Inc, TO-92. The footprint is the wide inline one (2.54 mm pitch), so the leads are bent apart with a jig. Keep them in the anti-static bag until they are soldered.
-- **Resistors**: 1/4 W axial, mounted vertical (DIN0207, 5.08 mm pitch). Every value on the bus boards is 47k (pull-ups), 1k (LED series) or 10k (bus pull-ups and the memory write gate); the panel adds 1 Meg pull-downs and the debounce values.
+- **Resistors**: 1/4 W axial, mounted vertical (DIN0207, 5.08 mm pitch). Every value on the bus boards is 47k (pull-ups), 1k (LED series and, since D053, the CLK and RST drivers) or 10k (bus pull-ups, the memory write gate, the panel's CLK and RST pull-downs); the panel adds 1 Meg pull-downs, the debounce values and the three 100 ohm in series with the CLK and RST drivers.
 - **LEDs**: 3 mm, any colour, one colour for the whole machine or one per board; 2 mA bright types look best behind 1k.
 - **Diodes**: 1N4148 everywhere (program words, control matrix, clock, panel).
 - **Capacitors**: 100 nF disc 2.5 mm pitch; electrolytics are 5 mm diameter, 2 mm pitch.
@@ -127,6 +173,7 @@ About $150, all stock items; a face left empty needs no rails.
 ## Before pressing order
 
 1. `sim/pcb.py` reports zero DRC errors and zero unconnected for every card and the sequencer, and the commit that says so is the one the gerbers came from (`git status` clean under `cards/` and `boards/03-sequencer/`).
-2. `sim/gate.py` is green for all twelve programs at TYP and for the six corner programs at LO, HI and MIX with every card in the deck (docs/plan.md), and again at 500 pF per bus line.
+2. `sim/gate.py` is green with every card in the deck and the clock card running the machine from its own power-on reset: all thirteen programs at TYP, the six corner programs at LO, HI and MIX seeds 1 to 4, at 500 pF per bus line, at 4.5 and 4.25 V, with 100 pF between neighbouring bus lines (`sim/results/`, docs/cards.md steps 9 and 11).
 3. Look at the renders in each `fab/` folder for 30 seconds each: header on the top edge, pin 1 marked, LEDs on the front, the board name on the silk.
 4. `docs/bring-up.md` read once, so the test plan is known before the boards exist.
+5. For the pilot: only the three zips of section 0; the second order waits for the pilot's bench checks (bring-up.md sections 1, 2 and 4).

@@ -370,6 +370,7 @@ def outputs(pcb,name):
     subprocess.run([K,'sch','export','bom','--fields','Reference,Value,Footprint,${QUANTITY}','--group-by','Value,Footprint','--exclude-dnp','-o',os.path.join(fab,f'{name}-bom.csv'),os.path.join(d,f'{name}.kicad_sch')],capture_output=True)
     for side,fn in [('top',f'{name}-top.png'),('bottom',f'{name}-bottom.png')]:
         subprocess.run([K,'pcb','render','--side',side,'--width','2000','--height','1400','--quality','high','-o',os.path.join(fab,fn),pcb],capture_output=True)
+    import order_check; order_check.write_zip(fab,name)      # fab/<name>-gerbers.zip: the nine files the fab takes, the file that gets uploaded
     print('fab outputs in',fab)
 
 if __name__=='__main__':

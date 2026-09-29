@@ -16,10 +16,12 @@ frame.
 | hub | 5 | the power entry, the bus pull-ups, both 64-way headers; the first ribbon is crimped against it |
 
 Three five-packs on the 100 x 100 mm tier, about $10 of boards plus
-shipping. Upload the three zips from `cards/<name>/fab/` (the gerbers and
-the drill file; JLCPCB, 2 layers, 1.6 mm, HASL, any colour); read the quote
-from the calculator and keep the cart out of git. Parts for the pilot, one
-of each card built, from `bom.py` (`--per`):
+shipping. Upload `cards/<name>/fab/<name>-gerbers.zip` for each (the nine
+files the fab takes: copper, mask, silk, outline, drill, job; JLCPCB, 2
+layers, 1.6 mm, HASL, any colour); read the quote from the calculator and
+keep the cart out of git. The zip is written by `pcb.py` with the other
+fab outputs and checked against them by the order gate (section 5, item
+1). Parts for the pilot, one of each card built, from `bom.py` (`--per`):
 
 | Part | Footprint | coupon | reg0 | hub | Total |
 |---|---|---|---|---|---|
@@ -175,9 +177,9 @@ sides), seven rows per face, the sequencer on two rails of its own.
 
 About $150, all stock items; a face left empty needs no rails.
 
-## Before pressing order
+## 5. Before pressing order
 
-1. `sim/pcb.py` reports zero DRC errors and zero unconnected for every card and the sequencer, and the commit that says so is the one the gerbers came from (`git status` clean under `cards/` and `boards/03-sequencer/`).
+1. `python3 sim/order_check.py <card> ...` prints `ORDER GATE: all pass` for every card in the order, on the committed files (it checks that the tree is clean under the card, that the project file carries the routed rules, ERC, DRC with schematic parity, JLCPCB's minimum rules, that the gerbers and drill in `fab/` are the committed board's, that the zip is those files, the 100 x 100 outline and its two mounting holes, and every part's pads and polarity against the nets). Added 2026-09-28 after a re-audit of the pilot found the coupon's project file wiped by a schematic rebuild, which no one would have seen without re-running DRC on the committed board. The sequencer is not a card; it gets `pcb.py`'s own DRC and the same look at its fab folder.
 2. `sim/gate.py` is green with every card in the deck and the clock card running the machine from its own power-on reset: all thirteen programs at TYP, the six corner programs at LO, HI and MIX seeds 1 to 4, at 500 pF per bus line, at 4.5 and 4.25 V, with 100 pF between neighbouring bus lines (`sim/results/`, docs/cards.md steps 9 and 11).
 3. Look at the renders in each `fab/` folder for 30 seconds each: header on the top edge, pin 1 marked, LEDs on the front, the board name on the silk.
 4. `docs/bring-up.md` read once, so the test plan is known before the boards exist.

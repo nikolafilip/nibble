@@ -1,0 +1,55 @@
+* Models for the hub's power entry (D061): the crowbar's SCR and zener, the reverse diode.
+* None of these parts is in the machine's logic; the models exist for sim/tb_crowbar.py, which chooses the crowbar's values.
+* Every number below was read in the maker's datasheet on 2026-09-28 (NXP/WeEn BT151-500R rev 05; Vishay 1N4728A..1N4761A
+* rev 2.7; Vishay 1N5400..1N5408 rev 19-Dec-2025); "measured" is what sim/tb_crowbar.py --models reads on the model.
+
+* BT151-500R, SCR, 12 A, TO-220: two transistors, the PNP's collector on the NPN's base (the gate), the NPN's collector on
+* the PNP's base. RGK sets the gate current that fires it, RGS the gate's series resistance, REP the on-state slope.
+*                         datasheet typ (max)     BT151 measured    BT151_HARD measured    BT151_EASY measured
+*   IGT  (12 V, 100 mA)   2 (15) mA
+*   VGT                   0.6 (1.5) V
+*   VT at 23 A            1.4 (1.75) V
+*   IH                    7 (20) mA               (the model's is higher: it lets go sooner than the part, the safe side here)
+* BT151_HARD is a part at the datasheet's maximum gate current and voltage and on-state voltage: the one that fires last
+* and runs hottest. BT151_EASY fires on a fifth of the typical gate current (the datasheet gives no minimum).
+.subckt BT151 A G K
+QP gi nb A BT151P
+QN nb gi K BT151N
+RGK gi K 220
+RGS G gi 5
+.model BT151P PNP(IS=2e-13 BF=1.0 RE=0.02 RB=0.004 CJE=200p CJC=100p TF=200n)
+.model BT151N NPN(IS=2e-12 BF=80 RE=0.004 RC=0.002 RB=0.006 CJE=300p CJC=100p TF=20n)
+.ends
+.subckt BT151_HARD A G K
+QP gi nb A BT151P
+QN nb gi K BT151N
+RGK gi K 36
+RGS G gi 58
+.model BT151P PNP(IS=5e-14 BF=0.4 RE=0.03 RB=0.004 CJE=200p CJC=100p TF=200n)
+.model BT151N NPN(IS=2e-12 BF=20 RE=0.004 RC=0.002 RB=0.006 CJE=300p CJC=100p TF=20n)
+.ends
+.subckt BT151_EASY A G K
+QP gi nb A BT151P
+QN nb gi K BT151N
+RGK gi K 1500
+RGS G gi 2
+.model BT151P PNP(IS=5e-14 BF=1.0 RE=0.015 RB=0.004 CJE=200p CJC=100p TF=200n)
+.model BT151N NPN(IS=2e-12 BF=80 RE=0.004 RC=0.002 RB=0.006 CJE=300p CJC=100p TF=20n)
+.ends
+
+* 1N47xxA zeners, 1.3 W, DO-41: the breakdown at the test current with the datasheet's impedance there, and beside it a second
+* branch for the knee. The datasheet promises no more than ZZK at 1 mA (600 to 700 ohm) and 10 uA at a few volts; the KNEE
+* branch draws the softest knee that still meets both, which is the zener that leaks most at 5.25 V. A real one is sharper.
+*   1N4734A 5.6 V at 45 mA, 5 ohm, 600 ohm at 1 mA, 10 uA at 2 V
+*   1N4735A 6.2 V at 41 mA, 2 ohm, 700 ohm at 1 mA, 10 uA at 3 V
+*   1N4736A 6.8 V at 37 mA, 3.5 ohm, 700 ohm at 1 mA, 10 uA at 4 V
+* Use: X<name> cathode anode Z1N47 VZ=<volts, tolerance included> IZT=<amps> ZZT=<ohm> ZZK=<ohm>
+.subckt Z1N47 K A VZ=6.2 IZT=41m ZZT=2 ZZK=700
+DM A K ZMAIN
+DK A K ZKNEE
+.model ZMAIN D(IS=1e-14 N=1 RS={ZZT*0.45} BV={VZ-0.03} IBV={IZT*0.95} NBV={ZZT*0.55*IZT/0.02585})
+.model ZKNEE D(IS=1e-14 N=1 RS=50 BV={VZ-0.25} IBV=1m NBV={ZZK*1m/0.02585})
+.ends
+
+* 1N5408, 3 A rectifier, DO-201: 1.2 V maximum at 3 A, 200 A surge
+.model D1N5408 D(IS=3e-9 N=1.6 RS=0.02 CJO=60p BV=1000 IBV=5u TT=3u)

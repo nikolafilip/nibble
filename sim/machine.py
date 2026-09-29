@@ -35,6 +35,8 @@ CROSS_PF=int(os.environ.get('CROSS_PF','0'))        # coupling capacitance betwe
 VDD=float(os.environ.get('VDD','5'))                 # the supply at the hub; VDD=4.5 for a USB port at its minimum less the polyfuse and the ribbon
 POR_V0=float(os.environ.get('POR_V0','0'))           # volts on the clock card's power-on reset capacitor at t=0: the release comes earlier by 220 ms * ln(VDD/(VDD-POR_V0)),
                                                      # 44 us per mV, so a sweep of POR_V0 walks the reset release across a clock period (the release is asynchronous to the clock)
+RESET_S=float(os.environ.get('RESET_S','0.2'))       # the run's allowance for the power-on reset before the ticks are budgeted (0.2 s covers the 236 ms release at MIX seed 2 for a
+                                                     # full run; a t12 run there needs more); sweep_por.py, which pulls the release to about 20 ms with POR_V0, sets it to 0.03
 SW=[f'SW{i}' for i in range(4)]   # the panel's data switch levels, ports of the panel subcircuit so the deck can set them
 LINK=[f'OPR{i}' for i in range(8)]+['PCR','RAI']   # the sequencer-to-counter link header (D035); PCL is on the bus header
 ALINK=['C1','C2','C3','ZS0','ZS1','ZS2']             # the ALU cards' carry and zero-so-far chain (2x3 links between neighbours)
@@ -271,7 +273,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     # With the real clock the run is budgeted at 5 ms a tick after the card's 121 ms power-on reset (measured: 1.64 ms at TYP, 2.47 at LO,
     # 1.72 at HI; a 4.25 V supply will be slower), and ends itself about 7 ms after HLT rises, four clock periods, enough to see the clock
     # stop: the oscillator keeps swinging behind the gate, so the idle tail after the halt cost two thirds of a running second (40 % of fib's run)
-    tend=edges[-1]+T/2 if not real_clock else 0.2+len(trace)*5e-3
+    tend=edges[-1]+T/2 if not real_clock else RESET_S+len(trace)*5e-3
     if real_clock: L+=["Rstop HLT HSTOP 100k","Cstop HSTOP 0 100n"]
     top=set(tok for l in L if l[0] not in '.*+' and not l.startswith(('.subckt','.ends')) for tok in l.split()[1:])
     probes=[p for p in probes if '.' in p or p in top]     # a bus line no board touches is not a node in the deck

@@ -3,6 +3,7 @@
     python3 order_check.py coupon reg0 hub          (from sim/; plain python3, kicad-cli only)
     python3 order_check.py --zip coupon             (also write fab/<card>-gerbers.zip from the fab files)
     python3 order_check.py --selftest               (the pins rule against parts made up to break it)
+    python3 order_check.py --machine                (what joins the boards: every bus header against bus.py, every link against its far end)
 
     python3 order_check.py sequencer                (boards/03-sequencer: 245 x 255 mm, four layers, four corner holes; assembly.BOARDS)
 
@@ -27,6 +28,14 @@ Per card, from the files in cards/<card>/ as committed:
            centre (an M6 nut's corners and a 12 mm solder tag reach 6.4 mm over 25 um of mask) and 3.3 mm of a mounting hole's (an M3
            hex standoff's corners reach 3.2 mm, no washers: docs/mounting.md). The DRC sees 0.15 mm of clearance and is content; the
            first hub route had CLK 0.17 mm from the +5V socket's ring, under its nut (2026-09-28)
+
+--machine, over every routed board at once (no card's own checks can see these, and the simulation joins the cards by net name,
+so a header wired to the wrong pin would pass every deck):
+  bus      on every board, every pad of every 2x32 header carries the signal bus.py gives that pin, or nothing; the power pins
+           (+5V 1 2 63, GND 3 4 6 8 64) are all connected; the hub's two headers carry all 64 lines
+  links    a link ribbon joins pin n to pin n: each pair of headers that a ribbon joins (ALU carry chain, counter carry chain,
+           the sequencer's operand link to the eight counter cards, memory control to the slots) has the same signal on the
+           same pin at both ends, or nothing at the end that does not take it
 Exit status 1 if any check fails."""
 import sys, os, re, json, subprocess, tempfile, zipfile, shutil, collections, math
 K='/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli'
@@ -173,7 +182,58 @@ def selftest():
            ('TO-92_Inline','Q4',T('GND','A','GND'),True),('TO-92_Inline','Q5',T('Y','A','Z'),True)]
     wrong=[(ref,want) for fp,ref,P,want in cases if bool([b for b in pin_rules(base+[(fp,ref,P)]) if b[0]==ref])!=want]
     print(f'pins selftest: {len(cases)-len(wrong)} of {len(cases)} cases as expected'+''.join(f'\n  {r}: the rule {"kept quiet" if w else "objected"}' for r,w in wrong))
-    return not wrong
+    # the machine rules on the real boards with one thing broken at a time: each must be caught, and on its own board
+    import copy; H0={n:headers(n) for n in BOARDS}; ok=not machine_rules(copy.deepcopy(H0))[0]; mw=[] if ok else ['the boards as they are']
+    def broken(board,val,f,what):
+        H=copy.deepcopy(H0); f(H[board][val][2]); b=machine_rules(H)[0]
+        if not b or any(n not in (board,what) for n,_ in b): mw.append(f'{board} {val}: {b[:2]}')
+    def swap(i,j): return lambda P:P.update({i:P[j],j:P[i]})
+    broken('reg0','BUS',swap(5,6),'reg0')                                     # CLK and its ground changed places (what a header on the wrong face does)
+    broken('ctr3','BUS',lambda P:P.update({64:None}),'ctr3')                  # a ground pin left open
+    broken('hub','BUS J4',lambda P:P.update({33:None}),'hub')                # the hub's second header drops a line
+    broken('alu1','IN',swap(1,3),'alu0')                                      # the carry and the zero chain crossed in a link
+    broken('ctr5','LINK',swap(6,7),'sequencer')                               # a counter card taking its neighbour's operand bit
+    print(f'machine selftest: {5-len(mw) if ok else 0} of 5 faults caught'+''.join(f'\n  not as expected: {m}' for m in mw))
+    return not wrong and not mw
+
+BOARDS=['alu0','alu1','alu2','alu3','clock','coupon','ctr0','ctr1','ctr2','ctr3','ctr4','ctr5','ctr6','ctr7','hub','memctl','memslot',
+        'panela','panelb','panelc','prog','reg0','reg1','reg2','reg3','sequencer']
+LINKS=([(f'alu{i}','OUT',f'alu{i+1}','IN') for i in range(3)]+[(f'ctr{i}','OUT',f'ctr{i+1}','IN') for i in range(7)]
+       +[('sequencer','LINK',f'ctr{i}','LINK') for i in range(8)]+[('memctl','LINK','memslot','LINK')])
+
+def headers(name):
+    """A board's connectors: {value: (footprint, layer, {pad number: net or None})}; a net KiCad named unconnected-... is None."""
+    B=assembly.board(name); s=open(os.path.join(B['dir'],f'{name}.kicad_pcb')).read(); out={}
+    for m in re.finditer(r'^\t\(footprint "((?:IDC-Header|PinHeader)[^"]*)"\s*\(layer "([^"]+)"\)(.*?)^\t\)$',s,re.S|re.M):
+        b=m.group(3); val=re.search(r'\(property "Value" "([^"]*)"',b).group(1); ref=re.search(r'\(property "Reference" "([^"]*)"',b).group(1); pads={}
+        for p in re.finditer(r'\(pad "(\d+)" \w+ \w+(.*?)\n\t\t\)',b,re.S):
+            net=re.search(r'\(net (?:\d+ )?"([^"]*)"\)',p.group(2)); net=net.group(1) if net else None
+            pads[int(p.group(1))]=None if not net or net.startswith('unconnected-') else net
+        out[val if val not in out else f'{val} {ref}']=(m.group(1),m.group(2),pads)
+    return out
+
+def machine_rules(H=None):
+    import bus
+    bad=[]; nb=nl=0; H=H or {n:headers(n) for n in BOARDS}
+    for n in BOARDS:
+        hs=[(v,h) for v,h in H[n].items() if h[0].startswith('IDC-Header_2x32')]
+        if not hs: bad.append((n,'no bus header'))
+        for v,(fp,layer,pads) in hs:
+            nb+=1
+            for pin,sig in bus.PINS.items():
+                got=pads.get(pin)
+                if got is None and (sig in ('+5V','GND') or n=='hub'): bad.append((n,f'{v} pin {pin}: {sig} not connected'))
+                elif got is not None and got!=sig: bad.append((n,f'{v} pin {pin}: {got}, bus.py says {sig}'))
+    for a,va,b,vb in LINKS:
+        nl+=1; A=H[a].get(va); Bh=H[b].get(vb)
+        if not A or not Bh: bad.append((a,f'link {va} to {b} {vb}: header missing')); continue
+        if A[0]!=Bh[0]: bad.append((a,f'link {va} to {b} {vb}: {A[0]} against {Bh[0]}'))
+        if not any(A[2][k] and A[2][k]==Bh[2].get(k) and A[2][k]!='GND' for k in A[2]): bad.append((a,f'link {va} to {b} {vb}: no signal in common'))
+        for k in sorted(A[2]):
+            x,y=A[2][k],Bh[2].get(k)
+            if x and y and x!=y: bad.append((a,f'link {va} pin {k} {x} meets {b} {vb} pin {k} {y}'))
+            if (x=='GND')!=(y=='GND') and (x or y) and 'GND' in (x,y) and (x and y): bad.append((a,f'link {va} pin {k}: ground against a signal'))
+    return bad,nb,nl
 
 def parse_copper(path):
     """The board's copper with positions: footprints (name, ref, centre, [pads: (x,y,radius,net)]), tracks, vias. A pad's position is
@@ -217,6 +277,10 @@ def clamp_rules(pcb):
 
 if __name__=='__main__':
     if '--selftest' in sys.argv: sys.exit(0 if selftest() else 1)
+    if '--machine' in sys.argv:
+        bad,nb,nl=machine_rules()
+        for n,w in bad: print(f'   FAIL  {n}: {w}')
+        print(f'MACHINE: {nb} bus headers on {len(BOARDS)} boards, {nl} links: '+('all pass' if not bad else f'{len(bad)} FAILED')); sys.exit(1 if bad else 0)
     args=[a for a in sys.argv[1:] if not a.startswith('--')]; make_zip='--zip' in sys.argv
     if not args: print(__doc__); sys.exit(2)
     allok=True; rows=[]

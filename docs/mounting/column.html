@@ -58,7 +58,8 @@ li{margin:6px 0}
 
 <main>
 <h1>Nibble Column</h1>
-<p class="lede">The machine as 100 x 100 mm cards standing in a grid on the faces of a square aluminium column, LEDs out, two 64-way ribbons zigzagging over them, the sequencer board at the top of the front. Drawn from the real card outlines in the repo. Drag the model to walk around it; slide the program-card count to see the column fill.</p>
+<p class="lede">The machine as 100 x 100 mm cards standing in a grid on the faces of a square aluminium column, LEDs out, the sequencer board at the top of the front. Drawn from the real card outlines in the repo. Drag the model to walk around it; slide the program-card count to see the column fill.</p>
+<div class="note"><b>The ribbons in this model are the old route and cannot be built.</b> The model draws them over the cards' fronts along the rows. A ribbon leaves its socket at right angles to the header, so it runs down a column, and since 2026-09-29 the headers are on the back of the boards and the ribbons behind the cards (D059). The frame, the rails and the cards' places on the faces are as drawn; the ribbons, the slot order and the standoffs are being redrawn (<code>docs/mounting.md</code>).</div>
 
 <div class="kv">
   <div><b>54 × 54 cm</b><span>floor footprint, cards included</span></div>
@@ -95,9 +96,9 @@ li{margin:6px 0}
       <li><b>Frame.</b> Four 900 mm uprights of 2020 extrusion at the corners of a 500 mm square, joined top and bottom by 460 mm rails with corner brackets. Rubber feet or a 500 mm plywood square under it.</li>
       <li><b>Rails.</b> One 460 mm rail per row of cards, clamped to the uprights with corner brackets at the height of the row's holes: 110, 220, ... 770 mm above the base. The sequencer's three rows have two rails of their own, 256 mm apart, and no others.</li>
       <li><b>Cards.</b> An M3 T-nut slides into the rail slot at each of the card's two side holes. A 12 mm M3 standoff screws into the T-nut; the card screws onto the standoff. Two points on one rail hold a 100 g card; nothing is drilled, so a card moves with two T-nuts.</li>
-      <li><b>Hub.</b> A card like the others, bottom right of the front, with a header on its top edge (ribbon A) and one on its bottom edge (ribbon B) and the USB socket on its left edge.</li>
-      <li><b>Cables.</b> Every card's 64-way header is a shrouded IDC socket along its top edge, at the same place on every card. The ribbon lies flat over the cards' top edges along a row, a socket crimped on wherever there is a card, folds down 110 mm at the row's end and comes back along the next row; at the face's top it folds round the upright onto the next face.</li>
-      <li><b>Power.</b> One USB cable into the hub's socket from a phone charger.</li>
+      <li><b>Hub.</b> A card like the others, bottom right of the front, with a header along its top edge (ribbon A) and one along its bottom edge (ribbon B), both on its back, and two banana sockets on its front.</li>
+      <li><b>Cables.</b> Every card's 64-way header is a shrouded box header along its top edge, on the back of the card, at the same place on every card. The ribbon runs behind the cards down a column, a socket crimped on wherever there is a card (the model still shows the old route).</li>
+      <li><b>Power.</b> A bench supply at 5.0 V with its limit at 1.5 A, two banana leads into the hub's sockets. Nothing else powers the machine.</li>
     </ol>
   </div>
 </div>

@@ -1,4 +1,5 @@
 Ref,Val,Package,PosX,PosY,Rot,Side
+"J1","BUS","IDC-Header_2x32_P2.54mm_Vertical",10.630000,-4.960000,-90.000000,bottom
 "C1","100n","C_Disc_D5.0mm_W2.5mm_P2.50mm",95.000000,-16.500000,-90.000000,top
 "C2","10u","CP_Radial_D5.0mm_P2.00mm",95.000000,-26.000000,-90.000000,top
 "D1","LED","LED_D3.0mm",65.300000,-69.340000,90.000000,top
@@ -9,7 +10,6 @@ Ref,Val,Package,PosX,PosY,Rot,Side
 "D6","LED","LED_D3.0mm",80.660000,-22.350000,90.000000,top
 "D7","LED","LED_D3.0mm",80.660000,-37.590000,90.000000,top
 "D8","LED","LED_D3.0mm",80.660000,-52.830000,90.000000,top
-"J1","BUS","IDC-Header_2x32_P2.54mm_Vertical",10.630000,-7.500000,90.000000,top
 "J2","LINK","IDC-Header_2x06_P2.54mm_Vertical",40.000000,-95.000000,90.000000,top
 "J3","A3","PinHeader_1x03_P2.54mm_Vertical",62.000000,-95.000000,90.000000,top
 "J4","A2","PinHeader_1x03_P2.54mm_Vertical",71.500000,-95.000000,90.000000,top

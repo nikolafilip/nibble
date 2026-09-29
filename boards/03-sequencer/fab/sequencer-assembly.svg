@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2850 2712" width="2850" height="2712" font-family="Helvetica,Arial,sans-serif">
-<rect width="2850" height="2712" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2850 2738" width="2850" height="2738" font-family="Helvetica,Arial,sans-serif">
+<rect width="2850" height="2738" fill="#ffffff"/>
 <rect x="1" y="1" width="2448" height="2548" fill="#f7f7f2" stroke="#222" stroke-width="2"/>
 <circle cx="1874.7" cy="615.6" r="4.0" fill="none" stroke="#d8d8d0" stroke-width="1"/>
 <circle cx="1874.7" cy="641.0" r="4.0" fill="none" stroke="#d8d8d0" stroke-width="1"/>
@@ -5416,20 +5416,6 @@
 <path d="M1603.0 2037.9A26.0 26.0 0 0 1 1579.4 2022.9" stroke="#999" stroke-width="1.2" fill="none"/>
 <path d="M1621.0 1993.5A25.8 25.8 0 0 1 1626.2 2000.7" stroke="#999" stroke-width="1.2" fill="none"/>
 <path d="M1626.6 2022.9A26.0 26.0 0 0 1 1603.0 2037.9" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M54.2 16.7L945.8 16.7" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M54.2 107.9L54.2 16.7" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M67.2 29.8L932.8 29.8" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M67.2 94.8L67.2 29.8" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M101.3 121.8L111.3 121.8" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M106.3 111.8L101.3 121.8" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M111.3 121.8L106.3 111.8" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M479.5 94.8L67.2 94.8" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M479.5 107.9L479.5 94.8" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M520.5 94.8L520.5 107.9" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M932.8 29.8L932.8 94.8" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M932.8 94.8L520.5 94.8" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M945.8 16.7L945.8 107.9" stroke="#999" stroke-width="1.2" fill="none"/>
-<path d="M945.8 107.9L54.2 107.9" stroke="#999" stroke-width="1.2" fill="none"/>
 <path d="M1661.8 1636.7L1697.8 1636.7" stroke="#999" stroke-width="1.2" fill="none"/>
 <path d="M1656.2 1607.3A26.0 26.0 0 0 1 1679.8 1592.2" stroke="#999" stroke-width="1.2" fill="none"/>
 <path d="M1661.8 1636.7A25.8 25.8 0 0 1 1656.6 1629.5" stroke="#999" stroke-width="1.2" fill="none"/>
@@ -6005,95 +5991,113 @@
 <path d="M2087.4 2022.9A26.0 26.0 0 0 1 2063.8 2037.9" stroke="#999" stroke-width="1.2" fill="none"/>
 <path d="M1744.9 1523.0L1771.0 1523.0" stroke="#999" stroke-width="1.2" fill="none"/>
 <circle cx="1731.2" cy="1523.0" r="13.7" stroke="#999" stroke-width="1.2" fill="none"/>
-<text x="753.8" y="944.7" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 753.8 944.7)">T0</text>
-<text x="753.8" y="1097.1" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 753.8 1097.1)">T1</text>
-<text x="753.8" y="1249.5" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 753.8 1249.5)">T2</text>
-<text x="753.8" y="1401.9" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 753.8 1401.9)">T3</text>
-<text x="753.8" y="1554.3" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 753.8 1554.3)">T4</text>
-<text x="753.8" y="1706.7" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 753.8 1706.7)">IR3</text>
-<text x="753.8" y="1859.1" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 753.8 1859.1)">IR2</text>
-<text x="753.8" y="2011.5" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 753.8 2011.5)">IR1</text>
-<text x="753.8" y="2163.9" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 753.8 2163.9)">IR0</text>
-<text x="753.8" y="2316.3" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 753.8 2316.3)">OPR7</text>
-<text x="830.6" y="627.2" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 830.6 627.2)">OPR6</text>
-<text x="830.6" y="779.6" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 830.6 779.6)">OPR5</text>
-<text x="830.6" y="932.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 830.6 932.0)">OPR4</text>
-<text x="830.6" y="1084.4" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 830.6 1084.4)">OPR3</text>
-<text x="830.6" y="1236.8" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 830.6 1236.8)">OPR2</text>
-<text x="830.6" y="1389.2" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 830.6 1389.2)">OPR1</text>
-<text x="830.6" y="1541.6" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 830.6 1541.6)">OPR0</text>
-<text x="830.6" y="1694.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 830.6 1694.0)">CFQ</text>
-<text x="830.6" y="1846.4" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 830.6 1846.4)">ZFQ</text>
-<text x="1091.0" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1091.0 210.0)">NOP S3</text>
-<text x="1116.4" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1116.4 180.0)">MOV S3</text>
-<text x="1141.8" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1141.8 150.0)">XCH S3</text>
-<text x="1167.2" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1167.2 210.0)">ADD S3</text>
-<text x="1192.6" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1192.6 180.0)">SUB S3</text>
-<text x="1218.0" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1218.0 150.0)">OUT S3</text>
-<text x="1243.4" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1243.4 210.0)">HLT S3</text>
-<text x="1268.8" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1268.8 180.0)">DEC S3</text>
-<text x="1294.2" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1294.2 150.0)">INC S3</text>
-<text x="1319.6" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1319.6 210.0)">LOADB S3</text>
-<text x="1345.0" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1345.0 180.0)">LOADB S4</text>
-<text x="1370.4" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1370.4 150.0)">STOREB S3</text>
-<text x="1395.8" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1395.8 210.0)">STOREB S4</text>
-<text x="1421.2" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1421.2 180.0)">IN S3</text>
-<text x="1446.6" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1446.6 150.0)">RET S3</text>
-<text x="1472.0" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1472.0 210.0)">AND S3</text>
-<text x="1497.4" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1497.4 180.0)">OR S3</text>
-<text x="1522.8" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1522.8 150.0)">XOR S3</text>
-<text x="1548.2" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1548.2 210.0)">LDI S3</text>
-<text x="1573.6" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1573.6 180.0)">JMP S3</text>
-<text x="1599.0" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1599.0 150.0)">JC S3</text>
-<text x="1624.4" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1624.4 210.0)">JZ S3</text>
-<text x="1649.8" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1649.8 180.0)">LOAD S3</text>
-<text x="1675.2" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1675.2 150.0)">LOAD S4</text>
-<text x="1700.6" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1700.6 210.0)">STORE S3</text>
-<text x="1726.0" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1726.0 180.0)">STORE S4</text>
-<text x="1751.4" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1751.4 150.0)">CALL S3</text>
-<text x="1776.8" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1776.8 210.0)">JNZ S3</text>
-<text x="1802.2" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1802.2 180.0)">JNC S3</text>
-<text x="1827.6" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1827.6 150.0)">OP10 S3</text>
-<text x="1853.0" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1853.0 210.0)">OP10 S4</text>
-<text x="1878.4" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1878.4 180.0)">OP11 S3</text>
-<text x="1903.8" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1903.8 150.0)">OP11 S4</text>
-<text x="1929.2" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1929.2 210.0)">OP12 S3</text>
-<text x="1954.6" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1954.6 180.0)">OP12 S4</text>
-<text x="1980.0" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 1980.0 150.0)">OP13 S3</text>
-<text x="2005.4" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 2005.4 210.0)">OP13 S4</text>
-<text x="2030.8" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 2030.8 180.0)">OP14 S3</text>
-<text x="2056.2" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 2056.2 150.0)">OP14 S4</text>
-<text x="2081.6" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 2081.6 210.0)">OP15 S3</text>
-<text x="2107.0" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 2107.0 180.0)">OP15 S4</text>
-<text x="2132.4" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 2132.4 150.0)">JC&amp;C</text>
-<text x="2157.8" y="210.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 2157.8 210.0)">JZ&amp;Z</text>
-<text x="2183.2" y="180.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 2183.2 180.0)">JNZ&amp;!Z</text>
-<text x="2208.6" y="150.0" font-size="10" fill="#777" dominant-baseline="middle" transform="rotate(-0 2208.6 150.0)">JNC&amp;!C</text>
-<text x="1020.0" y="251.0" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 251.0)">SUB</text>
-<text x="1020.0" y="301.8" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 301.8)">EO</text>
-<text x="1020.0" y="352.6" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 352.6)">AI</text>
-<text x="1020.0" y="403.4" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 403.4)">AO</text>
-<text x="1020.0" y="454.2" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 454.2)">BI</text>
-<text x="1020.0" y="505.0" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 505.0)">BO</text>
-<text x="1020.0" y="555.8" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 555.8)">BA</text>
-<text x="1020.0" y="606.6" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 606.6)">AB</text>
-<text x="1020.0" y="657.4" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 657.4)">OI</text>
-<text x="1020.0" y="708.2" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 708.2)">IO</text>
-<text x="1020.0" y="759.0" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 759.0)">FI</text>
-<text x="1020.0" y="809.8" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 809.8)">HLT</text>
-<text x="1020.0" y="860.6" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 860.6)">MAI</text>
-<text x="1020.0" y="911.4" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 911.4)">MI</text>
-<text x="1020.0" y="962.2" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 962.2)">MO</text>
-<text x="1020.0" y="1013.0" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 1013.0)">ONE</text>
-<text x="1020.0" y="1063.8" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 1063.8)">F0</text>
-<text x="1020.0" y="1114.6" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 1114.6)">F1</text>
-<text x="1020.0" y="1165.4" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 1165.4)">INP</text>
-<text x="1020.0" y="1216.2" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 1216.2)">PCL</text>
-<text x="1020.0" y="1267.0" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 1267.0)">PCR</text>
-<text x="1020.0" y="1317.8" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 1317.8)">RAI</text>
-<text x="1020.0" y="1368.6" font-size="12" fill="#777" dominant-baseline="middle" transform="rotate(-0 1020.0 1368.6)">DONE</text>
-<text x="36.3" y="84.0" font-size="13" fill="#777" dominant-baseline="middle" transform="rotate(-0 36.3 84.0)">1</text>
-<text x="290.0" y="2532.0" font-size="20" fill="#777" dominant-baseline="middle" transform="rotate(-0 290.0 2532.0)">NIBBLE  SEQUENCER</text>
+<path d="M54.2 16.7L54.2 107.9" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<path d="M54.2 107.9L945.8 107.9" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<path d="M67.2 29.8L67.2 94.8" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<path d="M67.2 94.8L932.8 94.8" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<path d="M101.3 2.8L111.3 2.8" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<path d="M106.3 12.8L101.3 2.8" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<path d="M111.3 2.8L106.3 12.8" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<path d="M479.5 16.7L479.5 29.8" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<path d="M479.5 29.8L67.2 29.8" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<path d="M520.5 29.8L520.5 16.7" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<path d="M932.8 29.8L520.5 29.8" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<path d="M932.8 94.8L932.8 29.8" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<path d="M945.8 16.7L54.2 16.7" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<path d="M945.8 107.9L945.8 16.7" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
+<text x="77.3" y="49.6" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 77.3 49.6)">1</text>
+<text x="77.3" y="75.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 77.3 75.0)">2</text>
+<text x="266.3" y="114.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 266.3 114.0)">HEADER ON THE BACK</text>
+<text x="753.8" y="944.7" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 753.8 944.7)">T0</text>
+<text x="753.8" y="1097.1" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 753.8 1097.1)">T1</text>
+<text x="753.8" y="1249.5" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 753.8 1249.5)">T2</text>
+<text x="753.8" y="1401.9" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 753.8 1401.9)">T3</text>
+<text x="753.8" y="1554.3" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 753.8 1554.3)">T4</text>
+<text x="753.8" y="1706.7" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 753.8 1706.7)">IR3</text>
+<text x="753.8" y="1859.1" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 753.8 1859.1)">IR2</text>
+<text x="908.7" y="49.6" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 908.7 49.6)">63</text>
+<text x="908.7" y="75.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 908.7 75.0)">64</text>
+<text x="1018.0" y="1015.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1018.0 1015.0)">ONE</text>
+<text x="1018.0" y="1114.6" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1018.0 1114.6)">F1</text>
+<text x="1019.0" y="1216.2" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1019.0 1216.2)">PCL</text>
+<text x="1020.0" y="249.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 249.0)">SUB</text>
+<text x="1020.0" y="301.8" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 301.8)">EO</text>
+<text x="1020.0" y="352.6" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 352.6)">AI</text>
+<text x="1020.0" y="403.4" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 403.4)">AO</text>
+<text x="1020.0" y="454.2" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 454.2)">BI</text>
+<text x="1020.0" y="555.8" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 555.8)">BA</text>
+<text x="1020.0" y="606.6" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 606.6)">AB</text>
+<text x="1020.0" y="708.2" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 708.2)">IO</text>
+<text x="1020.0" y="759.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 759.0)">FI</text>
+<text x="1020.0" y="816.8" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 816.8)">HLT</text>
+<text x="1020.0" y="860.6" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 860.6)">MAI</text>
+<text x="1020.0" y="911.4" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 911.4)">MI</text>
+<text x="1020.0" y="962.2" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 962.2)">MO</text>
+<text x="1020.0" y="1063.8" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 1063.8)">F0</text>
+<text x="1020.0" y="1165.4" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 1165.4)">INP</text>
+<text x="1020.0" y="1265.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 1265.0)">PCR</text>
+<text x="1020.0" y="1317.8" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1020.0 1317.8)">RAI</text>
+<text x="1021.0" y="505.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1021.0 505.0)">BO</text>
+<text x="1023.0" y="1366.6" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1023.0 1366.6)">DONE</text>
+<text x="1024.0" y="657.4" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 1024.0 657.4)">OI</text>
+<text x="1112.7" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1112.7 238.0)">NOP S3</text>
+<text x="1138.1" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1138.1 238.0)">MOV S3</text>
+<text x="1163.5" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1163.5 238.0)">XCH S3</text>
+<text x="1188.9" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1188.9 238.0)">ADD S3</text>
+<text x="1214.3" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1214.3 238.0)">SUB S3</text>
+<text x="1239.7" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1239.7 238.0)">OUT S3</text>
+<text x="1265.1" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1265.1 238.0)">HLT S3</text>
+<text x="1290.5" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1290.5 238.0)">DEC S3</text>
+<text x="1315.9" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1315.9 238.0)">INC S3</text>
+<text x="1341.3" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1341.3 238.0)">LOADB S3</text>
+<text x="1366.7" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1366.7 238.0)">LOADB S4</text>
+<text x="1392.1" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1392.1 238.0)">STOREB S3</text>
+<text x="1417.5" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1417.5 238.0)">STOREB S4</text>
+<text x="1442.9" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1442.9 238.0)">IN S3</text>
+<text x="1468.3" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1468.3 238.0)">RET S3</text>
+<text x="1493.7" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1493.7 238.0)">AND S3</text>
+<text x="1519.1" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1519.1 238.0)">OR S3</text>
+<text x="1544.5" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1544.5 238.0)">XOR S3</text>
+<text x="1569.9" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1569.9 238.0)">LDI S3</text>
+<text x="1595.3" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1595.3 238.0)">JMP S3</text>
+<text x="1620.7" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1620.7 238.0)">JC S3</text>
+<text x="1646.1" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1646.1 238.0)">JZ S3</text>
+<text x="1671.5" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1671.5 238.0)">LOAD S3</text>
+<text x="1696.9" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1696.9 238.0)">LOAD S4</text>
+<text x="1722.3" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1722.3 238.0)">STORE S3</text>
+<text x="1747.7" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1747.7 238.0)">STORE S4</text>
+<text x="1773.1" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1773.1 238.0)">CALL S3</text>
+<text x="1798.5" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1798.5 238.0)">JNZ S3</text>
+<text x="1823.9" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1823.9 238.0)">JNC S3</text>
+<text x="1849.3" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1849.3 238.0)">OP10 S3</text>
+<text x="1874.7" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1874.7 238.0)">OP10 S4</text>
+<text x="1900.1" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1900.1 238.0)">OP11 S3</text>
+<text x="1925.5" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1925.5 238.0)">OP11 S4</text>
+<text x="1950.9" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1950.9 238.0)">OP12 S3</text>
+<text x="1976.3" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 1976.3 238.0)">OP12 S4</text>
+<text x="2001.7" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 2001.7 238.0)">OP13 S3</text>
+<text x="2027.1" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 2027.1 238.0)">OP13 S4</text>
+<text x="2052.5" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 2052.5 238.0)">OP14 S3</text>
+<text x="2077.9" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 2077.9 238.0)">OP14 S4</text>
+<text x="2103.3" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 2103.3 238.0)">OP15 S3</text>
+<text x="2128.7" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 2128.7 238.0)">OP15 S4</text>
+<text x="2154.1" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 2154.1 238.0)">JC&amp;C</text>
+<text x="2179.5" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 2179.5 238.0)">JZ&amp;Z</text>
+<text x="2204.9" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 2204.9 238.0)">JNZ&amp;!Z</text>
+<text x="2230.3" y="238.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 2230.3 238.0)">JNC&amp;!C</text>
+<text x="757.8" y="2011.5" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 757.8 2011.5)">IR1</text>
+<text x="757.8" y="2316.3" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 757.8 2316.3)">OPR7</text>
+<text x="759.8" y="2156.9" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 759.8 2156.9)">IR0</text>
+<text x="834.6" y="627.2" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 834.6 627.2)">OPR6</text>
+<text x="834.6" y="779.6" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 834.6 779.6)">OPR5</text>
+<text x="834.6" y="932.0" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 834.6 932.0)">OPR4</text>
+<text x="834.6" y="1084.4" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 834.6 1084.4)">OPR3</text>
+<text x="834.6" y="1236.8" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 834.6 1236.8)">OPR2</text>
+<text x="834.6" y="1389.2" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 834.6 1389.2)">OPR1</text>
+<text x="834.6" y="1541.6" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 834.6 1541.6)">OPR0</text>
+<text x="834.6" y="1694.0" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 834.6 1694.0)">CFQ</text>
+<text x="834.6" y="1846.4" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 834.6 1846.4)">ZFQ</text>
+<text x="290.0" y="2532.0" font-size="20" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 290.0 2532.0)">NIBBLE  SEQUENCER</text>
 <circle cx="1961.6" cy="1751.6" r="6.0" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
 <circle cx="1987.0" cy="1751.6" r="6.0" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
 <circle cx="2012.4" cy="1751.6" r="6.0" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
@@ -8812,70 +8816,6 @@
 <circle cx="1628.4" cy="2011.9" r="6.0" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
 <circle cx="1603.0" cy="2011.9" r="6.0" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
 <circle cx="1577.6" cy="2011.9" r="6.0" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<rect x="99.5" y="68.2" width="13.6" height="13.6" fill="#ffffff" stroke="#555" stroke-width="2"/>
-<circle cx="106.3" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="131.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="131.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="157.1" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="157.1" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="182.5" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="182.5" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="207.9" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="207.9" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="233.3" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="233.3" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="258.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="258.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="284.1" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="284.1" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="309.5" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="309.5" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="334.9" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="334.9" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="360.3" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="360.3" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="385.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="385.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="411.1" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="411.1" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="436.5" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="436.5" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="461.9" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="461.9" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="487.3" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="487.3" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="512.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="512.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="538.1" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="538.1" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="563.5" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="563.5" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="588.9" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="588.9" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="614.3" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="614.3" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="639.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="639.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="665.1" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="665.1" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="690.5" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="690.5" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="715.9" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="715.9" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="741.3" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="741.3" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="766.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="766.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="792.1" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="792.1" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="817.5" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="817.5" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="842.9" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="842.9" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="868.3" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="868.3" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="893.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
-<circle cx="893.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
 <circle cx="1654.4" cy="1618.2" r="6.0" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
 <circle cx="1679.8" cy="1618.2" r="6.0" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
 <circle cx="1705.2" cy="1618.2" r="6.0" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
@@ -9336,6 +9276,70 @@
 <path d="M1731.2 1523.0L1782.0 1523.0" stroke="#1f77b4" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.85"/>
 <circle cx="1731.2" cy="1523.0" r="6.4" fill="#ffffff" stroke="#1f77b4" stroke-width="2"/>
 <circle cx="1782.0" cy="1523.0" r="6.4" fill="#ffffff" stroke="#1f77b4" stroke-width="2"/>
+<rect x="99.5" y="42.8" width="13.6" height="13.6" fill="#ffffff" stroke="#555" stroke-width="2"/>
+<circle cx="106.3" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="131.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="131.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="157.1" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="157.1" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="182.5" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="182.5" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="207.9" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="207.9" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="233.3" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="233.3" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="258.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="258.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="284.1" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="284.1" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="309.5" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="309.5" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="334.9" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="334.9" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="360.3" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="360.3" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="385.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="385.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="411.1" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="411.1" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="436.5" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="436.5" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="461.9" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="461.9" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="487.3" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="487.3" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="512.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="512.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="538.1" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="538.1" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="563.5" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="563.5" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="588.9" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="588.9" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="614.3" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="614.3" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="639.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="639.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="665.1" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="665.1" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="690.5" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="690.5" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="715.9" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="715.9" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="741.3" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="741.3" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="766.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="766.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="792.1" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="792.1" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="817.5" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="817.5" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="842.9" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="842.9" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="868.3" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="868.3" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="893.7" cy="49.6" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
+<circle cx="893.7" cy="75.0" r="6.8" fill="#ffffff" stroke="#888" stroke-width="1.2"/>
 <text x="1219.0" y="1684.1" font-size="17" font-weight="bold" fill="#1f77b4" text-anchor="middle" dominant-baseline="middle" stroke="#ffffff" stroke-width="3" paint-order="stroke" transform="rotate(0 1219.0 1684.1)">10k</text>
 <text x="2298.4" y="338.6" font-size="17" font-weight="bold" fill="#9467bd" text-anchor="middle" dominant-baseline="middle" stroke="#ffffff" stroke-width="3" paint-order="stroke" transform="rotate(0 2298.4 338.6)">1Meg</text>
 <text x="883.4" y="464.7" font-size="17" font-weight="bold" fill="#ff7f0e" text-anchor="middle" dominant-baseline="middle" stroke="#ffffff" stroke-width="3" paint-order="stroke" transform="rotate(0 883.4 464.7)">22k</text>
@@ -9499,7 +9503,7 @@
 <text x="2468" y="316" font-size="16" fill="#111">diode 1N4148, upright  x 87</text>
 <text x="2468" y="340" font-size="16" fill="#111">LED  x 19</text>
 <text x="2468" y="364" font-size="16" fill="#111">mounting hole  x 4</text>
-<text x="2468" y="388" font-size="16" fill="#111">box header 2x32  x 1</text>
+<text x="2468" y="388" font-size="16" fill="#111">box header 2x32, on the back  x 1</text>
 <text x="2468" y="412" font-size="16" fill="#111">box header 2x6  x 1</text>
 <text x="2468" y="436" font-size="16" fill="#111">capacitor 100n  x 1</text>
 <text x="2468" y="460" font-size="16" fill="#111">electrolytic 10u  x 1</text>
@@ -9507,6 +9511,7 @@
 <text x="18" y="2590" font-size="16" fill="#444">Square pad = pad 1: the cathode of a diode or an LED, the plus of an electrolytic, pin 1 of a header.</text>
 <text x="18" y="2616" font-size="16" fill="#444">Grey and unlabelled: the commonest resistor of the card (see the legend) and the 2N7000, flat side as the outline shows. Resistors stand upright on 5.08 mm.</text>
 <text x="18" y="2642" font-size="16" fill="#444">Upright diodes (black, unlabelled): the body stands on the square pad, band down; the bare lead bends over to the round pad.</text>
-<text x="18" y="2668" font-size="16" fill="#444">Faint pads: 948 positions that stay empty. The board prints a circle only where a part goes.</text>
-<text x="18" y="2694" font-size="16" fill="#444">Drawn from the committed board by sim/assembly.py; the values are the schematic's. Front view, the header along the top edge.</text>
+<text x="18" y="2668" font-size="16" fill="#444">Dashed blue outline: the bus header, soldered on the BACK of the board with its notch toward the top edge (D059). Its 64 pins are soldered on this face.</text>
+<text x="18" y="2694" font-size="16" fill="#444">Faint pads: 948 positions that stay empty. The board prints a circle only where a part goes.</text>
+<text x="18" y="2720" font-size="16" fill="#444">Drawn from the committed board by sim/assembly.py; the values are the schematic's. Front view, the header along the top edge.</text>
 </svg>

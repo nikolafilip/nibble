@@ -1,4 +1,5 @@
 Ref,Val,Package,PosX,PosY,Rot,Side
+"J1","BUS","IDC-Header_2x32_P2.54mm_Vertical",10.630000,-4.960000,-90.000000,bottom
 "C1","100n","C_Disc_D5.0mm_W2.5mm_P2.50mm",95.000000,-16.500000,-90.000000,top
 "C2","10u","CP_Radial_D5.0mm_P2.00mm",95.000000,-26.000000,-90.000000,top
 "D1","LED","LED_D3.0mm",11.540000,-22.350000,90.000000,top
@@ -25,7 +26,6 @@ Ref,Val,Package,PosX,PosY,Rot,Side
 "D22","LED","LED_D3.0mm",65.300000,-22.350000,90.000000,top
 "D23","LED","LED_D3.0mm",65.300000,-37.590000,90.000000,top
 "D24","LED","LED_D3.0mm",65.300000,-52.830000,90.000000,top
-"J1","BUS","IDC-Header_2x32_P2.54mm_Vertical",10.630000,-7.500000,90.000000,top
 "Q1","2N7000","TO-92_Inline_Wide",9.000000,-26.795000,0.000000,top
 "Q2","2N7000","TO-92_Inline_Wide",9.000000,-42.035000,0.000000,top
 "Q3","2N7000","TO-92_Inline_Wide",9.000000,-57.275000,0.000000,top
@@ -100,8 +100,8 @@ Ref,Val,Package,PosX,PosY,Rot,Side
 "R44","1Meg","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",78.120000,-38.860000,0.000000,top
 "R45","1Meg","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",78.120000,-43.940000,0.000000,top
 "R46","1Meg","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",78.120000,-49.020000,0.000000,top
-"R47","1Meg","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",78.120000,-54.100000,0.000000,top
-"R48","1Meg","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",78.120000,-59.180000,0.000000,top
+"R47","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",78.120000,-54.100000,0.000000,top
+"R48","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",78.120000,-59.180000,0.000000,top
 "R49","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",49.870000,-72.000000,-90.000000,top
 "R50","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",49.870000,-79.700000,-90.000000,top
 "R51","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",49.870000,-87.400000,-90.000000,top
@@ -118,5 +118,5 @@ Ref,Val,Package,PosX,PosY,Rot,Side
 "R62","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",74.590000,-87.400000,-90.000000,top
 "R63","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",68.590000,-72.000000,-90.000000,top
 "R64","10k","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",68.590000,-79.700000,-90.000000,top
-"SW1","A0 A1 A2 A3 B0 B1 B2 B3 (switch up = 1)","SW_DIP_SPSTx08_Slide_9.78x22.5mm_W7.62mm_P2.54mm",53.870000,-72.000000,0.000000,top
+"SW1","A0 A1 A2 A3 B0 B1 B2 B3 (switch ON = 1)","SW_DIP_SPSTx08_Slide_9.78x22.5mm_W7.62mm_P2.54mm",53.870000,-72.000000,0.000000,top
 "SW2","SUB EO AI AO BI BO BA AB","SW_DIP_SPSTx08_Slide_9.78x22.5mm_W7.62mm_P2.54mm",84.590000,-72.000000,0.000000,top

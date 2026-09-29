@@ -5,7 +5,9 @@ is the record of running every check on all 26 designs (25 cards and the
 sequencer), what each check can and cannot see, what was found, and what is
 still open. Nothing here has been built: every line is a check on files.
 
-Commit checked: `5b2a0bd` (boards unchanged since then).
+Commit checked: `5b2a0bd`. Since then the bus headers went to the back of
+every board and the silkscreen was refitted (no track moved: `sim/board_diff.py`);
+the findings' states below are as of that change.
 
 ## 1. What was run, on what
 
@@ -19,7 +21,7 @@ Commit checked: `5b2a0bd` (boards unchanged since then).
 | Other parts' leads under the bus header's body | script over the pads inside each header's courtyard | all 26 (27 headers) | none |
 | Every footprint has a courtyard, and courtyard overlap is an error | project files and boards | all 26 | yes; 0 overlaps |
 | Hole against lead, per footprint | section 4 | all 22 footprint types | fits on paper; three parts must be the exact family |
-| Silkscreen text sizes | script | all 26 | 364 labels under 1.0 mm (F4) |
+| Silkscreen text sizes | script | all 26 | 364 labels under 1.0 mm (F4); 2 after the refit |
 
 ## 2. Findings
 
@@ -28,11 +30,11 @@ Commit checked: `5b2a0bd` (boards unchanged since then).
 | F1 | The gate's `pins` rule called four correct timing capacitors reversed and a potentiometer's mounting lugs unconnected | clock, panel B | Fixed in the rule (`5b2a0bd`); the rule now has a self-test |
 | F2 | The assembly drawings hid what they were for on the cards with arrays: 32 diode labels covered the 32 diodes of a program card, the panels' switch names ran across the resistors beside them | prog, panel A, B, C, clock | Fixed (`5b2a0bd`), all 26 redrawn and looked at |
 | F3 | The sequencer had never been through the gate, had no assembly drawing and no zip; its README gave the part counts of an older board | sequencer | Gate extended: passes. Drawing shows which 87 of the 1035 matrix crossings take a diode. README corrected |
-| F4 | 364 silkscreen labels are 0.8 or 0.9 mm high; JLCPCB states 1.0 mm. 8 labels are clipped by a pad's mask opening | every board; the 8: panel B `INP`, panel C `PC0`, sequencer `OPR0 OPR1 OPR3 OPR5 OPR6 ZFQ` | Open: the silkscreen pass (with the headers, D059). The sequencer's 45 row names stand 2.54 mm apart in three staggered lines and do not fit at 1.0 mm as they are |
+| F4 | 364 silkscreen labels are 0.8 or 0.9 mm high; JLCPCB states 1.0 mm. 8 labels are clipped by a pad's mask opening | every board; the 8: panel B `INP`, panel C `PC0`, sequencer `OPR0 OPR1 OPR3 OPR5 OPR6 ZFQ` | Closed with the headers' move: `pcb.fit_silk` grows every label to 1.0 mm where it has room and moves it off pads, vias, outlines and out from under parts; two labels stay smaller (`WRH` on panel B, `RUN` on the clock, 0.8 mm), none is clipped. The sequencer's row names stand upright over their rows. The gate's `silk` check holds it; `sim/silk_proof.py` plots the print for the eyes |
 | F5 | Nothing checked that the bus header of every board has every signal on the same pin. The simulation joins the cards by net name, so a header wired to the wrong pin passes every deck | all | Closed: `--machine` compares every pad of all 27 headers with `sim/bus.py`. They agree |
 | F6 | The link ribbons between neighbours have the fault the bus ribbon had: the headers lie along the bottom edge, so a ribbon leaves them up or down, never sideways to the neighbour | ALU, counter, memory cards, sequencer (30 link headers) | Open, section 5. No board changes; it is a matter of where the cards stand and how each ribbon is folded |
 | F7 | A ribbon that goes down one column and up the next arrives mirrored (pin 1 where pin 64 should be) unless it is folded an odd number of times on the way. Pins 1 and 64 are +5V and GND | the bus ribbon behind the cards (D059) | Open, section 5: goes into the mounting document with a continuity test before first power |
-| F8 | The schematic calls the level switches "switch up = 1". The switches lie on their side: the sliders move left and right. The boards print nothing about it | panel A, B, C, prog, clock | The assembly drawings now say: closed (ON) is 1, fit every switch with ON toward the right edge. A printed `ON` arrow on the boards is proposed for the silkscreen pass |
+| F8 | The schematic calls the level switches "switch up = 1". The switches lie on their side: the sliders move left and right. The boards print nothing about it | panel A, B, C, prog, clock | Closed: the boards print `ON >` at every switch, the assembly drawings and `bring-up.md` say closed (ON, to the right) is 1 |
 | F9 | The sequencer's bus header is 12.5 mm left of the header line of the card column below it (the board is centred on the face) | mounting | Open, section 5: the rails are slotted, the board can stand 12.5 mm to the right |
 
 ## 3. The DRC warnings, all of them

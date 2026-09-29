@@ -32,7 +32,7 @@ def dip_levels(w,x,y,names,title,px,py):
         col,row=(divmod(i,3) if nn>4 else (i,0))
         w.at(r,px-4.0-6.0*col,py+ROW_P*row,270)
         w.label(n,px+9.2,py+i*2.54-0.4,0.8)
-    w.label(title.split(' (')[0],px-16.0 if nn>4 else px-22.0,py-3.6,0.8)
+    w.label(title.split(' (')[0],px-16.0 if nn>4 else px-22.0,py-3.6,0.8); w.on_mark(px,py,nn)
     return sw
 
 def button(w,x,y,name,px,py,xr):
@@ -56,7 +56,7 @@ def button(w,x,y,name,px,py,xr):
 
 def main(which,pack='column'):
     d={'a':panel.build_a,'b':panel.build_b,'c':panel.build_c}[which](); pr=d.check(); assert not pr, pr
-    PROJECT=f'panel{which}'; OUT=os.path.join(HERE,'..','cards',PROJECT); os.makedirs(OUT,exist_ok=True)
+    PROJECT=f'panel{which}'; OUT=os.path.join(ksch.CARDS,PROJECT); os.makedirs(OUT,exist_ok=True)
     root_uuid=ksch.U()
     w=ksch.DenseWriter(PROJECT,root_uuid)
     common=f"Cell: 2N7000 + 47k pull-up (NMOS, see docs/gate-cell.md).  {d.ntransistors()} transistors, {d.nresistors()} resistors, {d.nleds()} LEDs, 100 x 100 mm (docs/cards.md).\n"
@@ -87,7 +87,7 @@ def main(which,pack='column'):
     sx=10*G; sy=yend+16*G
     if which in 'ab':
         n1,n2=(panel.LEVEL_SW,panel.CTRL_SW1) if which=='a' else (panel.CTRL_SW2,panel.CTRL_SW3)
-        dip_levels(w,sx,sy,n1," ".join(n1)+" (switch up = 1)",RAIL_M-7.62,BLOCK_Y[which])
+        dip_levels(w,sx,sy,n1," ".join(n1)+" (switch ON = 1)",RAIL_M-7.62,BLOCK_Y[which])
         dip_levels(w,sx+30*G,sy,n2," ".join(n2),RAIL_R-7.62,BLOCK_Y[which])
     if which=='b':
         button(w,sx+60*G,sy-2*G,'CLK',8.0,61.0,frame.X0-1.27+7.68*1)

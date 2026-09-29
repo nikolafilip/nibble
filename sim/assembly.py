@@ -10,6 +10,7 @@ its value. The commonest resistor value is drawn grey and unlabelled: fit the co
 that value. A square pad is pad 1: the cathode of a diode or an LED, the plus of an electrolytic, pin 1 of a header.
 Switches, buttons and upright diodes carry no label of their own (the silkscreen names the switches, and a label on each of 32
 diodes at 2.54 mm hid the diodes): the legend counts them and a note below the board says how they sit.
+A part on the back of the board (the bus header, D059) is drawn with a dashed blue outline: its pins are soldered on the front.
 A position marked do-not-populate on the board (the sequencer's 948 empty matrix crossings) is drawn as two faint pads and
 counted apart: the board prints a circle only where a diode goes.
 Positions and angles are the board's own (a pad's place is its footprint's plus its offset turned by the footprint's angle)."""
@@ -40,24 +41,25 @@ def parse(path):
         fp,layer,X,Y,a,b=m.group(1),m.group(2),float(m.group(3)),float(m.group(4)),math.radians(float(m.group(5) or 0)),m.group(6)
         c,sn=math.cos(a),math.sin(a); T=lambda x,y:(X+x*c+y*sn,Y-x*sn+y*c)
         val=re.search(r'\(property "Value" "([^"]*)"',b).group(1); ref=re.search(r'\(property "Reference" "([^"]*)"',b).group(1)
+        SILK='F.SilkS' if layer=='F.Cu' else 'B.SilkS'      # a part on the back prints its outline on the back
         pads=[(p.group(1),p.group(2),)+T(float(p.group(3)),float(p.group(4)))+(max(float(p.group(5)),float(p.group(6)))/2,)
               for p in re.finditer(r'\(pad "([^"]*)" (\w+) \w+\s*\(at ([\d.-]+) ([\d.-]+)(?: [\d.-]+)?\)\s*\(size ([\d.]+) ([\d.]+)\)',b)]
         g=[]
         for q in re.finditer(r'\(fp_line\s*\(start ([\d.-]+) ([\d.-]+)\)\s*\(end ([\d.-]+) ([\d.-]+)\)(.*?)\(layer "([^"]+)"\)',b,re.S):
-            if q.group(6)=='F.SilkS' and len(q.group(5))<200: g.append(('line',T(float(q.group(1)),float(q.group(2))),T(float(q.group(3)),float(q.group(4)))))
+            if q.group(6)==SILK and len(q.group(5))<200: g.append(('line',T(float(q.group(1)),float(q.group(2))),T(float(q.group(3)),float(q.group(4)))))
         for q in re.finditer(r'\(fp_rect\s*\(start ([\d.-]+) ([\d.-]+)\)\s*\(end ([\d.-]+) ([\d.-]+)\)(.*?)\(layer "([^"]+)"\)',b,re.S):
-            if q.group(6)=='F.SilkS' and len(q.group(5))<200:
+            if q.group(6)==SILK and len(q.group(5))<200:
                 x1,y1,x2,y2=[float(q.group(k)) for k in (1,2,3,4)]; P=[T(x1,y1),T(x2,y1),T(x2,y2),T(x1,y2)]
                 g+=[('line',P[k],P[(k+1)%4]) for k in range(4)]
         for q in re.finditer(r'\(fp_circle\s*\(center ([\d.-]+) ([\d.-]+)\)\s*\(end ([\d.-]+) ([\d.-]+)\)(.*?)\(layer "([^"]+)"\)',b,re.S):
-            if q.group(6)=='F.SilkS' and len(q.group(5))<200:
+            if q.group(6)==SILK and len(q.group(5))<200:
                 cx,cy,ex,ey=[float(q.group(k)) for k in (1,2,3,4)]; g.append(('circle',T(cx,cy),math.hypot(ex-cx,ey-cy)))
         for q in re.finditer(r'\(fp_arc\s*\(start ([\d.-]+) ([\d.-]+)\)\s*\(mid ([\d.-]+) ([\d.-]+)\)\s*\(end ([\d.-]+) ([\d.-]+)\)(.*?)\(layer "([^"]+)"\)',b,re.S):
-            if q.group(8)=='F.SilkS' and len(q.group(7))<200: g.append(('arc',)+tuple(T(float(q.group(k)),float(q.group(k+1))) for k in (1,3,5)))
+            if q.group(8)==SILK and len(q.group(7))<200: g.append(('arc',)+tuple(T(float(q.group(k)),float(q.group(k+1))) for k in (1,3,5)))
         attr=re.search(r'\(attr ([^)]*)\)',b)
         out.append(dict(fp=fp,kind=kind(fp),ref=ref,val=val,at=(X,Y),pads=pads,g=g,back=layer!='F.Cu',upright='Vertical' in fp,dnp=bool(attr) and 'dnp' in attr.group(1).split()))
-    texts=[(t.group(1),float(t.group(2)),float(t.group(3)),float(t.group(4) or 0),float(t.group(5))) for t in
-           re.finditer(r'^\t\(gr_text "([^"]*)"\s*\(at ([\d.-]+) ([\d.-]+)(?: ([\d.-]+))?\)\s*\(layer "F\.SilkS"\).*?\(size ([\d.]+) [\d.]+\)',s,re.M|re.S)]
+    texts=[(t.group(1),float(t.group(2)),float(t.group(3)),float(t.group(4) or 0),float(t.group(5)),'start' if 'left' in (t.group(6) or '') else 'end' if 'right' in (t.group(6) or '') else 'middle') for t in
+           re.finditer(r'^\t\(gr_text "([^"]*)"\s*\(at ([\d.-]+) ([\d.-]+)(?: ([\d.-]+))?\)\s*\(layer "F\.SilkS"\).*?\(size ([\d.]+) [\d.]+\).*?\)\s*\)(?:\s*\(justify ([^)]*)\))?',s,re.M|re.S)]
     return out,texts
 
 def arc_path(a,m,e):
@@ -83,6 +85,7 @@ def draw(name,out=None,d=None):
     if any(p['kind']=='diode' and p['upright'] for p in parts): notes.append('Upright diodes (black, unlabelled): the body stands on the square pad, band down; the bare lead bends over to the round pad.')
     dips={len(p['pads'])//2 for p in parts if p['kind']=='DIP switch'}
     if dips: notes.append('DIP switches (black pads, named on the silkscreen): a closed switch (ON) is '+('a 1' if max(dips)>1 else 'RUN, an open one STEP')+'. They work either way round: fit each with ON toward the right edge.')
+    if any(p['back'] for p in parts): notes.append('Dashed blue outline: the bus header, soldered on the BACK of the board with its notch toward the top edge (D059). Its 64 pins are soldered on this face.')
     if empty: notes.append(f'Faint pads: {len(empty)} positions that stay empty. The board prints a circle only where a part goes.')
     notes.append('Drawn from the committed board by sim/assembly.py; the values are the schematic\'s. Front view, the header along the top edge.')
     W=int(B['size'][0]*S); HB=int(B['size'][1]*S); LEG=400; H=HB+32+26*len(notes)          # the sheet: the board, the legend beside it, the notes below
@@ -90,12 +93,13 @@ def draw(name,out=None,d=None):
        f'<rect width="{W+LEG}" height="{H}" fill="#ffffff"/>',f'<rect x="1" y="1" width="{W-2}" height="{HB-2}" fill="#f7f7f2" stroke="#222" stroke-width="2"/>']
     for p in empty:
         for n,typ,x,y,r in p['pads']: o.append(f'<circle cx="{x*S:.1f}" cy="{y*S:.1f}" r="{r*0.5*S:.1f}" fill="none" stroke="#d8d8d0" stroke-width="1"/>')
-    for p in parts:                                   # the silkscreen outlines, as printed
+    for p in parts:                                   # the silkscreen outlines, as printed; a part on the back dashed
+        look='stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"' if p['back'] else 'stroke="#999" stroke-width="1.2" fill="none"'
         for g in p['g']:
-            if g[0]=='line': o.append(f'<path d="M{g[1][0]*S:.1f} {g[1][1]*S:.1f}L{g[2][0]*S:.1f} {g[2][1]*S:.1f}" stroke="#999" stroke-width="1.2" fill="none"/>')
-            elif g[0]=='circle': o.append(f'<circle cx="{g[1][0]*S:.1f}" cy="{g[1][1]*S:.1f}" r="{g[2]*S:.1f}" stroke="#999" stroke-width="1.2" fill="none"/>')
-            else: o.append(f'<path d="{arc_path(g[1],g[2],g[3])}" stroke="#999" stroke-width="1.2" fill="none"/>')
-    for t,x,y,a,sz in texts: o.append(f'<text x="{x*S:.1f}" y="{y*S:.1f}" font-size="{sz*S*1.3:.0f}" fill="#777" dominant-baseline="middle" transform="rotate({-a:.0f} {x*S:.1f} {y*S:.1f})">{t.replace("&","&amp;").replace("<","&lt;")}</text>')
+            if g[0]=='line': o.append(f'<path d="M{g[1][0]*S:.1f} {g[1][1]*S:.1f}L{g[2][0]*S:.1f} {g[2][1]*S:.1f}" {look}/>')
+            elif g[0]=='circle': o.append(f'<circle cx="{g[1][0]*S:.1f}" cy="{g[1][1]*S:.1f}" r="{g[2]*S:.1f}" {look}/>')
+            else: o.append(f'<path d="{arc_path(g[1],g[2],g[3])}" {look}/>')
+    for t,x,y,a,sz,anchor in texts: o.append(f'<text x="{x*S:.1f}" y="{y*S:.1f}" font-size="{sz*S*1.3:.0f}" fill="#777" text-anchor="{anchor}" dominant-baseline="middle" transform="rotate({-a:.0f} {x*S:.1f} {y*S:.1f})">{t.replace("&","&amp;").replace("<","&lt;")}</text>')
     labels=[]
     for p in parts:
         k=p['kind']; pads=p['pads']
@@ -119,7 +123,7 @@ def draw(name,out=None,d=None):
     for x,y,t,c,rot in labels:
         o.append(f'<text x="{x*S:.1f}" y="{y*S:.1f}" font-size="17" font-weight="bold" fill="{c}" text-anchor="middle" dominant-baseline="middle" stroke="#ffffff" stroke-width="3" paint-order="stroke" transform="rotate({rot} {x*S:.1f} {y*S:.1f})">{t.replace("&","&amp;").replace("<","&lt;")}</text>')
     # the legend
-    x0=W+18; y=34; L=lambda t,size=17,fill='#111',bold=False: o.append(f'<text x="{x0}" y="{y}" font-size="{size}" fill="{fill}"{" font-weight=\"bold\"" if bold else ""}>{t}</text>')
+    x0=W+18; y=34; BOLD=' font-weight="bold"'; L=lambda t,size=17,fill='#111',bold=False: o.append(f'<text x="{x0}" y="{y}" font-size="{size}" fill="{fill}"{BOLD if bold else ""}>{t}</text>')     # (KiCad's python is 3.9: no backslash inside an f-string's braces)
     L(f'{name}: assembly, front',22,bold=True); y+=30; L('Fit the coloured parts first.',15,'#444'); y+=34
     L('Resistors',18,bold=True); y+=26
     for v,n in sorted(rv.items(),key=lambda kv:(kv[0]==common,-kv[1],kv[0])):
@@ -128,7 +132,7 @@ def draw(name,out=None,d=None):
     y+=12; L('Other parts',18,bold=True); y+=26
     def what(p):                                      # the legend's name of a part that is not a resistor
         k=p['kind']; m=re.search(r'_(\d)x(\d+)_',p['fp'])
-        if k in ('box header','pin header'): return f'{k} {int(m.group(1))}x{int(m.group(2))}'
+        if k in ('box header','pin header'): return f'{k} {int(m.group(1))}x{int(m.group(2))}'+(', on the back' if p['back'] else '')
         if k=='DIP switch': return f'DIP switch, {len(p["pads"])//2}-way'
         if k=='diode' and p['upright']: return f'diode {p["val"]}, upright'
         return k if k in ('test loop','socket','mounting hole','push button') or p['val']==k else f'{k} {p["val"]}'

@@ -1,5 +1,5 @@
 """Build, route and check a board from a KiCad project + placement plan.
-Run with KiCad's python:  <kicad>/python3 pcb.py <projectdir> <name> [--no-route] [--passes N] [--silk] [--patch] [--dsn-only] [--ses file.ses]   (N: freerouting router and optimizer pass cap, default 300 (a dense card needs about 200 to close its last net); a board that cannot finish stops there with its unrouted nets listed; --silk only replaces the silkscreen text of a routed board from the plan)
+Run with KiCad's python:  <kicad>/python3 pcb.py <projectdir> <name> [--no-route] [--passes N] [--silk] [--patch] [--back-header] [--dsn-only] [--ses file.ses]   (N: freerouting router and optimizer pass cap, default 300 (a dense card needs about 200 to close its last net); a board that cannot finish stops there with its unrouted nets listed; --silk only replaces the silkscreen text of a routed board from the plan; --back-header turns the bus headers of a routed board onto its back in the holes they have (D059) and mirrors their symbols on the schematic: no track moves)
 Reads <name>.kicad_sch (via kicad-cli netlist), <name>.plan.json; writes <name>.kicad_pcb, fab/ outputs.
 """
 import glob, sys, os, json, subprocess, re
@@ -54,7 +54,8 @@ def build(projdir,name,route=True,passes=300,dsn_only=False,ses_file=None):
             if n: pad.SetNet(netobj[n])
         if ref.startswith('H'): holes.append(m); continue
         if ref in place:
-            x,y,rot=place[ref]; m.SetPosition(V(x,y)); m.SetOrientationDegrees(rot)
+            x,y,rot=place[ref][:3]; m.SetPosition(V(x,y)); m.SetOrientationDegrees(rot)
+            if len(place[ref])>3 and place[ref][3]=='B': flip_top_bottom(m)     # the pads' nets came from the netlist by pad number and go with the pads
         else: print('WARNING: no placement for',ref,fp); m.SetPosition(V(W+20,10))
     if missing: raise SystemExit('missing footprints: '+str(missing))
     hp=plan['extra'].get('holes')            # explicit hole positions (cards: mid-side), else the four corners
@@ -204,6 +205,7 @@ def build(projdir,name,route=True,passes=300,dsn_only=False,ses_file=None):
         for z in [z for z in board.Zones() if z.GetIsRuleArea()]: board.Remove(z)     # the router keepouts (the board reloaded from best has its own copies)
         outline(0); gnd_pour(); pcbnew.SaveBoard(pcb,board)
     sync_project(projdir,name,tw,cl)     # again: SaveBoard rewrites the project file with KiCad's defaults (0.2 mm clearance)
+    fit_silk_apart(projdir,name)
     return pcb
 
 def drop_one_layer_vias(board,handoffs):
@@ -263,11 +265,59 @@ def repatch(projdir,name):
     board=pcbnew.LoadBoard(pcb); apply_patches(board,plan)
     pcbnew.ZONE_FILLER(board).Fill(board.Zones()); pcbnew.SaveBoard(pcb,board); return pcb
 
+def flip_top_bottom(m):
+    """Turn a placed footprint over onto the back of the board in the holes it has: mirrored top to bottom about the middle of
+    its pads. A two-row header at rot 90 (pin 1 bottom left, its even row above) ends with pin 1 top left, its even row below
+    and its notch toward the top edge: pin 2k-1 in the hole pin 2k had (D059). The nets go with the pads."""
+    xs=[p.GetPosition().x for p in m.Pads()]; ys=[p.GetPosition().y for p in m.Pads()]
+    m.Flip(pcbnew.VECTOR2I((min(xs)+max(xs))//2,(min(ys)+max(ys))//2),pcbnew.FLIP_DIRECTION_TOP_BOTTOM)
+
+def back_headers(projdir,name):
+    """--back-header: the 2x32 bus headers of a routed board go onto its back, in place (D059). The schematic's header symbols
+    are mirrored (pin 2k-1 where pin 2k was: the wires and labels stay), the footprints turned over, and every pad takes the
+    net the schematic now gives its number, which must be the net its hole already had: no track, via or rail changes. The
+    plan gets the placement ('B') and the header's labels, so a rebuild gives the same board. The pour is refilled (pad 1's
+    square went to another hole)."""
+    import bus
+    pcb=os.path.join(projdir,f'{name}.kicad_pcb'); sch=os.path.join(projdir,f'{name}.kicad_sch'); pj=os.path.join(projdir,f'{name}.plan.json')
+    import tempfile, shutil
+    s=open(sch).read(); num=lambda v:f'{v:.4f}'.rstrip('0').rstrip('.')
+    s,k=re.subn(r'(\(lib_id "Connector_Generic:Conn_02x32_Odd_Even"\)\s*)\(at ([\d.-]+) ([\d.-]+) 0\)(?!\s*\(mirror)(\s*)',
+                lambda m:f'{m.group(1)}(at {num(float(m.group(2))+2.54)} {m.group(3)} 0){m.group(4)}(mirror y){m.group(4)}',s)
+    tmp=tempfile.mkdtemp(prefix=f'back_{name}_'); open(os.path.join(tmp,f'{name}.kicad_sch'),'w').write(s)      # nothing of the project is written until every pad has agreed
+    shutil.copy(os.path.join(projdir,f'{name}.kicad_pro'),tmp); net=os.path.join(tmp,f'{name}.net')
+    subprocess.run([K,'sch','export','netlist','--format','kicadsexpr','-o',net,os.path.join(tmp,f'{name}.kicad_sch')],check=True,capture_output=True)
+    nets,comps=knet.parse(net); padnet={(ref,pin):n for n,nodes in nets.items() for ref,pin in nodes}; shutil.rmtree(tmp,ignore_errors=True)
+    board=pcbnew.LoadBoard(pcb); plan=json.load(open(pj)); moved=[]
+    for m in board.GetFootprints():
+        if not str(m.GetFPID().GetLibItemName()).startswith('IDC-Header_2x32') or m.IsFlipped(): continue
+        ref=m.GetReference(); had={(p.GetPosition().x,p.GetPosition().y):p.GetNetname() for p in m.Pads()}
+        flip_top_bottom(m)
+        for p in m.Pads():
+            want=padnet.get((ref,p.GetNumber()),''); was=had[(p.GetPosition().x,p.GetPosition().y)]; free=lambda n:not n or n.startswith('unconnected-')
+            if (free(want)!=free(was)) or (not free(want) and want!=was): raise SystemExit(f'{name} {ref} pin {p.GetNumber()}: the schematic says {want or "nothing"}, its hole carries {was or "nothing"}')
+            if free(want) and not want: p.SetNetCode(0); continue
+            ni=board.FindNet(want)
+            if ni is None: ni=pcbnew.NETINFO_ITEM(board,want); board.Add(ni)
+            p.SetNet(ni)
+        x,y,rot=plan['place'][ref][:3]; plan['place'][ref]=[x,y,rot,'B']; moved.append(ref)
+        plan['silk']=[l for l in plan['silk'] if not (l[0]=='1' and abs(l[1]-(x-7.0))<0.01 and abs(l[2]-(y+0.9))<0.01)]+bus.header_labels(x,y)
+    if not moved: print('   no bus header on the front of',name); return pcb
+    if k!=len(moved): raise SystemExit(f'{name}: {len(moved)} headers on the front of the board, {k} unmirrored symbols on the schematic')
+    open(sch,'w').write(s); json.dump(plan,open(pj,'w'),indent=0)
+    pcbnew.ZONE_FILLER(board).Fill(board.Zones()); pcbnew.SaveBoard(pcb,board)
+    print(f'   {name}: {", ".join(moved)} on the back, {k} symbol{"s" if k!=1 else ""} mirrored'); return resilk(projdir,name)
+
 def add_silk(board,plan):
-    """Board-level silkscreen text from the plan (labels, then the big board name)."""
-    for text,x,y,size in plan['silk']+plan['extra'].get('silk',[]):
-        t=pcbnew.PCB_TEXT(board); t.SetText(text); t.SetPosition(V(x,y)); t.SetLayer(pcbnew.F_SilkS)
-        t.SetTextSize(pcbnew.VECTOR2I(mm(size),mm(size))); t.SetTextThickness(mm(0.15)); t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT); board.Add(t)
+    """Board-level silkscreen text from the plan (labels, then the big board name). A label is [text, x, y, size] and may go
+    on with an angle and a face, 'B' for the back (mirrored, as the back is read)."""
+    for text,x,y,size,*more in plan['silk']+plan['extra'].get('silk',[]):
+        rot=more[0] if more else 0; back=len(more)>1 and more[1]=='B'
+        t=pcbnew.PCB_TEXT(board); t.SetText(text); t.SetPosition(V(x,y)); t.SetLayer(pcbnew.B_SilkS if back else pcbnew.F_SilkS)
+        t.SetTextSize(pcbnew.VECTOR2I(mm(size),mm(size))); t.SetTextThickness(mm(0.15)); t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT)
+        if rot: t.SetTextAngleDegrees(rot)
+        if back: t.SetMirrored(True)
+        board.Add(t)
     for text,x,y,size in plan['extra'].get('silk_big',[]):
         t=pcbnew.PCB_TEXT(board); t.SetText(text); t.SetPosition(V(x,y)); t.SetLayer(pcbnew.F_SilkS)
         t.SetTextSize(pcbnew.VECTOR2I(mm(size),mm(size))); t.SetTextThickness(mm(0.25)); t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT); board.Add(t)
@@ -284,10 +334,108 @@ def resilk(projdir,name):
             t=t.Cast()
             if t.GetLayer()==pcbnew.F_SilkS and isinstance(t,pcbnew.PCB_TEXT): t.SetLayer(pcbnew.F_Fab)
     # (the footprint pass goes first: after board.Remove of a text, pcbnew hands back untyped footprint objects)
-    for d in [d for d in board.GetDrawings() if isinstance(d,pcbnew.PCB_TEXT) and d.GetLayer()==pcbnew.F_SilkS]: board.Remove(d)
+    for d in [d for d in board.GetDrawings() if isinstance(d,pcbnew.PCB_TEXT) and d.GetLayer() in (pcbnew.F_SilkS,pcbnew.B_SilkS)]: board.Remove(d)
     add_silk(board,plan); pcbnew.SaveBoard(pcb,board)
     rules=plan['extra'].get('rules',{}); sync_project(projdir,name,rules.get('track',0.25),rules.get('clearance',0.2))
+    fit_silk_apart(projdir,name)
     return pcb
+
+def fit_silk_apart(projdir,name):
+    """fit_silk in a python of its own: once a text has been removed from a board, pcbnew hands this process untyped objects
+    (a board loaded afterwards has no GetDrawings)."""
+    r=subprocess.run([sys.executable,os.path.abspath(__file__),projdir,name,'--fit-silk'],capture_output=True,text=True)
+    out=[l for l in r.stdout.splitlines() if l.startswith('   silk:')]
+    if r.returncode or not out: print(r.stdout[-2000:],r.stderr[-2000:]); raise SystemExit('fit_silk failed')
+    print(out[-1])
+
+SILK_MIN=1.0          # mm: the text height JLCPCB says it prints; 0.8 mm may or may not come out
+def fit_silk(projdir,name):
+    """Every board-level label to SILK_MIN where it fits, and out from under the parts. A label may not lie on a pad, on a
+    via (it is under the mask, but its hole takes the ink: IR0 read dR0), on a part's printed outline or reference, on another
+    label, in the courtyard of a part on its face (the name would be under the
+    part; an LED's printed circle stands for its courtyard, which is 0.35 mm wider than the LED's flange), or within 0.3 mm of
+    the board's edge. The labels that are large already stand first; each of the others takes the nearest place to where the
+    plan put it that is free, on a 0.1 mm grid: first at SILK_MIN within 1.2 mm, then at its own size within 1.2 mm, then the
+    same two turned upright (reading upward: a name in the 2 mm between an LED and the next part), then the four again within
+    3 mm, then at SILK_MIN within 6 mm; with no place at all it stays as the plan had it. A label is measured by its ink (its letters' height and stroke,
+    and room below the line for a p or a bracket), not by KiCad's box around it, which is half as high again. KiCad's DRC,
+    which knows the letters' shapes, then judges the result: a label it objects to is placed again by KiCad's box, and one it
+    still objects to goes back to the plan's place and size. The plan is not touched: the same plan and the same board give
+    the same silkscreen."""
+    import tempfile, shutil, math
+    pcb=os.path.join(projdir,f'{name}.kicad_pcb'); board=pcbnew.LoadBoard(pcb); SILK=(pcbnew.F_SilkS,pcbnew.B_SilkS)
+    T=sorted([d for d in board.GetDrawings() if isinstance(d,pcbnew.PCB_TEXT) and d.GetLayer() in SILK],key=lambda t:(t.GetLayer(),t.GetPosition().y,t.GetPosition().x,t.GetText()))
+    at0=[(t.GetPosition().x,t.GetPosition().y) for t in T]; size0=[t.GetTextSize().x for t in T]; turn0=[t.GetTextAngleDegrees() for t in T]
+    box=lambda b,g=0:(b.GetLeft()-g,b.GetTop()-g,b.GetRight()+g,b.GetBottom()+g)
+    solid={l:[] for l in SILK}; yards={l:[] for l in SILK}
+    for m in board.GetFootprints():
+        for pad in m.Pads():
+            for l,cu in zip(SILK,(pcbnew.F_Cu,pcbnew.B_Cu)):
+                if pad.IsOnLayer(cu): solid[l].append(box(pad.GetBoundingBox(),mm(0.12)))
+        for g in list(m.GraphicalItems())+[m.Reference(),m.Value()]:
+            if g.GetLayer() in SILK and (not isinstance(g,pcbnew.PCB_TEXT) or g.IsVisible()): solid[g.GetLayer()].append(box(g.GetBoundingBox(),mm(0.1)))
+        if str(m.GetFPID().GetLibItemName()).startswith('LED'): continue
+        m.BuildCourtyardCaches()
+        for l,cy in zip(SILK,(pcbnew.F_CrtYd,pcbnew.B_CrtYd)):
+            c=m.GetCourtyard(cy)
+            if c.OutlineCount(): yards[l].append((c,box(c.BBox())))
+    for t in board.GetTracks():
+        if t.GetClass()=='PCB_VIA':
+            for l in SILK: solid[l].append(box(t.GetBoundingBox(),mm(0.05)))
+    e=board.GetBoardEdgesBoundingBox(); edge=(e.GetLeft()+mm(0.3),e.GetTop()+mm(0.3),e.GetRight()-mm(0.3),e.GetBottom()-mm(0.3))
+    hit=lambda a,b:a[0]<b[2] and b[0]<a[2] and a[1]<b[3] and b[1]<a[3]
+    def free(b,near,yard):
+        if b[0]<edge[0] or b[1]<edge[1] or b[2]>edge[2] or b[3]>edge[3]: return False
+        if any(hit(b,o) for o in near): return False
+        for c,cb in yard:
+            if hit(b,cb) and any(c.Contains(pcbnew.VECTOR2I(x,y)) for x in list(range(b[0],b[2],mm(0.2)))+[b[2]] for y in list(range(b[1],b[3],mm(0.2)))+[b[3]]): return False
+        return True
+    ring=sorted(((dx*0.1,dy*0.1) for dx in range(-60,61) for dy in range(-60,61)),key=lambda d:(round(math.hypot(*d),3),d[1],d[0]))
+    def put(k,d,size,turn=0):
+        T[k].SetPosition(pcbnew.VECTOR2I(at0[k][0]+mm(d[0]),at0[k][1]+mm(d[1]))); T[k].SetTextSize(pcbnew.VECTOR2I(size,size)); T[k].SetTextAngleDegrees(turn0[k]+turn)
+        T[k].SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_CENTER if turn else pcbnew.GR_TEXT_H_ALIGN_LEFT)       # a name turned upright here stands centred on the plan's point
+    def ink(t,tight=True):
+        """The label's box: KiCad's own, or with its height cut down to the letters (cap height, stroke, 0.05 mm; 0.35 of the
+        height more below the line when a letter hangs under it)."""
+        b=box(t.GetBoundingBox())
+        if not tight: return b
+        z=t.GetTextSize().x; h=z//2+t.GetTextThickness()//2+mm(0.05); low=int(0.35*z) if set(t.GetText())&set('gjpqy()[],;') else 0
+        if int(round(t.GetTextAngleDegrees()))%180==0: c=(b[1]+b[3])//2; return (b[0],c-h,b[2],c+h+low)
+        c=(b[0]+b[2])//2; return (c-h,b[1],c+h+low,b[3])          # upright, reading upward: under the line is to the right
+    placed={l:{} for l in SILK}; lost=[]
+    def place(k,tight):
+        big=max(size0[k],mm(SILK_MIN)); l=T[k].GetLayer(); placed[l].pop(k,None)
+        put(k,(0,0),big); b0=box(T[k].GetBoundingBox()); R=max(b0[2]-b0[0],b0[3]-b0[1])+mm(7)      # the label's length (it may be turned) and the 6 mm it may move
+        here=(at0[k][0]-R,at0[k][1]-R,at0[k][0]+R,at0[k][1]+R)      # nothing farther than this from the plan's point can touch the label (12 mm was too near for a label 31 mm long: HEADER HERE lay across two vias)
+        near=[o for o in solid[l]+list(placed[l].values()) if hit(here,o)]; yard=[y for y in yards[l] if hit(here,y[1])]
+        for size,reach,turn in ((big,1.2,0),(size0[k],1.2,0),(big,1.2,90),(size0[k],1.2,90),(big,3.0,0),(size0[k],3.0,0),(big,3.0,90),(size0[k],3.0,90),(big,6.0,0)):
+            if turn and turn0[k]: continue      # (a name the plan stood upright stays as the plan turned it)
+            put(k,(0,0),size,turn); b0=ink(T[k],tight)
+            spot=next((d for d in ring if math.hypot(*d)<=reach+1e-9 and free((b0[0]+mm(d[0]),b0[1]+mm(d[1]),b0[2]+mm(d[0]),b0[3]+mm(d[1])),near,yard)),None)
+            if spot is not None: put(k,spot,size,turn); break
+        else:
+            put(k,(0,0),size0[k])
+            if k not in lost: lost.append(k)
+        placed[l][k]=ink(T[k],tight)
+    for k in sorted(range(len(T)),key=lambda k:size0[k]<mm(SILK_MIN)): place(k,True)      # the labels that are large already stand first: the others make room for them
+    tmp=tempfile.mkdtemp(prefix=f'silk_{name}_'); tp=os.path.join(tmp,f'{name}.kicad_pcb'); shutil.copy(os.path.join(projdir,f'{name}.kicad_pro'),tmp)
+    def objected():
+        pcbnew.SaveBoard(tp,board); rep=os.path.join(tmp,'drc.json')
+        subprocess.run([K,'pcb','drc','--format','json','--severity-all','-o',rep,tp],capture_output=True); ids={t.m_Uuid.AsString():k for k,t in enumerate(T)}
+        return sorted({ids[i['uuid']] for v in json.load(open(rep))['violations'] if v['type'].startswith(('silk','text')) for i in v['items'] if i.get('uuid') in ids})
+    again=objected()
+    for k in again: place(k,False)
+    back=objected() if again else []
+    for k in back: put(k,(0,0),size0[k])
+    still=objected() if back else []
+    pcbnew.SaveBoard(pcb,board); shutil.rmtree(tmp,ignore_errors=True)
+    rules=json.load(open(os.path.join(projdir,f'{name}.plan.json')))['extra'].get('rules',{}); sync_project(projdir,name,rules.get('track',0.25),rules.get('clearance',0.2))
+    small=[k for k in range(len(T)) if T[k].GetTextSize().x<mm(SILK_MIN)]; far=[k for k in range(len(T)) if math.hypot(T[k].GetPosition().x-at0[k][0],T[k].GetPosition().y-at0[k][1])>mm(1.21)]
+    moved=[k for k in range(len(T)) if (T[k].GetPosition().x,T[k].GetPosition().y)!=at0[k]]; names=lambda ks:', '.join(sorted(T[k].GetText() for k in ks))
+    upright=[k for k in range(len(T)) if T[k].GetTextAngleDegrees()!=turn0[k]]
+    print(f'   silk: {len(T)} labels, {sum(1 for z in size0 if z<mm(SILK_MIN))} under {SILK_MIN} mm in the plan, {len(small)} on the board; {len(moved)} moved'
+          +(f'; under {SILK_MIN} mm: {names(small)}' if small else '')+(f'; turned upright: {names(upright)}' if upright else '')+(f'; moved more than 1.2 mm: {names(far)}' if far else '')
+          +(f'; no free place, left as planned: {names(lost)}' if lost else '')+(f'; placed again by KiCad\'s box: {names(again)}' if again else '')+(f'; DRC sent back to the plan: {names(back)}' if back else '')+(f'; DRC still objects to: {names(still)}' if still else ''))
 
 def gnd_stitch(board,pcb,netobj,refill,gndname='GND'):
     """For every GND pad DRC reports as not reached by the pour, add a via in a nearby free spot and a short track to it.
@@ -391,7 +539,8 @@ def outputs(pcb,name):
 if __name__=='__main__':
     projdir,name=sys.argv[1],sys.argv[2]
     passes=int(sys.argv[sys.argv.index("--passes")+1]) if "--passes" in sys.argv else 300
+    if '--fit-silk' in sys.argv: fit_silk(projdir,name); sys.exit(0)                               # (what resilk and build run at their end, in a process of its own)
     if '--dsn-only' in sys.argv: build(projdir,name,passes=passes,dsn_only=True); sys.exit(0)     # write the filtered DSN the router would get, and stop
     ses_file=sys.argv[sys.argv.index('--ses')+1] if '--ses' in sys.argv else None                 # import a session routed by hand from that DSN instead of running the router
-    pcb=resilk(projdir,name) if '--silk' in sys.argv else repatch(projdir,name) if '--patch' in sys.argv else build(projdir,name,route='--no-route' not in sys.argv,passes=passes,ses_file=ses_file)
+    pcb=back_headers(projdir,name) if '--back-header' in sys.argv else resilk(projdir,name) if '--silk' in sys.argv else repatch(projdir,name) if '--patch' in sys.argv else build(projdir,name,route='--no-route' not in sys.argv,passes=passes,ses_file=ses_file)
     drc(pcb); outputs(pcb,name)

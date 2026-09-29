@@ -7,7 +7,7 @@ HERE=os.path.dirname(os.path.abspath(__file__))
 
 def main(which,pack='column'):
     d=memory.build_ctl() if which=='ctl' else memory.build_slot(); pr=d.check(); assert not pr, pr
-    PROJECT='memctl' if which=='ctl' else 'memslot'; OUT=os.path.join(HERE,'..','cards',PROJECT)
+    PROJECT='memctl' if which=='ctl' else 'memslot'; OUT=os.path.join(ksch.CARDS,PROJECT)
     os.makedirs(OUT,exist_ok=True)
     root_uuid=ksch.U()
     w=ksch.DenseWriter(PROJECT,root_uuid); w.HCOL=frame.RIBBON_HCOL

@@ -13,7 +13,7 @@
 "R54,R59","220k","Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical","2"
 "R55,R60","100k","Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical","2"
 "R57,R62","100","Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical","2"
-"SW1","OI IO II PCE PCL FI HLT MAI (switch up = 1)","Button_Switch_THT:SW_DIP_SPSTx08_Slide_9.78x22.5mm_W7.62mm_P2.54mm","1"
+"SW1","OI IO II PCE PCL FI HLT MAI (switch ON = 1)","Button_Switch_THT:SW_DIP_SPSTx08_Slide_9.78x22.5mm_W7.62mm_P2.54mm","1"
 "SW2","MI MO WRL WRH ONE F0 F1 INP","Button_Switch_THT:SW_DIP_SPSTx08_Slide_9.78x22.5mm_W7.62mm_P2.54mm","1"
 "SW3","CLK","Button_Switch_THT:SW_PUSH_6mm","1"
 "SW4","RST","Button_Switch_THT:SW_PUSH_6mm","1"

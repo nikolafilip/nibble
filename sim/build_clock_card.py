@@ -3,7 +3,7 @@ Run from sim/:  python3 build_clock_card.py"""
 import os
 import ksch, clock, frame
 G=ksch.G
-OUT=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','cards','clock')
+OUT=os.path.join(ksch.CARDS,'clock')
 PROJECT='clock'
 R_FIX='100k'; C_FAST='47n'; C_SLOW='2.2u'; R_POT='1M'
 
@@ -52,7 +52,7 @@ def main():
     # RUN switch and the CLK pull-up
     y2=y+12*G
     w.T("RUN / STEP: the switch closes +5V onto RUNSW (1 Meg pull-down); a diode and 1k from RUNSW to CLK are the clock's pull-up, present only in RUN (1k, D053: the rising edge into the cards' 3 nF takes microseconds, not 35)",x-4*G,y2-4*G,1.6,True)
-    sw=w.dipswitch(1,x+3*G,y2,"RUN"); w.at(sw,46,78,0); w.label("RUN",43,74,1.0)
+    sw=w.dipswitch(1,x+3*G,y2,"RUN"); w.at(sw,46,78,0); w.label("RUN",43,74,1.0); w.on_mark(46,78,1)
     w.W(x,y2,x-2*G,y2); w.PW('+5V',x-2*G,y2); w.W(x+6*G,y2,x+8*G,y2); w.J(x+8*G,y2); w.L('RUNSW',x+8*G,y2,0,'output')
     w.W(x+8*G,y2,x+8*G,y2+G); w.at(w.R('1Meg',x+8*G,y2+2.5*G),40,86,270); w.W(x+8*G,y2+4*G,x+8*G,y2+5*G); w.PW('GND',x+8*G,y2+5*G)
     w.W(x+8*G,y2,x+9*G,y2); w.at(w.diode(x+10.5*G,y2,180),58,78,0); w.W(x+12*G,y2,x+13*G,y2)          # diode: in STEP the 10k must not pull CLK down against the panel's button

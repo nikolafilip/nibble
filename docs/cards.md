@@ -23,7 +23,8 @@ is the four register bits plus a spare.
 
 ## The cards
 
-100 x 100 x 1.6 mm, 2-layer, one 2 x 32 shrouded header on the top edge
+100 x 100 x 1.6 mm, 2-layer, one 2 x 32 shrouded header along the top edge,
+soldered on the back of the card (D059, D062: the ribbon runs behind the cards)
 (the header is 91 mm long, so the two M3 holes sit mid-height on the left and
 right edges). LEDs on the front. Below the header and its two power trunks
 there is room for 11 tile columns of 82 mm (`sim/frame.py`, `ksch.DenseWriter`).

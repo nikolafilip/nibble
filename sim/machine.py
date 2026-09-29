@@ -279,9 +279,10 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     probes=[p for p in probes if '.' in p or p in top]     # a bus line no board touches is not a node in the deck
     # the ribbons: eight 64-way cables of about half a metre, 60 to 80 pF per metre per line, lumped at the hub as CABLE_PF per header line
     L+=[f"Ccab{k} {sig} 0 {CABLE_PF}p" for k,sig in enumerate(bus.SIGNALS) if sig in top and sig not in ('+5V','GND')]
-    # crosstalk: the ribbon's conductors run in header pin order, so consecutive signals from BUS0# (pin 9) to INP (pin 62) are neighbours;
-    # CLK and RST (pins 5 and 7) have ground on both sides
-    if CROSS_PF: L+=[f"Ccross{k} {a} {b} {CROSS_PF}p" for k,(a,b) in enumerate(zip(bus.SIGNALS[2:],bus.SIGNALS[3:])) if a in top and b in top]
+    # crosstalk: the ribbon's conductors run in header pin order, so the signals on two consecutive pins are neighbours: every pair from
+    # RST (pin 8) and BUS1# (pin 9) to INP and F1 (pins 61, 62). CLK (pin 6) has ground on both sides. RST had too while the header was
+    # on the front (D017); on the back the two pins of every pair change places (D059, bus.py), and RST's second neighbour is BUS1#
+    if CROSS_PF: L+=[f"Ccross{n} {bus.PINS[n]} {bus.PINS[n+1]} {CROSS_PF}p" for n in range(1,bus.N) if bus.PINS[n] in top and bus.PINS[n+1] in top and not {bus.PINS[n],bus.PINS[n+1]}&{'+5V','GND'}]
     # tmax stays at the default (1 us): 10 us is a quarter faster but aborts with "timestep too small" on some decks.
     # cshunt: 1 pF from every node to ground (less than the real stray capacitance), and abstol/chgtol a hundred times looser than
     # the defaults (still far below any current or charge that matters here), keep ngspice's timestep from collapsing at clock edges

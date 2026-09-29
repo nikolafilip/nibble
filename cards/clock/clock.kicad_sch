@@ -10723,7 +10723,8 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic:Conn_02x32_Odd_Even")
-		(at 76.2 101.6 0)
+		(at 78.74 101.6 0)
+		(mirror y)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim yes)

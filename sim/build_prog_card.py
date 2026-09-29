@@ -5,7 +5,7 @@ import os, sys, json
 import ksch, program, frame
 G=ksch.G
 HERE=os.path.dirname(os.path.abspath(__file__))
-OUT=os.path.join(HERE,'..','cards','prog'); PROJECT='prog'
+OUT=os.path.join(ksch.CARDS,'prog'); PROJECT='prog'
 WORD_XY=[(57.0,34.0),(74.0,34.0),(57.0,60.0),(74.0,60.0)]      # DIP-16 pin 1 of word 0..3: two by two right of the six tile columns, below the decoupling caps, clear of the right hole
 JUMPER_HX=[14.0+9.5*k for k in range(6)]                    # six 1x3 jumpers along the bottom edge, PC7 leftmost
 
@@ -21,7 +21,7 @@ def word_block(w,n,x,y,pcb,mapping):
         w.W(x+3*G,sy,x+4*G,sy); d=w.diode(x+5.5*G,sy,180,foot=w.D_FOOT_V); w.W(x+7*G,sy,x+8*G,sy); w.L(f'M{bit}',x+8*G,sy,0,'output')   # rot 180: A on the left (switch), K on the right (M)
         w.at(d,px+12.7,py+i*2.54,180); mapping[d]=[n,bit]      # footprint rot 180: K pad at (x,y), A pad 2.54 to the left, next to the switch pin
         if px==WORD_XY[1][0]: w.label(f"M{bit}",px+14.6,py+i*2.54-0.4,0.8)
-    w.label(f"WORD {n}",px-1.0,py-4.4,0.8)
+    w.label(f"WORD {n}",px-1.0,py-4.4,0.8); w.on_mark(px,py,8,beside=(px+6.4,py-4.4))      # beside the word's name: below the upper two switches stand the names of the lower two
     return sw
 
 def main(pack='column'):

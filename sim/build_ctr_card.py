@@ -8,7 +8,7 @@ LINK_PINS=lambda t:[t,'GND','GND','GND','GND','GND']      # the 2x3 neighbour li
 
 def main(i,pack='column'):
     d=counter.build_bit(i); pr=d.check(); assert not pr, pr
-    OUT=os.path.join(HERE,'..','cards',f'ctr{i}'); PROJECT=f'ctr{i}'
+    OUT=os.path.join(ksch.CARDS,f'ctr{i}'); PROJECT=f'ctr{i}'
     os.makedirs(OUT,exist_ok=True)
     root_uuid=ksch.U()
     w=ksch.DenseWriter(PROJECT,root_uuid); w.HCOL=frame.RIBBON_HCOL

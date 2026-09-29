@@ -23614,7 +23614,8 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic:Conn_02x32_Odd_Even")
-		(at 76.2 101.6 0)
+		(at 78.74 101.6 0)
+		(mirror y)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim yes)
@@ -26583,7 +26584,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "A0 A1 A2 A3 B0 B1 B2 B3 (switch up = 1)"
+		(property "Value" "A0 A1 A2 A3 B0 B1 B2 B3 (switch ON = 1)"
 			(at 27.94 417.83 0)
 			(show_name no)
 			(do_not_autoplace no)

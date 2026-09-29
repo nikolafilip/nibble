@@ -5,16 +5,16 @@ G=ksch.G
 def bus_header(w,x,y,used,through=False):
     """64-pin header at (x,y); `used` = signals this board connects. Unused pins get no-connect flags, or with
     `through` a passive label so a second header on the same board carries every line in parallel (D039). Returns ref."""
-    ref=w.header(x,y)
+    ref=w.header(x,y)                 # the symbol is mirrored (the header is on the back, D059): the even pins are on the left
     for pin,sig in bus.PINS.items():
-        odd=pin%2==1; px=x-2*G if odd else x+3*G; py=y-15*G+((pin-1)//2)*G
+        left=pin%2==0; px=x-2*G if left else x+3*G; py=y-15*G+((pin-1)//2)*G
         if sig in ('+5V','GND'):
-            ex=px-3*G if odd else px+3*G
+            ex=px-3*G if left else px+3*G
             w.W(px,py,ex,py); w.PW(sig,ex,py)
         elif sig in used or through:
-            ex=px-4*G if odd else px+4*G
+            ex=px-4*G if left else px+4*G
             kind='bidirectional' if sig.startswith('BUS') else 'input' if sig in used else 'passive'
-            w.W(px,py,ex,py); w.L(sig,ex,py,180 if odd else 0,kind)
+            w.W(px,py,ex,py); w.L(sig,ex,py,180 if left else 0,kind)
         else:
             w.body+=f'\t(no_connect\n\t\t(at {ksch.f(px)} {ksch.f(py)})\n\t\t(uuid "{ksch.U()}")\n\t)\n'
     return ref
@@ -48,12 +48,12 @@ def pulldown(w,net,x,y,value='1Meg'):
     w.L(net,x,y,90,'input'); w.W(x,y,x,y+G); r=w.R(value,x,y+2.5*G); w.W(x,y+4*G,x,y+5*G); w.PW('GND',x,y+5*G); return r
 
 def header_gnd(w,hx,hy,outward,y_gnd_trunk=None):
-    """Pre-route the bus header's GND pins (3,4,6,8,64) for a header placed at (hx,hy) rot 90.
-    Pads: pin n at (hx+((n-1)//2)*2.54, hy-((n-1)%2)*2.54). outward=-1 if the header is at the top edge, +1 at the bottom."""
-    P=lambda n:(hx+((n-1)//2)*2.54, hy-((n-1)%2)*2.54)
-    (x4,y4),(x8,y8),(x3,y3),(x50,y50)=P(4),P(8),P(3),P(bus.N)
-    w.rails.append(('GND','F.Cu',x4,y4,x8,y8,0.5))        # 4-6-8 along the upper row
-    w.rails.append(('GND','F.Cu',x3,y3,x4,y4,0.5))        # 3-4
+    """Pre-route the bus header's GND pins (3,4,5,7,63) for a header placed at (hx,hy) rot 90 and turned onto the back
+    (bus.hole: the odd pins are the upper row). outward=-1 if the header is at the top edge, +1 at the bottom."""
+    P=lambda n:bus.hole(hx,hy,n)
+    (x4,y4),(x8,y8),(x3,y3),(x50,y50)=P(3),P(7),P(4),P(bus.N-1)
+    w.rails.append(('GND','F.Cu',x4,y4,x8,y8,0.5))        # 3-5-7 along the upper row
+    w.rails.append(('GND','F.Cu',x3,y3,x4,y4,0.5))        # 4-3
     if outward<0:
         w.rails.append(('GND','F.Cu',x8,y8,x8,y8-2.5,0.5)); w.vias.append(('GND',x8,y8-2.5))
         w.rails.append(('GND','F.Cu',x50,y50,x50,y50-2.5,0.5)); w.vias.append(('GND',x50,y50-2.5))
@@ -120,14 +120,15 @@ def card_frame(w,x,y,used,name,name_xy=(X0+20,CARD-1.8)):
     return dict(silk_big=[(name,name_xy[0],name_xy[1],1.5)],hide_refs=['Q','R','D','J'],rules=dict(track=0.2,clearance=0.15),holes=HOLES)
 
 def header_top(w,x,y,used,yg,yv,xv1):
-    """The bus header along the top edge at (HX,HY), pin 1 left, with its power pre-routed: GND pin 3 down to the GND trunk
-    at yg (pins 8 and 64 get vias to the pour), +5V pins 1-2 joined and pins 1 and 63 dropped on B.Cu to vias on the +5V
-    trunk at yv, the trunk extended left from its first rail xv1 to pin 1. (x,y): the symbol on the schematic. Returns the ref."""
-    j=bus_header(w,x,y,used); w.at(j,HX,HY,90); w.label("1",HX-7.0,HY+0.9,1.0)
+    """The bus header along the top edge, on the back of the board (D059), pin 1 left, with its power pre-routed: GND pin 4
+    down to the GND trunk at yg (pins 7 and 63 get vias to the pour), +5V pins 1-2 joined and pins 2 and 64 dropped on B.Cu
+    to vias on the +5V trunk at yv, the trunk extended left from its first rail xv1 to pin 2. (HX,HY) is where pin 1 stood
+    when the header was on the front: the holes are those. (x,y): the symbol on the schematic. Returns the ref."""
+    j=bus_header(w,x,y,used); w.at(j,HX,HY,90,'B'); w.silk+=[tuple(l) for l in bus.header_labels(HX,HY)]
     header_gnd(w,HX,HY,-1,y_gnd_trunk=yg)
-    P=lambda n:(HX+((n-1)//2)*2.54, HY-((n-1)%2)*2.54)
-    (xa,ya),(xb,yb)=P(1),P(2); w.rails.append(('+5V','F.Cu',xa,ya,xb,yb,0.5))
-    for n in (1,63):
+    P=lambda n:bus.hole(HX,HY,n)
+    (xa,ya),(xb,yb)=P(2),P(1); w.rails.append(('+5V','F.Cu',xa,ya,xb,yb,0.5))
+    for n in (2,64):
         px,py=P(n)
         near=[r[2] for r in w.rails if r[1]=='B.Cu' and abs(r[2]-r[4])<0.01 and abs(r[2]-px)<0.7]     # a tile rail under the pin's column (the sequencer's 10.16 pitch puts one at 89.0)
         if near:    # jog 1.5 mm past the rail before dropping to the trunk

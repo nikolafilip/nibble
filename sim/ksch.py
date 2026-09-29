@@ -79,8 +79,9 @@ class Writer:
     def pwr_flag(self,x,y):
         return self.symbol("power","PWR_FLAG",self.ref('#FLG'),"PWR_FLAG",x,y,0,('1',),"",[("Description","Special symbol for telling ERC where power comes from",True)])
     def header(self,x,y):
-        """2x32 header; odd pins at x-5.08, even at x+7.62; pin1 at y-38.1, step 2.54 down."""
-        return self.symbol("Connector_Generic","Conn_02x32_Odd_Even",self.ref('J'),"BUS",x,y,0,tuple(str(i) for i in range(1,65)),self.J_FOOT,[("Description","Nibble bus header",True)],sim=False)
+        """2x32 header, mirrored (the header is on the back of the board, D059): even pins at x-5.08, odd at x+7.62; pins 1 and 2
+        at y-38.1, step 2.54 down. The library symbol stands 2.54 to the right of (x,y) so that its pins end where they did."""
+        return self.symbol("Connector_Generic","Conn_02x32_Odd_Even",self.ref('J'),"BUS",x+2.54,y,0,tuple(str(i) for i in range(1,65)),self.J_FOOT,[("Description","Nibble bus header",True)],mirror='y',sim=False)
     TP_FOOT="TestPoint:TestPoint_Loop_D2.50mm_Drill1.0mm"
     def testpoint(self,name,x,y):
         """pin 1 at (x, y+2.54)?? -> Connector:TestPoint pin is at (0,-2.54) symbol coords = (x, y+2.54)?? see libsym"""
@@ -123,11 +124,17 @@ class Writer:
             f'\t\t(property "Sheetname" "{name}"\n\t\t\t(at {f(x)} {f(y-0.7116)} 0)\n\t\t\t(effects\n\t\t\t\t(font\n\t\t\t\t\t(size 1.27 1.27)\n\t\t\t\t)\n\t\t\t\t(justify left bottom)\n\t\t\t)\n\t\t)\n'
             f'\t\t(property "Sheetfile" "{file}"\n\t\t\t(at {f(x)} {f(y+h+0.5846)} 0)\n\t\t\t(effects\n\t\t\t\t(font\n\t\t\t\t\t(size 1.27 1.27)\n\t\t\t\t)\n\t\t\t\t(justify left top)\n\t\t\t)\n\t\t)\n'
             f'\t\t(instances\n\t\t\t(project "{self.project}"\n\t\t\t\t(path "/{self.root_uuid}"\n\t\t\t\t\t(page "{page}")\n\t\t\t\t)\n\t\t\t)\n\t\t)\n\t)\n')
-    def at(self,ref,x,y,rot=0):
-        """PCB placement (mm) for a part."""
-        self.place[ref]=(x,y,rot); return ref
-    def label(self,text,x,y,size=1.0):
-        self.silk.append((text,x,y,size))
+    def at(self,ref,x,y,rot=0,side=None):
+        """PCB placement (mm) for a part. side 'B': placed like that on the front, then turned over onto the back in the same
+        holes, top to bottom about the middle of its pads (pcb.flip_top_bottom)."""
+        self.place[ref]=(x,y,rot,side) if side else (x,y,rot); return ref
+    def on_mark(self,px,py,n,beside=None):
+        """Which way a DIP switch placed at (px,py) (pin 1, n ways) is ON: toward its right-hand pins, where the line names
+        stand. Every switch is a plain contact and works either way round; the mark is there so that all of them are fitted
+        alike and ON, to the right, is a 1. Below the switch, or at `beside` when something else is below."""
+        self.label("ON >",*(beside or (px+1.5,py+(n-1)*2.54+3.6)),1.0)
+    def label(self,text,x,y,size=1.0,rot=0,face='F'):
+        self.silk.append((text,x,y,size,rot,face) if rot or face!='F' else (text,x,y,size))
     # ---- cells ----
     CELL_W=15*G   # 38.1 schematic
     PCB_COL=10.16 # PCB tile pitch
@@ -355,6 +362,7 @@ def write_project(outdir,name):
     path=os.path.join(outdir,f'{name}.kicad_pro')
     if not os.path.exists(path): open(path,'w').write(project_file(name))
 
+CARDS=os.environ.get('NIBBLE_CARDS') or os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','cards')     # NIBBLE_CARDS: build elsewhere (a trial, or the check that the builders still write what is committed)
 def write_plan(w,path,outline,extra=None):
     """PCB placement plan consumed by pcb.py (run with KiCad's python)."""
     import json
@@ -408,7 +416,7 @@ def matrix(w,rows,cols,diodes,x0,y0,pcb,pd='1Meg',caption=lambda c:c,note=None,v
             w.rails.append((r,'B.Cu',prx[r],pyt-1.0,prx[r],ybot_in,0.4,True)); w.rails.append((r,'B.Cu',prx[r],ybot_in,prx[r],ybot_in+2.2,0.4))
         else: w.rails.append((r,'B.Cu',prx[r],pyt-4,prx[r],ybot_in,0.4))
     for k,(r,cap) in enumerate(rows):      # row captions along the top, three heights so they stay legible at 2.54 pitch
-        w.label(cap.replace(' (free)',''),prx[r]-0.9,pyt-5.0-(k%3)*3.0,0.8)     # (1.5 mm lower than before: the top row touched the sequencer's link header outline)
+        w.label(cap.replace(' (free)',''),prx[r]+1.27,pyt-2.2,1.0,90)     # upright over its row's diodes (they stand 1.27 right of the row's track), reading upward: at 2.54 mm between rows 1.0 mm names do not fit lying down (they stood in three staggered lines at 0.8 mm, each beginning left of its row)
     fitted=set(diodes)
     for rn,cap in rows:                    # a diode symbol at every crossing (D040): fitted where the design has one, DNP (pads only) elsewhere
         for cn in cols:

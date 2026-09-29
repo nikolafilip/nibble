@@ -2,7 +2,7 @@
 the line driver's 100 ohm / diode / 10k, the program row's diode and 220k, the input and power headers, the test loops.
 The gate coupon as a 100 x 100 card (docs/cards.md). Run from sim/:  python3 build_coupon_card.py"""
 import os, ksch, frame, coupon
-G=ksch.G; OUT=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','cards','coupon'); PROJECT='coupon'
+G=ksch.G; OUT=os.path.join(ksch.CARDS,'coupon'); PROJECT='coupon'
 INPUTS=['IN','N1','N2','N3','RST']
 LOOPS=[['TP_RING','RING0','TP_FO1','TP_FO10','TP_NAND','TP_NOR','TP_BUS','TP_VTO'],['X','TP_OSC','TP_Q','TP_DRV','TP_ROM','GND','+5V']]   # two rows on the board: the gates, then the clock
 # RING0 is the ring node itself (a x10 probe's 15 pF is in the simulated band): with low-threshold transistors the ring swings only to about 3 V and a

@@ -2,13 +2,12 @@
 eight M-line pull-downs, test loops, and two bus headers, one per column face's ribbon, wired pin for pin. No logic.
 The 64 lines are routed; ground is wired on the front as a ring and bars instead of a pour, which the lines cut to islands. Run from sim/:  python3 build_hub_card.py"""
 import os, ksch, frame, bus
-G=ksch.G; OUT=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','cards','hub'); PROJECT='hub'
+G=ksch.G; OUT=os.path.join(ksch.CARDS,'hub'); PROJECT='hub'
 HY2=93.0                    # the second bus header along the bottom edge (rot 90 like the top one: pin 1 left, pin 2 above it)
 YV1,YV2=14.0,86.0           # the +5V trunks (front) below the top header and above the bottom one
-XT=90.0; XV=92.2            # the trunks end at XT; a back-side link at XV joins them and feeds the bottom header's pin 63
+XT=90.0; XV=92.2            # the trunks end at XT; a back-side link at XV joins them and feeds the bottom header's pin 64
 XG=91.0; YG1,YG2=2.0,97.5   # the ground ring on the front: a bar above the top header's pads, one below the bottom's, joined down the right edge
 YB1,YB2=22.0,45.08          # ground bars: the LED and capacitors; the M pull-downs
-P=lambda hx,hy,n:(hx+((n-1)//2)*2.54, hy-((n-1)%2)*2.54)      # pin n of a rot-90 header at (hx,hy)
 
 def main():
     os.makedirs(OUT,exist_ok=True); root=ksch.U()
@@ -30,7 +29,7 @@ def main():
     w.at(red,14.0,26.0,0); w.at(blk,14.0,45.05,0)
     for cx,cy in ((14.0,26.0),(14.0,45.05)):   # the nut and tag reach 6.4 mm from the centre (an M6 nut's corners, a 12 mm tag) over 25 um of mask: no other
         w.keepouts.append((cx-7.5,cy-7.5,cx+7.5,cy+7.5))   # copper within 7.5 mm on either face (the router laid CLK 0.17 mm from the ring on the first route, 2026-09-28)
-    # CLK and RST leave the top header from the columns right above the sockets (pins 5 and 7); fenced out of the squares, the router gave
+    # CLK and RST leave the top header from the columns right above the sockets (pins 6 and 8, the lower row, since the header went to the back); fenced out of the squares, the router gave
     # them up, so they are led by hand on the back: a step down and right off the pin, left below the header's pads, down the free strip at the card's edge
     # (the GND rail there is on the front), right between the two squares, to a fixed via past them that the router wires on (a bare track end
     # it does not: two dangling tails on the first try; the sequencer's matrix tails end in vias for the same reason, ksch.py)
@@ -81,18 +80,19 @@ def main():
     hy=70*G
     for k,(hyy,yv) in enumerate([(frame.HY,YV1),(HY2,YV2)]):
         w.T(f"face {'A' if k==0 else 'B'} ribbon",30*G+k*22*G-4*G,hy-16*G,1.6,True)
-        j=frame.bus_header(w,30*G+k*22*G,hy,used,through=True); w.at(j,frame.HX,hyy,90); w.label("1",frame.HX-7.0,hyy+0.9,1.0)
+        j=frame.bus_header(w,30*G+k*22*G,hy,used,through=True); w.at(j,frame.HX,hyy,90,'B'); w.silk+=[tuple(l) for l in bus.header_labels(frame.HX,hyy)]
         w.label("BUS  FACE A" if k==0 else "BUS  FACE B  (pin 1 left)",3.0 if k==0 else frame.HX+30,19.0 if k==0 else 84.0,1.0)      # A's short, left of the fuse's body (x 19 to 43) and above the red socket
-        (x1,y1),(x2,y2),(x3,y3),(x4,y4),(x8,y8),(x63,y63),(x64,y64)=[P(frame.HX,hyy,n) for n in (1,2,3,4,8,63,64)]
-        R('+5V',x1,y1,x2,y2); R('GND',x4,y4,x8,y8); R('GND',x3,y3,x4,y4)      # pins 1-2 joined; 4-6-8 along the even row; 3-4
+        # the pins as the header on the back numbers them (D059, bus.hole): the odd pins are the upper row
+        (x1,y1),(x2,y2),(x3,y3),(x4,y4),(x7,y7),(x63,y63),(x64,y64)=[bus.hole(frame.HX,hyy,n) for n in (1,2,3,4,7,63,64)]
+        R('+5V',x2,y2,x1,y1); R('GND',x3,y3,x7,y7); R('GND',x4,y4,x3,y3)      # pins 1-2 joined; 3-5-7 along the upper row; 3-4
         R('+5V',frame.HX,yv,XT,yv,0.8)                                            # the trunk
-        if k==0:    # top: +5V pins 1 and 63 straight down to the trunk; ground pins 4 and 64 up to the bar above the pads
-            R('+5V',x1,y1,x1,yv); R('+5V',x63,y63,x63,yv)
-            R('GND',x4,y4,x4,YG1); R('GND',x64,y64,x64,YG1)
-        else:       # bottom: pin 2 (above pin 1) up to the trunk; pin 63 down, then round the back to the right-edge link; ground pin 3 down to the bar, pin 64 sideways to the ring
-            R('+5V',x2,y2,x2,yv)
-            R('+5V',x63,y63,x63,95.5); w.vias.append(('+5V',x63,95.5)); R('+5V',x63,95.5,XV,95.5,0.8,'B.Cu'); R('+5V',XV,95.5,XV,YV1,0.8,'B.Cu')
-            R('GND',x3,y3,x3,YG2); R('GND',x64,y64,XG,y64)
+        if k==0:    # top: +5V pins 2 and 64 straight down to the trunk; ground pins 3 and 63 up to the bar above the pads
+            R('+5V',x2,y2,x2,yv); R('+5V',x64,y64,x64,yv)
+            R('GND',x3,y3,x3,YG1); R('GND',x63,y63,x63,YG1)
+        else:       # bottom: pin 1 (above pin 2) up to the trunk; pin 64 down, then round the back to the right-edge link; ground pin 4 down to the bar, pin 63 sideways to the ring
+            R('+5V',x1,y1,x1,yv)
+            R('+5V',x64,y64,x64,95.5); w.vias.append(('+5V',x64,95.5)); R('+5V',x64,95.5,XV,95.5,0.8,'B.Cu'); R('+5V',XV,95.5,XV,YV1,0.8,'B.Cu')
+            R('GND',x4,y4,x4,YG2); R('GND',x63,y63,XG,y63)
     for yv in (YV1,YV2): R('+5V',XT,yv,XV,yv,0.8,'B.Cu'); w.vias.append(('+5V',XT,yv))      # the trunks' ends meet the back-side link
     R('GND',3.0,YG1,XG,YG1); R('GND',XG,YG1,XG,YG2); R('GND',13.17,YG2,XG,YG2)                # the ground ring (its top bar starts at the black socket's run)
     # the 64 lines are the router's (through-hole pads sit on both layers, so no straight pre-route can pass the parts): no ground pour,

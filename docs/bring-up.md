@@ -25,15 +25,27 @@ sequencer is in, the switches are the sequencer.
 - Multimeter with a continuity beeper.
 - 8-channel USB logic analyser (any Saleae-compatible clone) and Sigrok/PulseView, or a scope.
 - Temperature-controlled iron, 0.6 mm solder, flux, brass wool, wick.
-- Anti-static wrist strap: 2N7000 gates are static-sensitive until soldered.
+- Anti-static wrist strap: 2N7000 gates are static-sensitive until soldered, and the bus lines of a finished card go straight to gates: strap on whenever a card or a ribbon is handled.
 - Flush cutters, tweezers, a board holder, a lead-bending jig for TO-92 (the footprint is the 2.54 mm wide inline one).
 - The frame (docs/mounting.md) can wait; cards test fine flat on the bench on a short ribbon with a few sockets crimped on.
 
 ## Soldering, every card
 
-Resistors first (all lying flat on the tile, the body over pad 1), then
-diodes, then capacitors, headers, jumpers and switches, then LEDs (long leg
-is the anode, the square pad), transistors last with the strap on. Before
+Every card has a drawing, `fab/<card>-assembly.svg`: which resistor is not
+the common value, which way round each diode, LED and capacitor goes. The
+boards print no values.
+
+Resistors first (all standing upright on 5.08 mm, the body on one pad, the
+bare lead bent over to the other), then diodes, then capacitors, link
+headers, jumpers and switches, then LEDs (the short leg, the cathode, in the
+square pad), transistors last with the strap on.
+
+**The 64-pin bus header goes on the back of the board** (D059), with its
+notch toward the top edge (on the hub both headers, the lower one too): the
+front says `HEADER ON THE BACK`, the back has the header's outline with
+`HEADER HERE` and `NOTCH TO TOP`. Its pins are soldered on the front. The link
+headers (2x3, 2x6) and the jumpers stay on the front. A header on the wrong
+face puts every signal on the wrong conductor of the ribbon. Before
 the transistors go in, power the card and check that no pull-up is
 shorted: with the resistors and LEDs only, the current is under 1 mA.
 After the transistors: about 0.1 mA per gate that is on, so tens of mA for
@@ -107,24 +119,36 @@ the sockets (red +5V, black GND; 5.0 V, limit 300 mA): the power LED
 lights, the current is under 5 mA. Crimp the first ribbon: a short piece with three sockets for the
 bench, then the long ones for the column.
 
+Every ribbon, before it sees power: with nothing plugged into it but the
+hub, beep each socket's pin 1 to the hub's pin 1 and its pin 64 to the
+hub's pin 64, and check that pin 1 does not beep to pin 3. A socket
+crimped the other way round, or a ribbon turned over at a fold, puts +5V
+on a ground pin of every card after it (pins 1, 2 and 64 are +5V; 3, 4, 5,
+7 and 63 ground, `bus-header.md`).
+
+Plugging a 64-way socket takes 60 to 100 N and a card hangs on two screws
+at mid-height: hold the card from the front, behind the header, with the
+other hand. The same when pulling one off.
+
 ## 3. Panel A, B, C
 
-Plug the three onto the ribbon with the hub. Every level switch up puts a
-1 on its line: the LED of that line lights on card A or B, and the meter
-reads 5 V on the header pin. Switch down: 0 V (the 1 Meg pull-down; 10k on
-CLK and RST, D053). Card B: the CLK and RST buttons each give one clean
+Plug the three onto the ribbon with the hub. Every level switch that is ON
+(slid to the right, toward its name; the boards print `ON >`) puts a 1 on
+its line: the LED of that line lights on card A or B, and the meter reads
+5 V on the header pin. Switch off: 0 V (the 1 Meg pull-down; 10k on CLK
+and RST, D053). Card B: the CLK and RST buttons each give one clean
 edge per press on the header (scope or logic analyser: no bounce after the
 Schmitt trigger; the rise into the ribbon's few nF takes microseconds, the
 fall through the 10k about 30 us); card C's DATA switches show on the
-D3..D0 LEDs of card A only while INP is up (card B's switch): that is the
+D3..D0 LEDs of card A only while INP is on (card B's switch): that is the
 input port driving the bus. PC and M LEDs follow the PC and M lines, which
 nothing drives yet.
 
 ## 4. Register bit cards
 
 One card at a time, on the ribbon with the hub and the panel. The panel's
-A and B switches sit on the registers' output lines, so leave them down
-and drive the bus instead: DATA switch <i> on card C with INP up puts the
+A and B switches sit on the registers' output lines, so leave them off
+and drive the bus instead: DATA switch <i> on card C with INP on puts the
 bit on the bus; raise AI, press CLK: the A<i> LED lights (the card's own
 and panel A's). AO puts A back on the bus: the D<i> LED. Same
 for B with BI, BO; BA copies A into B, AB copies B into A; OI loads OUT.
@@ -145,7 +169,7 @@ simulation did all 2304 cases at four corners.
 
 Eight cards in a row, the 2x3 carry links between neighbours, the 2x6
 ribbon from the sequencer's link header along all eight (not connected
-yet: the sequencer is later). RST: all PC LEDs off. PCE up, press CLK: bit
+yet: the sequencer is later). RST: all PC LEDs off. PCE on, press CLK: bit
 0 lights; again: bit 1; the carry runs through the links. PCL with the
 bus data switches (OPR comes from the sequencer later; for now the panel's
 switches on the link ribbon's OPR lines): loads a jump target. RAI then
@@ -171,10 +195,10 @@ wrong side.
 Set a card's jumpers: P7..P4 the page, G3 G2 the word group, the centre pin
 to '1' where the address bit is 1; card c holds words 4c..4c+3. Set the
 switches of a short program (`sim/programs/count.asm` assembled by
-`sim/emu.py` gives the words; switch up = 1, bit 7 at the top). With the
-counter on the bus, PCE up and the CLK button: each press moves PC by one,
-the card's R<n> LED shows the row, and the M LEDs on panel C show the word.
-A blank word (all down) reads 0000 0000, NOP.
+`sim/emu.py` gives the words; a switch that is ON, to the right, is a 1,
+bit 7 at the top). With the counter on the bus, PCE on and the CLK button:
+each press moves PC by one, the card's R<n> LED shows the row, and the M
+LEDs on panel C show the word. A blank word (all off) reads 0000 0000, NOP.
 
 ## 9. Clock card
 
@@ -187,6 +211,14 @@ cards on it (about 3 nF): CLK rises 0.5 to 3.5 V in under 10 us, RST falls
 3.5 to 0.8 V in under 100 us (D053; the simulation says 6 and 45 us). RST
 lets go wherever the free-running clock happens to be, so on a few
 power-ups in a hundred the machine may start a step off: press RST.
+
+With the whole machine running a program, RST on the scope at the far end
+of the ribbon (its neighbour on the ribbon is BUS1# since the headers went
+to the back, D062): bumps of up to half a volt each time the bus is
+released are what the simulation says (0.28 to 0.43 V,
+`sim/results/rst_neighbour.md`). Above 0.6 V, fit a capacitor from RST to
+ground at the hub (2.2 nF halves the bump and RST then releases in 50 us
+instead of 20).
 
 ## 10. Sequencer
 

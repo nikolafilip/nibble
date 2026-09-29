@@ -18,6 +18,8 @@
 | `gate25_vdd425.md` | Added corners, 2026-09-27: fib, logic and call at HI with the supply at 4.25 V (`VDD=4.25`), same deck. The first run of this stage failed fib on the scorer, not the machine: `machine.py` read CLK against a fixed 3.5 V and the card's CLK high is (VDD − a diode) × 10/11, 3.38 V at 4.25 V; every level in the scorer and the switch counter's bridges is a fraction of VDD since commit 1480db7, and the stage was rerun on the fixed scorer |
 | `gate25_mix34.md` | Added corners, 2026-09-27/28: the six corner programs at MIX seeds 3 and 4, same deck |
 | `coupon_expected.md` | The coupon card, 2026-09-28 (D056): what the bench should read at each test loop, from `tb_coupon.py kicad --all` on the routed card's export at TYP, LO, HI and MIX seeds 1..3 (written by the testbench, not by `gate.py`) |
+| `rst_neighbour.md` | The reset line beside BUS1#, 2026-09-28 (D062): with the bus header on the back RST has one ground neighbour on the ribbon, not two; the bump it picks up when BUS1# is released, with every gate the routed boards hang on the two lines, against the coupling and a capacitor at the hub (written by `tb_rst_neighbour.py`) |
+| `crowbar.md` | The hub's crowbar and reverse diode, 2026-09-28 (D061): the models against their datasheets, which zener and gate resistor, and the rail in every way the voltage can arrive (turned up, switched on at 30 V, plugged in live, leads crossed), with the heat in the SCR (written by `tb_crowbar.py`). The parts are not on the hub yet |
 
 The four stages before `gate25_vdd425.md` ran on the scorer before 1480db7.
 At 5 V its fixed levels were the same fractions of VDD, so the tables stand.

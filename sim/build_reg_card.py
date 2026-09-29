@@ -20,7 +20,7 @@ CARD_TITLES={
 
 def main(i,pack='column'):
     d=registers.build_bit(i); pr=d.check(); assert not pr, pr
-    OUT=os.path.join(HERE,'..','cards',f'reg{i}'); PROJECT=f'reg{i}'
+    OUT=os.path.join(ksch.CARDS,f'reg{i}'); PROJECT=f'reg{i}'
     os.makedirs(OUT,exist_ok=True)
     root_uuid=ksch.U()
     w=ksch.DenseWriter(PROJECT,root_uuid); w.HCOL=frame.HCOL

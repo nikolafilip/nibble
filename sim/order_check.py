@@ -23,6 +23,9 @@ Per card, from the files in cards/<card>/ as committed:
            stack or a resistor, its drain on a pull-up, a stack, an LED, the bus header or a rail; no diode, LED or electrolytic
            reversed against the rails (pad 1 is the cathode / the plus, as the KiCad symbols and footprints number them); an
            electrolytic has its minus on GND or its plus on the supply (a timing capacitor sits between a signal and GND)
+  silk     no board label is clipped by a pad's mask opening or smaller than 0.8 mm (the note counts the ones under 1.0 mm, the
+           height JLCPCB says it prints: pcb.fit_silk grows every label that has the room); the 64-pin bus header is on the back
+           of the board (D059) and the front says so
   asm      fab/<card>-assembly.svg, the drawing that says which value goes where (the cards print none), is the committed board's
   clamp    no copper of another net, on either face, within reach of the hardware clamped on the board: 7.5 mm of a banana socket's
            centre (an M6 nut's corners and a 12 mm solder tag reach 6.4 mm over 25 um of mask) and 3.3 mm of a mounting hole's (an M3
@@ -31,8 +34,8 @@ Per card, from the files in cards/<card>/ as committed:
 
 --machine, over every routed board at once (no card's own checks can see these, and the simulation joins the cards by net name,
 so a header wired to the wrong pin would pass every deck):
-  bus      on every board, every pad of every 2x32 header carries the signal bus.py gives that pin, or nothing; the power pins
-           (+5V 1 2 63, GND 3 4 6 8 64) are all connected; the hub's two headers carry all 64 lines
+  bus      on every board, every 2x32 header is on the back and every pad of it carries the signal bus.py gives that pin, or
+           nothing; the power pins (+5V 1 2 64, GND 3 4 5 7 63) are all connected; the hub's two headers carry all 64 lines
   links    a link ribbon joins pin n to pin n: each pair of headers that a ribbon joins (ALU carry chain, counter carry chain,
            the sequencer's operand link to the eight counter cards, memory control to the slots) has the same signal on the
            same pin at both ends, or nothing at the end that does not take it
@@ -125,6 +128,13 @@ def check_card(name,make_zip=False):
     note['outline']=f'{w:.2f} x {h:.2f} mm, {len(holes)} holes, {len(mh)} of {HOLE_D} mm'
     # pins
     bad=pin_rules(pcb); res['pins']=not bad; note['pins']='all parts on nets, polarity rules pass' if not bad else '; '.join(f'{r} {w}' for r,w,_ in bad[:4])
+    # silk
+    sp=open(pcb).read(); sizes=[float(x) for x in re.findall(r'^\t\(gr_text "[^"]*"\s*\(at [^)]*\)\s*\(layer "[FB]\.SilkS"\).*?\(size ([\d.]+) [\d.]+\)',sp,re.M|re.S)]
+    clipped=[x for x in j['violations'] if x['type']=='silk_over_copper' and any('PCB text' in i['description'] for i in x['items'])]
+    front=re.findall(r'\(footprint "IDC-Header_2x32[^"]*"\s*\(layer "F\.Cu"\)',sp); said='"HEADER ON THE BACK"' in sp
+    res['silk']=bool(sizes) and min(sizes)>=0.8 and not clipped and not front and said
+    note['silk']=(f'{len(sizes)} labels, {sum(1 for x in sizes if x<1.0)} under 1.0 mm, none clipped; the bus header is on the back' if res['silk'] else
+                  '; '.join(([f'{len(clipped)} labels clipped by a pad'] if clipped else [])+([f'a label of {min(sizes)} mm'] if sizes and min(sizes)<0.8 else [])+(['the bus header is on the front'] if front else [])+(['the front does not say where the header goes'] if not said else [])))
     # asm
     ap=os.path.join(fab,f'{name}-assembly.svg'); at=os.path.join(tmp,'asm.svg'); assembly.draw(name,out=at,d=d)
     res['asm']=os.path.exists(ap) and open(ap).read()==open(at).read(); note['asm']='the drawing is the board\'s' if res['asm'] else 'missing or stale (python3 assembly.py <card>)'
@@ -189,11 +199,13 @@ def selftest():
         if not b or any(n not in (board,what) for n,_ in b): mw.append(f'{board} {val}: {b[:2]}')
     def swap(i,j): return lambda P:P.update({i:P[j],j:P[i]})
     broken('reg0','BUS',swap(5,6),'reg0')                                     # CLK and its ground changed places (what a header on the wrong face does)
+    H=copy.deepcopy(H0); H['alu2']['BUS']=(H['alu2']['BUS'][0],'F.Cu',H['alu2']['BUS'][2])
+    if [n for n,_ in machine_rules(H)[0]]!=['alu2']: mw.append('alu2: a header on the front')
     broken('ctr3','BUS',lambda P:P.update({64:None}),'ctr3')                  # a ground pin left open
     broken('hub','BUS J4',lambda P:P.update({33:None}),'hub')                # the hub's second header drops a line
     broken('alu1','IN',swap(1,3),'alu0')                                      # the carry and the zero chain crossed in a link
     broken('ctr5','LINK',swap(6,7),'sequencer')                               # a counter card taking its neighbour's operand bit
-    print(f'machine selftest: {5-len(mw) if ok else 0} of 5 faults caught'+''.join(f'\n  not as expected: {m}' for m in mw))
+    print(f'machine selftest: {6-len(mw) if ok else 0} of 6 faults caught'+''.join(f'\n  not as expected: {m}' for m in mw))
     return not wrong and not mw
 
 BOARDS=['alu0','alu1','alu2','alu3','clock','coupon','ctr0','ctr1','ctr2','ctr3','ctr4','ctr5','ctr6','ctr7','hub','memctl','memslot',
@@ -220,6 +232,7 @@ def machine_rules(H=None):
         if not hs: bad.append((n,'no bus header'))
         for v,(fp,layer,pads) in hs:
             nb+=1
+            if layer!='B.Cu': bad.append((n,f'{v}: the header is on {layer}, not on the back (D059)'))
             for pin,sig in bus.PINS.items():
                 got=pads.get(pin)
                 if got is None and (sig in ('+5V','GND') or n=='hub'): bad.append((n,f'{v} pin {pin}: {sig} not connected'))

@@ -2,6 +2,9 @@
 
     python3 order_check.py coupon reg0 hub          (from sim/; plain python3, kicad-cli only)
     python3 order_check.py --zip coupon             (also write fab/<card>-gerbers.zip from the fab files)
+    python3 order_check.py --selftest               (the pins rule against parts made up to break it)
+
+    python3 order_check.py sequencer                (boards/03-sequencer: 245 x 255 mm, four layers, four corner holes; assembly.BOARDS)
 
 Per card, from the files in cards/<card>/ as committed:
   clean    git reports nothing modified under cards/<card>/ (the gerbers are the commit's)
@@ -14,9 +17,11 @@ Per card, from the files in cards/<card>/ as committed:
   fab      gerbers and drill regenerated from the committed board equal fab/ (creation dates ignored)
   zip      fab/<card>-gerbers.zip holds exactly the nine files the fab needs, byte-identical to fab/
   outline  the edge cuts span exactly 100.00 x 100.00 mm; the drill file has two 3.2 mm mounting holes at (4,50) and (96,50)
-  pins     every through-hole pad of every part is on a net; each 2N7000 has its gate off the rails, its source on GND, a stack
-           or a resistor, its drain on a pull-up, a stack, an LED, the bus header or a rail; no diode, LED or electrolytic
-           reversed against the rails (pad 1 is the cathode / the plus, as the KiCad symbols and footprints number them)
+           (the sequencer: 245.00 x 255.00 mm and four holes, 4 mm in from the sides at y = 20 and 251)
+  pins     every numbered through-hole pad of every part is on a net; each 2N7000 has its gate off the rails, its source on GND, a
+           stack or a resistor, its drain on a pull-up, a stack, an LED, the bus header or a rail; no diode, LED or electrolytic
+           reversed against the rails (pad 1 is the cathode / the plus, as the KiCad symbols and footprints number them); an
+           electrolytic has its minus on GND or its plus on the supply (a timing capacitor sits between a signal and GND)
   asm      fab/<card>-assembly.svg, the drawing that says which value goes where (the cards print none), is the committed board's
   clamp    no copper of another net, on either face, within reach of the hardware clamped on the board: 7.5 mm of a banana socket's
            centre (an M6 nut's corners and a 12 mm solder tag reach 6.4 mm over 25 um of mask) and 3.3 mm of a mounting hole's (an M3
@@ -25,9 +30,12 @@ Per card, from the files in cards/<card>/ as committed:
 Exit status 1 if any check fails."""
 import sys, os, re, json, subprocess, tempfile, zipfile, shutil, collections, math
 K='/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli'
+import assembly
 HERE=os.path.dirname(os.path.abspath(__file__)); CARDS=os.path.join(HERE,'..','cards'); DRU=os.path.join(HERE,'jlcpcb.kicad_dru')
 ZIP_SUFFIXES=['-F_Cu.gtl','-B_Cu.gbl','-F_Mask.gts','-B_Mask.gbs','-F_Silkscreen.gto','-B_Silkscreen.gbo','-Edge_Cuts.gm1','.drl','-job.gbrjob']
-CARD=100.0; HOLES=[(4.0,50.0),(96.0,50.0)]; HOLE_D=3.2
+INNER=['-In1_Cu.g1','-In2_Cu.g2']                                   # a four-layer board's zip carries these too
+HOLE_D=3.2
+def suffixes(name): return ZIP_SUFFIXES[:2]+(INNER if assembly.board(name)['layers']==4 else [])+ZIP_SUFFIXES[2:]
 CLAMP={'Banana_Jack_1Pin':7.5,'MountingHole_3.2mm_M3_Pad':3.3}     # mm from the centre that the hardware on the board can touch, plus margin
 
 def run(args): return subprocess.run(args,capture_output=True,text=True)
@@ -37,7 +45,7 @@ def write_zip(fab,name):
     """fab/<name>-gerbers.zip: the nine fab files, fixed timestamps so the zip changes only when the gerbers do."""
     path=os.path.join(fab,f'{name}-gerbers.zip')
     with zipfile.ZipFile(path,'w',zipfile.ZIP_DEFLATED) as z:
-        for suf in ZIP_SUFFIXES:
+        for suf in suffixes(name):
             fn=f'{name}{suf}'; zi=zipfile.ZipInfo(fn,date_time=(2026,1,1,0,0,0)); zi.compress_type=zipfile.ZIP_DEFLATED; zi.external_attr=0o644<<16
             z.writestr(zi,open(os.path.join(fab,fn),'rb').read())
     return path
@@ -46,7 +54,7 @@ def strip_dates(text,drill=False):
     return '\n'.join(l for l in text.splitlines() if not (l.startswith('G04') or 'CreationDate' in l or (drill and l.startswith(';'))))
 
 def check_card(name,make_zip=False):
-    d=os.path.join(CARDS,name); pcb=os.path.join(d,f'{name}.kicad_pcb'); sch=os.path.join(d,f'{name}.kicad_sch'); pro=os.path.join(d,f'{name}.kicad_pro')
+    B=assembly.board(name); d=B['dir']; SUF=suffixes(name); pcb=os.path.join(d,f'{name}.kicad_pcb'); sch=os.path.join(d,f'{name}.kicad_sch'); pro=os.path.join(d,f'{name}.kicad_pro')
     fab=os.path.join(d,'fab'); res=collections.OrderedDict(); note={}
     tmp=tempfile.mkdtemp(prefix=f'order_{name}_')
     # clean
@@ -78,17 +86,17 @@ def check_card(name,make_zip=False):
     # fab: regenerate and compare
     gd=os.path.join(tmp,'fab'); os.makedirs(gd); run([K,'pcb','export','gerbers','-o',gd+'/',pcb]); run([K,'pcb','export','drill','-o',gd+'/',pcb])
     bad=[]
-    for suf in ZIP_SUFFIXES:
+    for suf in SUF:
         fn=f'{name}{suf}'; a=os.path.join(fab,fn); b=os.path.join(gd,fn)
         if not os.path.exists(a) or not os.path.exists(b): bad.append(fn+' missing'); continue
         if strip_dates(open(a).read(),suf=='.drl')!=strip_dates(open(b).read(),suf=='.drl'): bad.append(fn)
-    res['fab']=not bad; note['fab']='nine files equal the committed board' if not bad else 'stale: '+', '.join(bad)
+    res['fab']=not bad; note['fab']=f'{len(SUF)} files equal the committed board' if not bad else 'stale: '+', '.join(bad)
     # zip
     zp=os.path.join(fab,f'{name}-gerbers.zip')
     if make_zip: write_zip(fab,name)
     if os.path.exists(zp):
         with zipfile.ZipFile(zp) as z:
-            names=sorted(z.namelist()); want=sorted(f'{name}{s}' for s in ZIP_SUFFIXES)
+            names=sorted(z.namelist()); want=sorted(f'{name}{s}' for s in SUF)
             same=names==want and all(z.read(n)==open(os.path.join(fab,n),'rb').read() for n in want if os.path.exists(os.path.join(fab,n)))
         res['zip']=same; note['zip']=f'{len(names)} files, identical to fab/' if same else f'zip differs from fab/ ({len(names)} files)'
     else: res['zip']=False; note['zip']='no fab/<card>-gerbers.zip (run with --zip)'
@@ -103,13 +111,13 @@ def check_card(name,make_zip=False):
         m=re.match(r'^X(-?[\d.]+)Y(-?[\d.]+)',line)
         if m and cur: holes.append((float(tools[cur]),float(m.group(1)),float(m.group(2))))
     mh=[(x,y) for dd,x,y in holes if abs(dd-HOLE_D)<0.01]
-    okh=len(mh)==len(HOLES) and all(any(abs(x-hx)<0.01 and abs(abs(y)-hy)<0.01 for x,y in mh) for hx,hy in HOLES)     # the drill file has y up: (4,50) is X4Y-50
-    res['outline']=abs(w-CARD)<0.005 and abs(h-CARD)<0.005 and okh
+    HOLES=B['holes']; okh=len(mh)==len(HOLES) and all(any(abs(x-hx)<0.01 and abs(abs(y)-hy)<0.01 for x,y in mh) for hx,hy in HOLES)     # the drill file has y up: (4,50) is X4Y-50
+    res['outline']=abs(w-B['size'][0])<0.005 and abs(h-B['size'][1])<0.005 and okh
     note['outline']=f'{w:.2f} x {h:.2f} mm, {len(holes)} holes, {len(mh)} of {HOLE_D} mm'
     # pins
     bad=pin_rules(pcb); res['pins']=not bad; note['pins']='all parts on nets, polarity rules pass' if not bad else '; '.join(f'{r} {w}' for r,w,_ in bad[:4])
     # asm
-    import assembly; ap=os.path.join(fab,f'{name}-assembly.svg'); at=os.path.join(tmp,'asm.svg'); assembly.draw(name,out=at,d=d)
+    ap=os.path.join(fab,f'{name}-assembly.svg'); at=os.path.join(tmp,'asm.svg'); assembly.draw(name,out=at,d=d)
     res['asm']=os.path.exists(ap) and open(ap).read()==open(at).read(); note['asm']='the drawing is the board\'s' if res['asm'] else 'missing or stale (python3 assembly.py <card>)'
     # clamp
     bad,nclamp=clamp_rules(pcb); res['clamp']=not bad and nclamp>0
@@ -127,7 +135,7 @@ def parse_pcb(path):
     return fps
 
 def pin_rules(pcb):
-    fps=parse_pcb(pcb); RAIL={'GND','+5V','VBUS'}; bad=[]
+    fps=parse_pcb(pcb) if isinstance(pcb,str) else pcb; RAIL={'GND','+5V','VBUS'}; bad=[]
     q_s=set(); q_d=set(); r_nets=set(); led_nets=set(); hdr_nets=set()
     for fp,ref,P in fps:
         if fp.startswith('TO-92'): q_s.add(P['1'][1]); q_d.add(P['3'][1])
@@ -144,11 +152,28 @@ def pin_rules(pcb):
             k,a=P['1'][1],P['2'][1]
             if k in ('+5V','VBUS') or a=='GND': bad.append((ref,'reversed against the rails',(k,a)))
         elif fp.startswith('CP_Radial'):
-            if P['1'][1] not in ('+5V','VBUS') or P['2'][1]!='GND': bad.append((ref,'electrolytic polarity',(P['1'][1],P['2'][1])))
+            p,m=P['1'][1],P['2'][1]          # a timing capacitor has its plus on a signal and its minus on GND; between two signals nothing here says which way round, so that fails until someone looks
+            if p=='GND' or m in ('+5V','VBUS') or not (m=='GND' or p in ('+5V','VBUS')): bad.append((ref,'electrolytic polarity',(p,m)))
         if not fp.startswith('MountingHole'):
-            for pn,(typ,net) in P.items():
-                if typ=='thru_hole' and (net is None or net==''): bad.append((ref,f'pad {pn} on no net',None))
+            for pn,(typ,net) in P.items():   # a pad without a number is a part's mounting lug (the potentiometer's), on no net by design
+                if pn and typ=='thru_hole' and (net is None or net==''): bad.append((ref,f'pad {pn} on no net',None))
     return bad
+
+def selftest():
+    """The pins rule on boards made up to break it: each line is a part, its pads' nets, and whether the rule must object."""
+    T=lambda *nets:{str(i+1):('thru_hole',n) for i,n in enumerate(nets)}
+    base=[('R_Axial_DIN0207','R1',T('+5V','Y')),('TO-92_Inline','Q1',T('GND','A','Y'))]
+    cases=[('CP_Radial_D5.0mm','C2',T('+5V','GND'),False),('CP_Radial_D5.0mm','C4',T('POR','GND'),False),('CP_Radial_D5.0mm','C5',T('+5V','POR'),False),
+           ('CP_Radial_D5.0mm','C6',T('GND','POR'),True),('CP_Radial_D5.0mm','C7',T('GND','+5V'),True),('CP_Radial_D5.0mm','C8',T('POR','+5V'),True),
+           ('CP_Radial_D5.0mm','C9',T('POR','Y'),True),
+           ('Potentiometer_Alpha','RV1',{'':('thru_hole',None),'1':('thru_hole','Y'),'2':('thru_hole','A'),'3':('thru_hole','A')},False),
+           ('Potentiometer_Alpha','RV2',{'':('thru_hole',None),'1':('thru_hole','Y'),'2':('thru_hole',None),'3':('thru_hole','A')},True),
+           ('D_DO-35_SOD27','D1',T('+5V','Y'),True),('D_DO-35_SOD27','D2',T('Y','GND'),True),('D_DO-35_SOD27','D3',T('Y','A'),False),
+           ('LED_D5.0mm','D4',T('GND','Y'),False),('TO-92_Inline','Q2',T('GND','+5V','Y'),True),('TO-92_Inline','Q3',T('+5V','A','Y'),True),
+           ('TO-92_Inline','Q4',T('GND','A','GND'),True),('TO-92_Inline','Q5',T('Y','A','Z'),True)]
+    wrong=[(ref,want) for fp,ref,P,want in cases if bool([b for b in pin_rules(base+[(fp,ref,P)]) if b[0]==ref])!=want]
+    print(f'pins selftest: {len(cases)-len(wrong)} of {len(cases)} cases as expected'+''.join(f'\n  {r}: the rule {"kept quiet" if w else "objected"}' for r,w in wrong))
+    return not wrong
 
 def parse_copper(path):
     """The board's copper with positions: footprints (name, ref, centre, [pads: (x,y,radius,net)]), tracks, vias. A pad's position is
@@ -177,6 +202,7 @@ def clamp_rules(pcb):
         if name not in CLAMP: continue
         R=CLAMP[name]; own=pads[0][3] if pads else None; n+=1
         for x1,y1,x2,y2,w,l,net in tracks:
+            if l not in ('F.Cu','B.Cu'): continue      # the hardware touches the two faces only
             d=dseg(cx,cy,x1,y1,x2,y2)-w/2
             if d<R and net!=own: bad.append((ref,f'track {net} on {l} {d:.2f} mm from the centre'))
         for x,y,sz,net in vias:
@@ -190,6 +216,7 @@ def clamp_rules(pcb):
     return bad,n
 
 if __name__=='__main__':
+    if '--selftest' in sys.argv: sys.exit(0 if selftest() else 1)
     args=[a for a in sys.argv[1:] if not a.startswith('--')]; make_zip='--zip' in sys.argv
     if not args: print(__doc__); sys.exit(2)
     allok=True; rows=[]

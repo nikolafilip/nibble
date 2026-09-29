@@ -433,13 +433,13 @@
 <text x="1064" y="176" font-size="17" fill="#111">220k  x 8  (every unlabelled one)</text>
 <text x="1018" y="214" font-size="18" fill="#111" font-weight="bold">Other parts</text>
 <text x="1018" y="240" font-size="16" fill="#111">test loop  x 6</text>
-<text x="1018" y="264" font-size="16" fill="#111">hole  x 2</text>
-<text x="1018" y="288" font-size="16" fill="#111">header  x 2</text>
+<text x="1018" y="264" font-size="16" fill="#111">box header 2x32  x 2</text>
+<text x="1018" y="288" font-size="16" fill="#111">mounting hole  x 2</text>
 <text x="1018" y="312" font-size="16" fill="#111">socket  x 2</text>
-<text x="1018" y="336" font-size="16" fill="#111">electrolytic 100u  x 1</text>
-<text x="1018" y="360" font-size="16" fill="#111">LED  x 1</text>
-<text x="1018" y="384" font-size="16" fill="#111">fuse 1.5A  x 1</text>
-<text x="1018" y="408" font-size="16" fill="#111">capacitor 100n  x 1</text>
+<text x="1018" y="336" font-size="16" fill="#111">LED  x 1</text>
+<text x="1018" y="360" font-size="16" fill="#111">capacitor 100n  x 1</text>
+<text x="1018" y="384" font-size="16" fill="#111">electrolytic 100u  x 1</text>
+<text x="1018" y="408" font-size="16" fill="#111">fuse 1.5A  x 1</text>
 <text x="18" y="1040" font-size="16" fill="#444">Square pad = pad 1: the cathode of a diode or an LED, the plus of an electrolytic, pin 1 of a header.</text>
 <text x="18" y="1066" font-size="16" fill="#444">Grey and unlabelled: the commonest resistor of the card (see the legend) and the 2N7000, flat side as the outline shows. Resistors stand upright on 5.08 mm.</text>
 <text x="18" y="1092" font-size="16" fill="#444">Drawn from the committed board by sim/assembly.py; the values are the schematic's. Front view, the header along the top edge.</text>

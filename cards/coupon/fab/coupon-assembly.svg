@@ -1108,32 +1108,34 @@
 <text x="1018" y="98" font-size="18" fill="#111" font-weight="bold">Resistors</text>
 <path d="M1018 118L1052 118" stroke="#9467bd" stroke-width="7" stroke-linecap="round"/>
 <text x="1064" y="124" font-size="17" fill="#111">1Meg  x 5</text>
-<path d="M1018 144L1052 144" stroke="#d62728" stroke-width="7" stroke-linecap="round"/>
-<text x="1064" y="150" font-size="17" fill="#111">1k  x 3</text>
-<path d="M1018 170L1052 170" stroke="#1f77b4" stroke-width="7" stroke-linecap="round"/>
-<text x="1064" y="176" font-size="17" fill="#111">10k  x 3</text>
+<path d="M1018 144L1052 144" stroke="#1f77b4" stroke-width="7" stroke-linecap="round"/>
+<text x="1064" y="150" font-size="17" fill="#111">10k  x 3</text>
+<path d="M1018 170L1052 170" stroke="#d62728" stroke-width="7" stroke-linecap="round"/>
+<text x="1064" y="176" font-size="17" fill="#111">1k  x 3</text>
 <path d="M1018 196L1052 196" stroke="#8c564b" stroke-width="7" stroke-linecap="round"/>
 <text x="1064" y="202" font-size="17" fill="#111">4.7k  x 2</text>
 <path d="M1018 222L1052 222" stroke="#bcbd22" stroke-width="7" stroke-linecap="round"/>
 <text x="1064" y="228" font-size="17" fill="#111">100  x 1</text>
-<path d="M1018 248L1052 248" stroke="#e377c2" stroke-width="7" stroke-linecap="round"/>
-<text x="1064" y="254" font-size="17" fill="#111">3.3k  x 1</text>
+<path d="M1018 248L1052 248" stroke="#17becf" stroke-width="7" stroke-linecap="round"/>
+<text x="1064" y="254" font-size="17" fill="#111">100k  x 1</text>
 <path d="M1018 274L1052 274" stroke="#2ca02c" stroke-width="7" stroke-linecap="round"/>
 <text x="1064" y="280" font-size="17" fill="#111">220k  x 1</text>
-<path d="M1018 300L1052 300" stroke="#17becf" stroke-width="7" stroke-linecap="round"/>
-<text x="1064" y="306" font-size="17" fill="#111">100k  x 1</text>
+<path d="M1018 300L1052 300" stroke="#e377c2" stroke-width="7" stroke-linecap="round"/>
+<text x="1064" y="306" font-size="17" fill="#111">3.3k  x 1</text>
 <path d="M1018 326L1052 326" stroke="#bdbdbd" stroke-width="4" stroke-linecap="round"/>
 <text x="1064" y="332" font-size="17" fill="#111">47k  x 36  (every unlabelled one)</text>
 <text x="1018" y="370" font-size="18" fill="#111" font-weight="bold">Other parts</text>
 <text x="1018" y="396" font-size="16" fill="#111">2N7000  x 57</text>
 <text x="1018" y="420" font-size="16" fill="#111">test loop  x 15</text>
-<text x="1018" y="444" font-size="16" fill="#111">header  x 3</text>
-<text x="1018" y="468" font-size="16" fill="#111">diode 1N4148  x 2</text>
-<text x="1018" y="492" font-size="16" fill="#111">hole  x 2</text>
-<text x="1018" y="516" font-size="16" fill="#111">capacitor 47n  x 1</text>
+<text x="1018" y="444" font-size="16" fill="#111">diode 1N4148  x 2</text>
+<text x="1018" y="468" font-size="16" fill="#111">mounting hole  x 2</text>
+<text x="1018" y="492" font-size="16" fill="#111">LED  x 1</text>
+<text x="1018" y="516" font-size="16" fill="#111">box header 2x32  x 1</text>
 <text x="1018" y="540" font-size="16" fill="#111">capacitor 100n  x 1</text>
-<text x="1018" y="564" font-size="16" fill="#111">electrolytic 10u  x 1</text>
-<text x="1018" y="588" font-size="16" fill="#111">LED  x 1</text>
+<text x="1018" y="564" font-size="16" fill="#111">capacitor 47n  x 1</text>
+<text x="1018" y="588" font-size="16" fill="#111">electrolytic 10u  x 1</text>
+<text x="1018" y="612" font-size="16" fill="#111">pin header 1x2  x 1</text>
+<text x="1018" y="636" font-size="16" fill="#111">pin header 1x6  x 1</text>
 <text x="18" y="1040" font-size="16" fill="#444">Square pad = pad 1: the cathode of a diode or an LED, the plus of an electrolytic, pin 1 of a header.</text>
 <text x="18" y="1066" font-size="16" fill="#444">Grey and unlabelled: the commonest resistor of the card (see the legend) and the 2N7000, flat side as the outline shows. Resistors stand upright on 5.08 mm.</text>
 <text x="18" y="1092" font-size="16" fill="#444">Drawn from the committed board by sim/assembly.py; the values are the schematic's. Front view, the header along the top edge.</text>

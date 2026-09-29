@@ -355,9 +355,10 @@ def fit_silk(projdir,name):
     label, in the courtyard of a part on its face (the name would be under the
     part; an LED's printed circle stands for its courtyard, which is 0.35 mm wider than the LED's flange), or within 0.3 mm of
     the board's edge. The labels that are large already stand first; each of the others takes the nearest place to where the
-    plan put it that is free, on a 0.1 mm grid: first at SILK_MIN within 1.2 mm, then at its own size within 1.2 mm, then the
-    same two turned upright (reading upward: a name in the 2 mm between an LED and the next part), then the four again within
-    3 mm, then at SILK_MIN within 6 mm; with no place at all it stays as the plan had it. A label is measured by its ink (its letters' height and stroke,
+    plan put it that is free, on a 0.1 mm grid: at SILK_MIN within 1.2 mm, then the same turned upright (reading upward: a
+    name in the gap between an LED and the next part), then the two again within 3 mm, then lying within 6 mm; only when
+    SILK_MIN has no place does it try its own smaller size, in the same order to 3 mm; with no place at all it stays as the
+    plan had it. A label is measured by its ink (its letters' height and stroke,
     and room below the line for a p or a bracket), not by KiCad's box around it, which is half as high again. KiCad's DRC,
     which knows the letters' shapes, then judges the result: a label it objects to is placed again by KiCad's box, and one it
     still objects to goes back to the plan's place and size. The plan is not touched: the same plan and the same board give
@@ -408,7 +409,7 @@ def fit_silk(projdir,name):
         put(k,(0,0),big); b0=box(T[k].GetBoundingBox()); R=max(b0[2]-b0[0],b0[3]-b0[1])+mm(7)      # the label's length (it may be turned) and the 6 mm it may move
         here=(at0[k][0]-R,at0[k][1]-R,at0[k][0]+R,at0[k][1]+R)      # nothing farther than this from the plan's point can touch the label (12 mm was too near for a label 31 mm long: HEADER HERE lay across two vias)
         near=[o for o in solid[l]+list(placed[l].values()) if hit(here,o)]; yard=[y for y in yards[l] if hit(here,y[1])]
-        for size,reach,turn in ((big,1.2,0),(size0[k],1.2,0),(big,1.2,90),(size0[k],1.2,90),(big,3.0,0),(size0[k],3.0,0),(big,3.0,90),(size0[k],3.0,90),(big,6.0,0)):
+        for size,reach,turn in ((big,1.2,0),(big,1.2,90),(big,3.0,0),(big,3.0,90),(big,6.0,0),(size0[k],1.2,0),(size0[k],1.2,90),(size0[k],3.0,0),(size0[k],3.0,90)):      # every place at full size before any at the plan's smaller size (RUN and WRH stayed 0.8 mm lying down with room to stand at 1.0 mm)
             if turn and turn0[k]: continue      # (a name the plan stood upright stays as the plan turned it)
             put(k,(0,0),size,turn); b0=ink(T[k],tight)
             spot=next((d for d in ring if math.hypot(*d)<=reach+1e-9 and free((b0[0]+mm(d[0]),b0[1]+mm(d[1]),b0[2]+mm(d[0]),b0[3]+mm(d[1])),near,yard)),None)

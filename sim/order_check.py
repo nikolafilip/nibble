@@ -25,8 +25,8 @@ Per card, from the files in cards/<card>/ as committed:
            stack or a resistor, its drain on a pull-up, a stack, an LED, the bus header or a rail; no diode, LED or electrolytic
            reversed against the rails (pad 1 is the cathode / the plus, as the KiCad symbols and footprints number them); an
            electrolytic has its minus on GND or its plus on the supply (a timing capacitor sits between a signal and GND)
-  silk     no board label is clipped by a pad's mask opening or smaller than 0.8 mm (the note counts the ones under 1.0 mm, the
-           height JLCPCB says it prints: pcb.fit_silk grows every label that has the room); the 64-pin bus header is on the back
+  silk     no board label is clipped by a pad's mask opening or smaller than 1.0 mm, in height or in width (the height JLCPCB
+           says it prints; a letter made narrower has the narrower letter's gaps); the 64-pin bus header is on the back
            of the board (D059) and the front says so
   asm      fab/<card>-assembly.svg, the drawing that says which value goes where (the cards print none), is the committed board's
   clamp    no copper of another net, on either face, within reach of the hardware clamped on the board: 7.5 mm of a banana socket's
@@ -131,12 +131,12 @@ def check_card(name,make_zip=False):
     # pins
     bad=pin_rules(pcb); res['pins']=not bad; note['pins']='all parts on nets, polarity rules pass' if not bad else '; '.join(f'{r} {w}' for r,w,_ in bad[:4])
     # silk
-    sp=open(pcb).read(); sizes=[float(x) for x in re.findall(r'^\t\(gr_text "[^"]*"\s*\(at [^)]*\)\s*\(layer "[FB]\.SilkS"\).*?\(size ([\d.]+) [\d.]+\)',sp,re.M|re.S)]
+    sp=open(pcb).read(); sizes=[float(x) for hw in re.findall(r'^\t\(gr_text "[^"]*"\s*\(at [^)]*\)\s*\(layer "[FB]\.SilkS"\).*?\(size ([\d.]+) ([\d.]+)\)',sp,re.M|re.S) for x in hw]
     clipped=[x for x in j['violations'] if x['type']=='silk_over_copper' and any('PCB text' in i['description'] for i in x['items'])]
     front=re.findall(r'\(footprint "IDC-Header_2x32[^"]*"\s*\(layer "F\.Cu"\)',sp); said='"HEADER ON THE BACK"' in sp
-    res['silk']=bool(sizes) and min(sizes)>=0.8 and not clipped and not front and said
-    note['silk']=(f'{len(sizes)} labels, {sum(1 for x in sizes if x<1.0)} under 1.0 mm, none clipped; the bus header is on the back' if res['silk'] else
-                  '; '.join(([f'{len(clipped)} labels clipped by a pad'] if clipped else [])+([f'a label of {min(sizes)} mm'] if sizes and min(sizes)<0.8 else [])+(['the bus header is on the front'] if front else [])+(['the front does not say where the header goes'] if not said else [])))
+    res['silk']=bool(sizes) and min(sizes)>=1.0 and not clipped and not front and said
+    note['silk']=(f'{len(sizes)//2} labels, none under 1.0 mm, none clipped; the bus header is on the back' if res['silk'] else
+                  '; '.join(([f'{len(clipped)} labels clipped by a pad'] if clipped else [])+([f'a label of {min(sizes)} mm'] if sizes and min(sizes)<1.0 else [])+(['the bus header is on the front'] if front else [])+(['the front does not say where the header goes'] if not said else [])))
     # asm
     ap=os.path.join(fab,f'{name}-assembly.svg'); at=os.path.join(tmp,'asm.svg'); assembly.draw(name,out=at,d=d)
     res['asm']=os.path.exists(ap) and open(ap).read()==open(at).read(); note['asm']='the drawing is the board\'s' if res['asm'] else 'missing or stale (python3 assembly.py <card>)'

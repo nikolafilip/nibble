@@ -578,7 +578,6 @@
 <path d="M932.8 94.8L932.8 29.8" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
 <path d="M945.8 16.7L54.2 16.7" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
 <path d="M945.8 107.9L945.8 16.7" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
-<text x="216.2" y="515.5" font-size="10" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 216.2 515.5)">RUN</text>
 <text x="77.3" y="49.6" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 77.3 49.6)">1</text>
 <text x="77.3" y="75.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 77.3 75.0)">2</text>
 <text x="266.3" y="122.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 266.3 122.0)">HEADER ON THE BACK</text>
@@ -588,6 +587,7 @@
 <text x="490.0" y="600.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 490.0 600.0)">SLOW</text>
 <text x="908.7" y="49.6" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 908.7 49.6)">63</text>
 <text x="908.7" y="75.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 908.7 75.0)">64</text>
+<text x="220.2" y="515.5" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 220.2 515.5)">RUN</text>
 <text x="580.0" y="490.0" font-size="20" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 580.0 490.0)">SPEED</text>
 <text x="290.0" y="982.0" font-size="20" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 290.0 982.0)">NIBBLE  CLOCK</text>
 <path d="M400.0 640.0L400.0 690.8" stroke="#17becf" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.85"/>

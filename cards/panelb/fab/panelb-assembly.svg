@@ -881,7 +881,6 @@
 <path d="M932.8 94.8L932.8 29.8" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
 <path d="M945.8 16.7L54.2 16.7" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
 <path d="M945.8 107.9L945.8 16.7" stroke="#5b6fd6" stroke-width="1.6" stroke-dasharray="7 5" fill="none"/>
-<text x="369.8" y="369.4" font-size="10" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 369.8 369.4)">WRH</text>
 <text x="77.3" y="49.6" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 77.3 49.6)">1</text>
 <text x="77.3" y="75.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 77.3 75.0)">2</text>
 <text x="95.0" y="584.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 95.0 584.0)">CLK</text>
@@ -922,6 +921,7 @@
 <text x="937.9" y="863.0" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 937.9 863.0)">F0</text>
 <text x="937.9" y="888.4" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 937.9 888.4)">F1</text>
 <text x="937.9" y="913.8" font-size="13" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 937.9 913.8)">INP</text>
+<text x="373.8" y="369.4" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 373.8 369.4)">WRH</text>
 <text x="681.0" y="217.0" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 681.0 217.0)">MAI</text>
 <text x="681.0" y="369.4" font-size="13" fill="#777" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 681.0 369.4)">INP</text>
 <text x="90.0" y="982.0" font-size="20" fill="#777" text-anchor="start" dominant-baseline="middle" transform="rotate(-0 90.0 982.0)">NIBBLE  PANEL B  LEVELS 2</text>

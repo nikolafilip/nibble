@@ -38,14 +38,15 @@ the first ribbon.
 | panel A | `cards/panela` | 1 | 1 | 4 |
 | panel B | `cards/panelb` | 1 | 1 | 4 |
 | panel C | `cards/panelc` | 1 | 1 | 4 |
-| program (four words a card) | `cards/prog` | 20 | 4 | 0 |
+| program (four words a card) | `cards/prog` | 20 | 5 | 5 |
 | register bit | `cards/reg0` to `reg3`, 4 designs | 1 | 1 each | 4 each |
 | sequencer (245 x 255 mm, four layers) | `boards/03-sequencer` | 1 | 1 | 4 |
-| **26 designs** | | **52 boards** | **30 five-packs** | |
+| **26 designs** | | **52 boards** | **31 five-packs** | |
 <!-- bom.py: end boards -->
 
-The fab sells five of a design. "Boards over" are spares, and the program
-cards have none: a fifth five-pack of `prog` gives five.
+The fab sells five of a design. "Boards over" are spares. Twenty program
+cards are four five-packs to the last board, so a fifth is ordered (decided
+2026-09-29): five over.
 
 To order a design: upload `fab/<name>-gerbers.zip` from its folder at
 JLCPCB's quote page, wait for the preview, leave the options as they come

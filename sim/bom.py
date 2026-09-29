@@ -16,6 +16,7 @@ cost a cent and get dropped are bought by the hundred, connectors and switches a
 import csv, glob, os, sys, re, math, collections
 HERE=os.path.dirname(os.path.abspath(__file__)); ROOT=os.path.join(HERE,'..'); DOC=os.path.join(ROOT,'docs','order-1.md')
 COPIES={'memslot':8,'prog':20}      # boards built of a design, where it is not one: eight slot pairs; program cards for the longest program (sort, 80 words, four to a card)
+SPARE_PACKS={'prog':1}             # five-packs ordered over what the boards built need: twenty program cards are four packs to the last board (decided 2026-09-29: a fifth)
 PILOT=['coupon','reg0','hub']
 WHAT={'alu':'ALU bit','reg':'register bit','ctr':'counter bit','memctl':'memory control','memslot':'memory slots (one pair of slots a card)','prog':'program (four words a card)','clock':'clock',
       'hub':'bus hub','panela':'panel A','panelb':'panel B','panelc':'panel C','coupon':'gate coupon (a test card, not in the machine)','sequencer':'sequencer'}
@@ -83,7 +84,7 @@ def tables():
     for n in names: groups.setdefault(re.sub(r'\d+$','',n) if re.match(r'(alu|reg|ctr)\d$',n) else n,[]).append(n)
     L=['| Design | Files | Boards built of each | Five-packs to order | Boards over |','|---|---|---|---|---|']; packs=boards=0
     for g,ns in groups.items():
-        cp=COPIES.get(g,1); pk=math.ceil(cp/5); packs+=pk*len(ns); boards+=cp*len(ns)
+        cp=COPIES.get(g,1); pk=math.ceil(cp/5)+SPARE_PACKS.get(g,0); packs+=pk*len(ns); boards+=cp*len(ns)
         files=f'`cards/{ns[0]}`' if len(ns)==1 and g!='sequencer' else '`boards/03-sequencer`' if g=='sequencer' else f'`cards/{ns[0]}` to `{ns[-1]}`'
         L.append(f"| {WHAT[g]}{' (245 x 255 mm, four layers)' if g=='sequencer' else ''} | {files}{'' if len(ns)==1 else f', {len(ns)} designs'} | {cp} | {pk}{'' if len(ns)==1 else ' each'} | {pk*5-cp}{'' if len(ns)==1 else ' each'} |")
     L.append(f"| **{len(names)} designs** | | **{boards} boards** | **{packs} five-packs** | |")

@@ -61,7 +61,9 @@ on the table: headers on the back of every board and the ribbon down the
 back of each column, between the two standoffs and through the 12 mm
 between card and rail; or headers on the front and the ribbon behind,
 looped forward through the 10 mm gap above each card (about half as much
-ribbon again, so the deck is rerun above 500 pF). Not decided.
+ribbon again, so the deck is rerun above 500 pF). **Decided 2026-09-28
+(D059): the first, headers on the back, the ribbon behind.** The text
+below and the model are still the old route until they are redrawn.
 
 Two 64-way ribbons (D043). Ribbon A starts at the hub's top header, runs
 along the front face's bottom row of headers (every card's header is on

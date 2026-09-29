@@ -67,12 +67,14 @@ hardware does rather than what the DRC says):
   behind the card's mid-line from y 40 to 60 at the 12 mm of the standoffs;
   a panel socket is longer than that behind the board. The sockets move
   clear of the rail or the hub gets its own standoffs.
-- Which face the 64-way headers are soldered on waits for the ribbon's
-  route (docs/mounting.md, "Open"); the boards are the same either way, but
-  cards with headers on different faces cannot share a ribbon.
+- The 64-way headers go on the back of every board (D059, decided
+  2026-09-28). The copper does not change; the silk does (the header's
+  outline and pin 1 move to the back, the 0.8 mm labels go to 1.0 mm), so
+  **the coupon's and reg0's zips will be replaced too: nothing is uploaded
+  until that is done and the gate is green on the new files.**
 
-The coupon and reg0 depend on none of these except the last, which is a
-question for the soldering iron, not the fab. Each card's
+This document is due a rewrite (its counts say "26 boards" for 26 designs,
+52 boards built; it promises a buy column it does not have). Each card's
 `fab/<name>-assembly.svg` says which value goes where (the cards print no
 references and no values; `sim/assembly.py`).
 

@@ -85,15 +85,17 @@ def build(projdir,name,route=True,passes=300,dsn_only=False,ses_file=None):
     # A rail with an eighth field True is hidden from the router (the inside of the sequencer's diode matrix, D045):
     # it is not on the board while the DSN is written and comes back with the others after the import.
     LAY={'F.Cu':pcbnew.F_Cu,'B.Cu':pcbnew.B_Cu,'In1.Cu':pcbnew.In1_Cu,'In2.Cu':pcbnew.In2_Cu}
-    hidden=[]
+    hidden=[]; handoffs=[]
     def add_rails(all=True):
         for r in plan.get('rails',[]):
             net,layer,x1,y1,x2,y2,wd=r[:7]; hide=len(r)>7 and r[7]
             if hide and not all: continue
             t=pcbnew.PCB_TRACK(board); t.SetStart(V(x1,y1)); t.SetEnd(V(x2,y2)); t.SetWidth(mm(wd)); t.SetLayer(LAY[layer]); t.SetNet(netobj[net]); board.Add(t)
             if hide: hidden.append(t)
-        for net,x,y in plan.get('vias',[]):
+        handoffs.clear()
+        for net,x,y,*h in plan.get('vias',[]):       # a fourth field True: a hand-off via, the end of a hand-led track for the router to wire on (drop_one_layer_vias)
             v=pcbnew.PCB_VIA(board); v.SetPosition(V(x,y)); v.SetDrill(mm(0.4)); v.SetWidth(mm(0.8)); v.SetLayerPair(pcbnew.F_Cu,pcbnew.B_Cu); v.SetNet(netobj[net]); board.Add(v)
+            if h and h[0]: handoffs.append(v)
     def hide_rails():
         for t in hidden: board.Remove(t)
         hidden.clear()
@@ -178,7 +180,7 @@ def build(projdir,name,route=True,passes=300,dsn_only=False,ses_file=None):
             print(f'  route attempt {attempt+1}: router reports {unrouted if unrouted is not None else "no unrouted count"}')
             if not os.path.exists(ses): print(r.stdout[-3000:]); raise SystemExit('freerouting produced no SES')
             pcbnew.ImportSpecctraSES(board,ses); os.remove(ses)
-            add_rails(); apply_patches(board,plan); gnd_pour(); pcbnew.SaveBoard(pcb,board)
+            add_rails(); apply_patches(board,plan); drop_one_layer_vias(board,handoffs); gnd_pour(); pcbnew.SaveBoard(pcb,board)
             for _ in range(2):
                 if gnd_stitch(board,pcb,netobj,gnd_pour)==0: break
             n=unconnected(pcb)
@@ -203,6 +205,18 @@ def build(projdir,name,route=True,passes=300,dsn_only=False,ses_file=None):
         outline(0); gnd_pour(); pcbnew.SaveBoard(pcb,board)
     sync_project(projdir,name,tw,cl)     # again: SaveBoard rewrites the project file with KiCad's defaults (0.2 mm clearance)
     return pcb
+
+def drop_one_layer_vias(board,handoffs):
+    """Remove a hand-off via the router left with tracks on one layer only. A hand-off via (a plan via with a fourth field True) is the
+    end of a hand-led track for the router to wire on: it takes a via as a target, a bare track end it does not (the hub's CLK and RST
+    led past the banana sockets). When the router carries on in the same layer the via joins nothing, KiCad's DRC says so (via_dangling),
+    and without it the two tracks still meet at the point. Only hand-off vias are looked at: on the pour cards a plan via is a stub on
+    one layer meeting the pour on the other, which is not a track and must stay."""
+    tracks=[t for t in board.GetTracks() if t.GetClass()=='PCB_TRACK']; n=0
+    for v in handoffs:
+        p=v.GetPosition(); layers={t.GetLayer() for t in tracks if t.GetStart()==p or t.GetEnd()==p}
+        if len(layers)<2: board.Remove(v); n+=1
+    if n: print(f'  {n} hand-off via{"s" if n>1 else ""} dropped (the router did not change layer there)')
 
 def apply_patches(board,plan):
     """Hand fixes after the router (plan extra.patches): [{'net','layer','remove':[[x0,y0,x1,y1],...],'add':[[x0,y0,x1,y1],...],'width'}].

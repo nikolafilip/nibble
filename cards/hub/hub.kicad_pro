@@ -309,7 +309,6 @@
   },
   "schematic": {
     "bus_aliases": {},
-    "drawing": {},
     "legacy_lib_dir": "",
     "legacy_lib_list": [],
     "top_level_sheets": [

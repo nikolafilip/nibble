@@ -23,10 +23,20 @@ def main():
     # power entry (D052, D057, D058): the bench supply's banana leads into two 4 mm sockets standing on the front face, 19.05 mm apart
     # (a dual banana plug fits too), red +5V above black GND at the left edge -> polyfuse -> +5V. No USB, no terminal: the machine is bench-powered.
     x,y=16*G,30*G
-    BAN="Connector:Banana_Jack_1Pin"     # a panel-type 4 mm socket on a 6 mm hole (Cliff S16, Hirschmann BIL 20 or any red/black pair), the board as its panel
+    BAN="Connector:Banana_Jack_1Pin"     # a panel-type 4 mm socket with an M6 bushing (Hirschmann BIL 20 or any red/black pair on a 6 mm hole), the board as its panel:
+                                         # a 6.1 mm hole in a 10.16 mm copper ring, the nut and solder tag clamped on the ring at the back make the connection
     red=w.symbol("Connector_Generic","Conn_01x01",w.ref('J'),"BENCH +5V",x,y,0,('1',),BAN,[("Description","4 mm banana socket, red: bench supply +5 V",True)],sim=False)
     blk=w.symbol("Connector_Generic","Conn_01x01",w.ref('J'),"BENCH GND",x,y+6*G,0,('1',),BAN,[("Description","4 mm banana socket, black: bench supply ground",True)],sim=False)
     w.at(red,14.0,26.0,0); w.at(blk,14.0,45.05,0)
+    for cx,cy in ((14.0,26.0),(14.0,45.05)):   # the nut and tag reach 6.4 mm from the centre (an M6 nut's corners, a 12 mm tag) over 25 um of mask: no other
+        w.keepouts.append((cx-7.5,cy-7.5,cx+7.5,cy+7.5))   # copper within 7.5 mm on either face (the router laid CLK 0.17 mm from the ring on the first route, 2026-09-28)
+    # CLK and RST leave the top header from the columns right above the sockets (pins 5 and 7); fenced out of the squares, the router gave
+    # them up, so they are led by hand on the back: a step down and right off the pin, left below the header's pads, down the free strip at the card's edge
+    # (the GND rail there is on the front), right between the two squares, to a fixed via past them that the router wires on (a bare track end
+    # it does not: two dangling tails on the first try; the sequencer's matrix tails end in vias for the same reason, ksch.py)
+    for net,xp,xg,yh,xe,ye,xv in (('CLK',15.71,16.98,12.0,5.0,35.0,24.0),('RST',18.25,19.52,12.6,5.6,34.0,22.6)):
+        for x1,y1,x2,y2 in ((xp,7.5,xg,8.77),(xg,8.77,xg,yh),(xg,yh,xe,yh),(xe,yh,xe,ye),(xe,ye,xv,ye)): R(net,x1,y1,x2,y2,0.2,'B.Cu')
+        w.vias.append((net,xv,ye,True))      # a hand-off via (pcb.py drops it again when the router stays on the back)
     w.W(x-2*G,y,x-5*G,y); w.L('VBUS',x-5*G,y,180,'output')
     w.W(x-2*G,y+6*G,x-5*G,y+6*G); w.PW('GND',x-5*G,y+6*G); w.W(x-5*G,y+6*G,x-5*G,y+8*G); w.pwr_flag(x-5*G,y+8*G)     # flagged as the machine's source of ground
     R('VBUS',14.0,26.0,20.0,26.0,0.8); R('VBUS',20.0,26.0,20.0,16.0,0.8); R('VBUS',20.0,16.0,26.0,16.0,0.8)     # red socket to the fuse, wide

@@ -81,7 +81,7 @@ rows, so the chained ribbon folds down once, like the bus ribbon).
 | 2020 corner brackets with screws | 140 | two per rail end |
 | M3 T-nuts for the 6 mm slot | 130 | two per card, four for the sequencer, spares |
 | M3 x 12 mm male-female standoffs | 130 | brass or nylon |
-| M3 x 6 mm screws | 260 | card to standoff, standoff to T-nut |
+| M3 x 6 mm screws | 260 | card to standoff, standoff to T-nut; no washers: the cards' mounting pads are 6.4 mm and tracks pass 0.2 mm outside them (the order gate holds copper of other nets 3.3 mm from the hole's centre, the reach of a hex standoff's corners) |
 | Rubber feet or a 500 mm plywood square | 1 | the base |
 
 About $150, all stock items. A face that is not populated needs no rails.

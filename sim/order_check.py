@@ -17,12 +17,17 @@ Per card, from the files in cards/<card>/ as committed:
   pins     every through-hole pad of every part is on a net; each 2N7000 has its gate off the rails, its source on GND, a stack
            or a resistor, its drain on a pull-up, a stack, an LED, the bus header or a rail; no diode, LED or electrolytic
            reversed against the rails (pad 1 is the cathode / the plus, as the KiCad symbols and footprints number them)
+  clamp    no copper of another net, on either face, within reach of the hardware clamped on the board: 7.5 mm of a banana socket's
+           centre (an M6 nut's corners and a 12 mm solder tag reach 6.4 mm over 25 um of mask) and 3.3 mm of a mounting hole's (an M3
+           hex standoff's corners reach 3.2 mm, no washers: docs/mounting.md). The DRC sees 0.15 mm of clearance and is content; the
+           first hub route had CLK 0.17 mm from the +5V socket's ring, under its nut (2026-09-28)
 Exit status 1 if any check fails."""
 import sys, os, re, json, subprocess, tempfile, zipfile, shutil, collections, math
 K='/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli'
 HERE=os.path.dirname(os.path.abspath(__file__)); CARDS=os.path.join(HERE,'..','cards'); DRU=os.path.join(HERE,'jlcpcb.kicad_dru')
 ZIP_SUFFIXES=['-F_Cu.gtl','-B_Cu.gbl','-F_Mask.gts','-B_Mask.gbs','-F_Silkscreen.gto','-B_Silkscreen.gbo','-Edge_Cuts.gm1','.drl','-job.gbrjob']
 CARD=100.0; HOLES=[(4.0,50.0),(96.0,50.0)]; HOLE_D=3.2
+CLAMP={'Banana_Jack_1Pin':7.5,'MountingHole_3.2mm_M3_Pad':3.3}     # mm from the centre that the hardware on the board can touch, plus margin
 
 def run(args): return subprocess.run(args,capture_output=True,text=True)
 def jload(p): return json.load(open(p))
@@ -102,6 +107,9 @@ def check_card(name,make_zip=False):
     note['outline']=f'{w:.2f} x {h:.2f} mm, {len(holes)} holes, {len(mh)} of {HOLE_D} mm'
     # pins
     bad=pin_rules(pcb); res['pins']=not bad; note['pins']='all parts on nets, polarity rules pass' if not bad else '; '.join(f'{r} {w}' for r,w,_ in bad[:4])
+    # clamp
+    bad,nclamp=clamp_rules(pcb); res['clamp']=not bad and nclamp>0
+    note['clamp']=f'{nclamp} clamp sites, nothing of another net in reach' if not bad else '; '.join(f'{r}: {w}' for r,w in bad[:4])
     shutil.rmtree(tmp,ignore_errors=True)
     return res,note
 
@@ -137,6 +145,45 @@ def pin_rules(pcb):
             for pn,(typ,net) in P.items():
                 if typ=='thru_hole' and (net is None or net==''): bad.append((ref,f'pad {pn} on no net',None))
     return bad
+
+def parse_copper(path):
+    """The board's copper with positions: footprints (name, ref, centre, [pads: (x,y,radius,net)]), tracks, vias. A pad's position is
+    its footprint's plus its local offset turned by the footprint's angle (KiCad: x' = x cos a + y sin a, y' = -x sin a + y cos a with
+    y down); a pad's radius is half its larger side, so a rectangle is covered whole."""
+    s=open(path).read(); fps=[]
+    for m in re.finditer(r'^\t\(footprint "([^"]+)"\s*\(layer "[^"]+"\)\s*\(uuid "[^"]+"\)\s*\(at ([\d.-]+) ([\d.-]+)(?: ([\d.-]+))?\)(.*?)^\t\)$',s,re.M|re.S):
+        X,Y,ang,b=float(m.group(2)),float(m.group(3)),float(m.group(4) or 0),m.group(5); c,sn=math.cos(math.radians(ang)),math.sin(math.radians(ang))
+        ref=re.search(r'\(property "Reference" "([^"]+)"',b); pads=[]
+        for p in re.finditer(r'\(pad "[^"]*" (?:thru_hole|smd|np_thru_hole) \w+\s*\(at ([\d.-]+) ([\d.-]+)(?: [\d.-]+)?\)\s*\(size ([\d.]+) ([\d.]+)\)(.*?)\n\t\t\)',b,re.S):
+            px,py=float(p.group(1)),float(p.group(2)); net=re.search(r'\(net (?:\d+ )?"([^"]*)"\)',p.group(5))
+            pads.append((X+px*c+py*sn,Y-px*sn+py*c,max(float(p.group(3)),float(p.group(4)))/2,net.group(1) if net else None))
+        fps.append((m.group(1),ref.group(1) if ref else '?',(X,Y),pads))
+    tracks=[(float(a),float(b),float(c2),float(d),float(w),l,n) for a,b,c2,d,w,l,n in re.findall(r'\(segment\s*\(start ([\d.-]+) ([\d.-]+)\)\s*\(end ([\d.-]+) ([\d.-]+)\)\s*\(width ([\d.]+)\)\s*\(layer "([^"]+)"\)\s*\(net (?:\d+ )?"([^"]+)"\)',s)]
+    vias=[(float(x),float(y),float(sz),n) for x,y,sz,n in re.findall(r'\(via\s*\(at ([\d.-]+) ([\d.-]+)\)\s*\(size ([\d.]+)\).*?\(net (?:\d+ )?"([^"]+)"\)',s,re.S)]
+    return fps,tracks,vias
+
+def clamp_rules(pcb):
+    """Copper of another net within CLAMP reach of a socket's or a mounting hole's centre, on any layer (the pour is GND at 0.3 mm from a
+    pad: outside a mounting hole's reach and, on the hub, absent)."""
+    fps,tracks,vias=parse_copper(pcb); bad=[]; n=0
+    def dseg(px,py,x1,y1,x2,y2):
+        dx,dy=x2-x1,y2-y1; L2=dx*dx+dy*dy; t=0 if L2==0 else max(0,min(1,((px-x1)*dx+(py-y1)*dy)/L2))
+        return math.hypot(px-x1-t*dx,py-y1-t*dy)
+    for name,ref,(cx,cy),pads in fps:
+        if name not in CLAMP: continue
+        R=CLAMP[name]; own=pads[0][3] if pads else None; n+=1
+        for x1,y1,x2,y2,w,l,net in tracks:
+            d=dseg(cx,cy,x1,y1,x2,y2)-w/2
+            if d<R and net!=own: bad.append((ref,f'track {net} on {l} {d:.2f} mm from the centre'))
+        for x,y,sz,net in vias:
+            d=math.hypot(x-cx,y-cy)-sz/2
+            if d<R and net!=own: bad.append((ref,f'via {net} {d:.2f} mm from the centre'))
+        for name2,ref2,_,pads2 in fps:
+            if ref2==ref: continue
+            for x,y,r,net in pads2:
+                d=math.hypot(x-cx,y-cy)-r
+                if d<R and net!=own: bad.append((ref,f'pad of {ref2} ({net}) {d:.2f} mm from the centre'))
+    return bad,n
 
 if __name__=='__main__':
     args=[a for a in sys.argv[1:] if not a.startswith('--')]; make_zip='--zip' in sys.argv

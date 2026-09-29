@@ -222,8 +222,16 @@ millisecond later, after the pulse in flight (D050). Power-on: RST high
 for a tenth of a second, then low. On the scope, with the ribbon and the
 cards on it (about 3 nF): CLK rises 0.5 to 3.5 V in under 10 us, RST falls
 3.5 to 0.8 V in under 100 us (D053; the simulation says 6 and 45 us). RST
-lets go wherever the free-running clock happens to be, so on a few
-power-ups in a hundred the machine may start a step off: press RST.
+lets go wherever the free-running clock happens to be. If a clock edge
+comes within about 20 us after the release, some cards are out of reset
+at that edge and others are not, and the machine starts wrong: the first
+instruction runs as another one, or the step LEDs show two steps at once
+and stay that way (`sim/results/sweep_por.md`: the mixed-threshold corners
+fail with the edge 10 us after the release and pass at 0 and at 20 us).
+That is under one start in a hundred at the clock's fastest. The RST
+button let go while the clock runs is the same race. The way round it:
+RUN switch off (STEP), press RST, then RUN. A machine that starts wrong
+after power-on gets the same.
 
 With the whole machine running a program, RST on the scope at the far end
 of the ribbon (its neighbour on the ribbon is BUS1# since the headers went

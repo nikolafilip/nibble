@@ -12,7 +12,9 @@ being walked); then one run per wanted offset o, shifting the release by a furth
 o us after it (negative: before it). Every run is fib for 12 ticks; the scorer's own "reset: released at" line gives the offset
 each run actually got, which is what the table records. Pulling the release to 20 ms changes nothing the machine sees (the
 oscillator has run ten periods, every node has been at its rail for milliseconds) and makes a run minutes instead of most of an
-hour of simulating a held reset. At most two decks at once (-j 2). A passing run's .dat is deleted; a failing run's stays.
+hour of simulating a held reset. That holds where the release lands near what was asked: at TYP and MIX1 it came at 16 and
+19 ms; at MIX2, whose release without help is at 236 ms, the formula was 7 % out over that distance and the release came at
+3.8 ms, a period and a half after power-on: run MIX2 with --early 35. At most two decks at once (-j 2). A passing run's .dat is deleted; a failing run's stays.
 Writes out/sweep_por.md; --resume keeps a ledger so a cut-short queue continues."""
 import sys, os, math, glob, json, time, subprocess, threading
 from concurrent.futures import ThreadPoolExecutor

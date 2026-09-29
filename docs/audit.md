@@ -23,6 +23,26 @@ the findings' states below are as of that change.
 | Hole against lead, per footprint | section 4 | all 22 footprint types | fits on paper; three parts must be the exact family |
 | Silkscreen text sizes | script | all 26 | 364 labels under 1.0 mm (F4); 2 after the refit |
 
+## 1a. The header move and the machine gate (2026-09-29)
+
+The machine gate simulated the boards as they were before the headers went
+to the back. Two comparisons say its results stand for the boards as they
+are now:
+
+- every board's SPICE export is the same, element for element
+  (`sim/board_diff.py 992a90f <26 boards>`: "no copper moved", and the
+  netlist column);
+- the whole-machine deck (fib, all cards, the clock card) written from the
+  old tree and from the new one has the same 4957 elements on the same
+  nets. The 54 cable capacitors are numbered in another order, one on each
+  bus line as before.
+
+One stage does not carry over: the crosstalk stage (`CROSS_PF=100`,
+`sim/results/gate25_cross.md`) coupled the lines that were neighbours on
+the ribbon then. The neighbours are other lines now (RST and BUS1#, BUS1#
+and BUS0#, BUS0# and BUS3#, ...), so that stage is owed again on the new
+order: six programs at TYP and HI.
+
 ## 2. Findings
 
 | # | Finding | Where | State |

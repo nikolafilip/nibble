@@ -1,11 +1,12 @@
 # Mounting: the column of cards
 
-Decided 2026-09-10 (D038, D042, D043), redrawn 2026-09-11 for the cards.
+Decided 2026-09-10 (D038, D042, D043), redrawn 2026-09-11 for the cards;
+the ribbons' section rewritten 2026-09-29 (D059), the rest still to follow.
 The machine is 100 x 100 mm cards on one crimped ribbon per pair of faces,
 plus the sequencer board (245 x 255), and it lives in a New York apartment.
 A wall panel is too big to own, a flat stack hides the LEDs, a card cage
 hides them too. So: a freestanding square column with the cards standing
-on its faces in a grid, LEDs out, the ribbons zigzagging over them.
+on its faces in a grid, LEDs out, the ribbons behind them.
 
 `docs/mounting/column.html` is the model: open it in a browser (it loads
 three.js from a CDN), drag to walk around it, slide the program-card count
@@ -49,44 +50,49 @@ cards (68 words); a third face is needed for `sort`.
 
 ## The ribbons
 
-**Open (2026-09-28): the route below cannot be built as written.** An IDC
-socket lies across its ribbon, so the ribbon leaves a header at right
-angles to the header's long side. The cards' headers lie along their top
-edges; the ribbon therefore runs down a column of cards, not along a row,
-and a 64-way ribbon is 81 mm wide: run over the front it covers 81 of each
-card's 100 mm, LEDs included. The model (`column.html`) draws the same
-impossible route. No board changes with the answer; what changes is the
-face the headers are soldered on and where the ribbon goes. The choices
-on the table: headers on the back of every board and the ribbon down the
-back of each column, between the two standoffs and through the 12 mm
-between card and rail; or headers on the front and the ribbon behind,
-looped forward through the 10 mm gap above each card (about half as much
-ribbon again, so the deck is rerun above 500 pF). **Decided 2026-09-28
-(D059): the first, headers on the back, the ribbon behind.** The text
-below and the model are still the old route until they are redrawn.
+**Being redrawn.** The bus headers are on the back of the boards (D059,
+D062) and the ribbon runs behind the cards. What is settled and what is
+not:
 
-Two 64-way ribbons (D043). Ribbon A starts at the hub's top header, runs
-along the front face's bottom row of headers (every card's header is on
-its top edge, at the same place on every card, so the sockets sit at a
-110 mm pitch along the ribbon), folds down 110 mm at the row's end, runs
-back along the next row, and so on up the front, then around the upright
-onto the right face and up it the same way. Ribbon B starts at the hub's
-bottom header and does the left face and then the back. A socket is
-crimped on wherever a card is; an empty slot is just ribbon. The ribbon
-lies flat on the face over the cards' top edges: the visible wiring.
+Settled, because it follows from the parts:
 
-A ribbon over two full faces is about 7 m long and adds about 500 pF to
-every bus line; with the hub's 10k pull-ups that is 5 us of rise on a
-1 ms tick. The machine deck runs at 300 pF and is rerun at 500 pF
-(`CABLE_PF=500`); both must pass before the order. With only the front
-and right faces populated the ribbons are 3 to 4 m.
+- An IDC socket lies across its ribbon, and every card's header lies along
+  its top edge. So the ribbon runs down a column of cards, a socket every
+  110 mm, never along a row.
+- It is 81 mm wide (64 conductors at 1.27 mm) and passes between a card's
+  two standoffs, which are 92 mm apart.
+- Every header sits the same way round (notch toward the top edge, pin 1
+  top left as the front sees the holes). A ribbon that comes down one
+  column and goes up the next must therefore arrive un-mirrored. Two 45
+  degree folds that make a U-turn mirror it: conductor 1 changes sides,
+  and pins 1 and 64 are +5V and GND. The turn that works is a sideways
+  step of two 45 degree folds (down, across, down again) followed by one
+  straight fold back on itself: three folds. `docs/bring-up.md` has the
+  continuity test that every ribbon gets before it sees power.
+- The links between neighbours (2x3 and 2x6 headers on the front, along
+  the bottom edge) have the same geometry: their ribbon leaves downward.
+  Between two cards side by side the cable is a U with a half twist in it,
+  or pin 1 meets pin 6 and the carry line meets ground.
 
-The neighbour links (ALU carry and zero chain, counter carry, memory
-address ribbon, the sequencer's operand lines) are short pieces of 6-way
-and 12-way ribbon with their own IDC sockets between adjacent cards of a
-row; the counter's eight cards and the memory's nine sit side by side in
-their rows for that reason (a 4-wide row breaks a chain of eight into two
-rows, so the chained ribbon folds down once, like the bus ribbon).
+Not settled, and not to be bought for until it is:
+
+- Which card stands in which slot, so that the chains (ALU, counter,
+  memory) have their members next to each other and the ribbon's length
+  is known. The old slot list below was made for a ribbon along the rows.
+- The length of the standoffs. A header on the back with its socket and
+  the ribbon on it is deeper than the 12 mm the card stands off the rail;
+  under a card's own rail that does no harm (the rail is 30 mm below the
+  header), but on the sequencer the upper rail runs right under the
+  header. The depth is measured on the pilot's hub with a socket on it,
+  then the standoffs are chosen.
+- The sequencer's place: its header's middle is 72.5 mm left of the
+  board's middle, so the board stands off-centre to bring the header over
+  a column of cards.
+- The ribbon's length against what the machine was simulated with (300 pF
+  on every bus line, 500 pF in the margin run).
+
+`docs/mounting/column.html` still draws the old route (and an older power
+entry); it is redrawn with the slot list.
 
 ## Parts
 
@@ -96,7 +102,7 @@ rows, so the chained ribbon folds down once, like the bus ribbon).
 | 2020 extrusion, 460 mm | 35 | 25 card rails (7 per face, less the sequencer's three rows), 2 sequencer rails, 8 frame rails; 16 m |
 | 2020 corner brackets with screws | 140 | two per rail end |
 | M3 T-nuts for the 6 mm slot | 130 | two per card, four for the sequencer, spares |
-| M3 x 12 mm male-female standoffs | 130 | brass or nylon |
+| M3 male-female standoffs, 12 mm or longer | 130 | brass or nylon; the length is open (see the ribbons) |
 | M3 x 6 mm screws | 260 | card to standoff, standoff to T-nut; no washers: the cards' mounting pads are 6.4 mm and tracks pass 0.2 mm outside them (the order gate holds copper of other nets 3.3 mm from the hole's centre, the reach of a hex standoff's corners) |
 | Rubber feet or a 500 mm plywood square | 1 | the base |
 
@@ -104,7 +110,7 @@ About $150, all stock items. A face that is not populated needs no rails.
 
 ## What it does not do
 
-The ribbons show, and that is the look. On the floor the panel's switches
+On the floor the panel's switches
 are at 20 to 40 cm, so it wants a low table or the panel cards moved up a
 row. It has a back: with all four faces used, half the program is behind
 whatever you stand in front of, so it wants a spot you can walk around.

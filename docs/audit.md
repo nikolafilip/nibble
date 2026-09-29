@@ -93,6 +93,10 @@ ordered first. The counts are the whole machine's: 52 boards, 7129 parts.
 
 ## 5. Open: how the ribbons run
 
+(2026-09-29: what is settled of this is now in `docs/mounting.md`; the slot
+list, the standoffs and the model are still to be redrawn. The hub's sockets
+no longer reach the rail, D063.)
+
 An IDC socket lies across its ribbon. Every header on every board lies
 along a top or bottom edge, so every ribbon leaves its header upward or
 downward. D059 settled the bus ribbon (headers on the back, the ribbon down

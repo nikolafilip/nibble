@@ -1,217 +1,195 @@
 # The order: boards, parts, cables, frame
 
-Two orders (D055): a pilot of three designs, built and bench-checked, then
-everything else. Every card has passed the machine gate (docs/cards.md step
-9 and the added corners, `sim/results/`), so nothing in the second order is
-a guess that the pilot fixes; the pilot checks the fab, the parts and the
-hands. Four carts in the end: the fab, the electronic parts, the cables, the
-frame.
+Rewritten 2026-09-29. The three tables between the `bom.py` markers are
+written by `python3 sim/bom.py --write` from the routed boards and are not
+edited by hand; `python3 sim/bom.py --check` fails when they are stale or
+when the schematics and the boards disagree about a part. How this
+document got here is in `docs/order-log.md`.
 
-## 0. The pilot
+Two words, used strictly: a **design** is a set of files, a **board** is a
+piece of fibreglass that is built. The machine is 26 designs and 52 boards.
 
-| Design | Pieces | Why this one |
+## 1. What can be ordered today
+
+| | State |
+|---|---|
+| Coupon, register bit 0 | Ready. `ORDER GATE: all pass` on all 26 boards at commit `c2fe13f` (2026-09-29), the first with the headers on the back; every command of section 6 ended as written |
+| Hub | **On hold.** Its banana sockets are not chosen, the black one stands over the frame's rail, and it gets a crowbar (D061). The plan for it waits for approval |
+| Everything else | After the pilot is built and measured (D055) |
+| Cables, frame | After `docs/mounting.md` is redrawn for the ribbon behind the cards (D059); `docs/audit.md` section 5 has the open points |
+
+The pilot (D055) is the coupon, register bit 0 and the hub, five of each:
+the fab, the parts and the hands are tried on three designs before thirty
+are paid for. The coupon has every kind of cell with a test loop on it;
+the register card is one full logic card; the hub is the power entry and
+the first ribbon.
+
+## 2. Boards
+
+<!-- bom.py: boards -->
+| Design | Files | Boards built of each | Five-packs to order | Boards over |
+|---|---|---|---|---|
+| ALU bit | `cards/alu0` to `alu3`, 4 designs | 1 | 1 each | 4 each |
+| clock | `cards/clock` | 1 | 1 | 4 |
+| gate coupon (a test card, not in the machine) | `cards/coupon` | 1 | 1 | 4 |
+| counter bit | `cards/ctr0` to `ctr7`, 8 designs | 1 | 1 each | 4 each |
+| bus hub | `cards/hub` | 1 | 1 | 4 |
+| memory control | `cards/memctl` | 1 | 1 | 4 |
+| memory slots (one pair of slots a card) | `cards/memslot` | 8 | 2 | 2 |
+| panel A | `cards/panela` | 1 | 1 | 4 |
+| panel B | `cards/panelb` | 1 | 1 | 4 |
+| panel C | `cards/panelc` | 1 | 1 | 4 |
+| program (four words a card) | `cards/prog` | 20 | 4 | 0 |
+| register bit | `cards/reg0` to `reg3`, 4 designs | 1 | 1 each | 4 each |
+| sequencer (245 x 255 mm, four layers) | `boards/03-sequencer` | 1 | 1 | 4 |
+| **26 designs** | | **52 boards** | **30 five-packs** | |
+<!-- bom.py: end boards -->
+
+The fab sells five of a design. "Boards over" are spares, and the program
+cards have none: a fifth five-pack of `prog` gives five.
+
+To order a design: upload `fab/<name>-gerbers.zip` from its folder at
+JLCPCB's quote page, wait for the preview, leave the options as they come
+(1.6 mm, HASL, any colour, quantity 5). The cards are two layers, 100 x
+100 mm. The sequencer is four layers, 245 x 255 mm, and its zip has eleven
+files (two inner layers). The price is what the calculator says for the
+uploaded file; write it down here when it has been read. No price in this
+document is a quote yet.
+
+## 3. Parts for the pilot
+
+One board of each of the three designs:
+
+<!-- bom.py: pilot -->
+| Part | coupon | reg0 | hub | Together |
+|---|---|---|---|---|
+| 2N7000 transistor, TO-92 | 57 | 99 |  | 156 |
+| 1N4148 diode, DO-35 | 2 |  |  | 2 |
+| Resistor 100 ohm, 1/4 W axial | 1 |  |  | 1 |
+| Resistor 1 kohm, 1/4 W axial | 3 | 3 | 1 | 7 |
+| Resistor 3.3 kohm, 1/4 W axial | 1 |  |  | 1 |
+| Resistor 4.7 kohm, 1/4 W axial | 2 |  |  | 2 |
+| Resistor 10 kohm, 1/4 W axial | 3 | 2 | 4 | 9 |
+| Resistor 22 kohm, 1/4 W axial |  | 2 |  | 2 |
+| Resistor 47 kohm, 1/4 W axial | 36 | 47 |  | 83 |
+| Resistor 100 kohm, 1/4 W axial | 1 |  |  | 1 |
+| Resistor 220 kohm, 1/4 W axial | 1 |  | 8 | 9 |
+| Resistor 1 Mohm, 1/4 W axial | 5 |  |  | 5 |
+| LED, 3 mm | 1 | 3 | 1 | 5 |
+| Electrolytic capacitor 100 uF, 5 mm can, 2 mm pitch, 16 V or more |  |  | 1 | 1 |
+| Electrolytic capacitor 10 uF, 5 mm can, 2 mm pitch, 16 V or more | 1 | 1 |  | 2 |
+| Ceramic capacitor 100 nF, 2.5 mm pitch | 1 | 1 | 1 | 3 |
+| Ceramic capacitor 47 nF, 2.5 mm pitch | 1 |  |  | 1 |
+| Box header 2x32, 2.54 mm (the bus) | 1 | 1 | 2 | 4 |
+| Pin header 1x2, 2.54 mm | 1 |  |  | 1 |
+| Pin header 1x6, 2.54 mm | 1 |  |  | 1 |
+| Test loop, 1.0 mm hole | 15 |  | 6 | 21 |
+| Polyfuse 1.5 A (Bel 0ZRE0150FF) |  |  | 1 | 1 |
+| Banana socket, 4 mm (not chosen: the hub is on hold) |  |  | 2 | 2 |
+| **320 parts on one board of each** | 134 | 159 | 27 | |
+<!-- bom.py: end pilot -->
+
+All of these come out of the machine's quantities in section 4, the
+polyfuse and the hub's 100 uF excepted, which the hub alone uses. The
+bench also wants: a 3.3 nF capacitor with clip leads and a x10 scope
+probe for the coupon (`sim/results/coupon_expected.md`), a pair of
+banana-to-banana leads, and a short 64-way ribbon with three sockets.
+
+## 4. Parts for the machine
+
+<!-- bom.py: parts -->
+| Part | Need | Buy | Spares rule |
+|---|---|---|---|
+| 2N7000 transistor, TO-92 | 3515 | 3900 | a tenth over, to the next 100 |
+| 1N4148 diode, DO-35 | 733 | 900 | a tenth over, to the next 100 |
+| Resistor 100 ohm, 1/4 W axial | 4 | 100 | a tenth over, to the next 100 (they come in hundreds) |
+| Resistor 1 kohm, 1/4 W axial | 288 | 400 | a tenth over, to the next 100 (they come in hundreds) |
+| Resistor 3.3 kohm, 1/4 W axial | 81 | 100 | a tenth over, to the next 100 (they come in hundreds) |
+| Resistor 4.7 kohm, 1/4 W axial | 4 | 100 | a tenth over, to the next 100 (they come in hundreds) |
+| Resistor 10 kohm, 1/4 W axial | 133 | 200 | a tenth over, to the next 100 (they come in hundreds) |
+| Resistor 22 kohm, 1/4 W axial | 87 | 100 | a tenth over, to the next 100 (they come in hundreds) |
+| Resistor 47 kohm, 1/4 W axial | 1443 | 1600 | a tenth over, to the next 100 (they come in hundreds) |
+| Resistor 100 kohm, 1/4 W axial | 8 | 100 | a tenth over, to the next 100 (they come in hundreds) |
+| Resistor 220 kohm, 1/4 W axial | 11 | 100 | a tenth over, to the next 100 (they come in hundreds) |
+| Resistor 1 Mohm, 1/4 W axial | 78 | 100 | a tenth over, to the next 100 (they come in hundreds) |
+| LED, 3 mm | 281 | 350 | a tenth over, to the next 50 |
+| Electrolytic capacitor 100 uF, 5 mm can, 2 mm pitch, 16 V or more | 1 | 10 | a tenth over, to the next 10 |
+| Electrolytic capacitor 10 uF, 5 mm can, 2 mm pitch, 16 V or more | 51 | 60 | a tenth over, to the next 10 |
+| Electrolytic capacitor 2.2 uF, 5 mm can, 2 mm pitch, 16 V or more | 2 | 10 | a tenth over, to the next 10 |
+| Electrolytic capacitor 1 uF, 5 mm can, 2 mm pitch, 16 V or more | 2 | 10 | a tenth over, to the next 10 |
+| Ceramic capacitor 100 nF, 2.5 mm pitch | 52 | 60 | a tenth over, to the next 10 |
+| Ceramic capacitor 47 nF, 2.5 mm pitch | 2 | 10 | a tenth over, to the next 10 |
+| Ceramic capacitor 2.2 nF, 2.5 mm pitch | 2 | 10 | a tenth over, to the next 10 |
+| Box header 2x32, 2.54 mm (the bus) | 53 | 56 | a twentieth over, two at the least |
+| Box header 2x6, 2.54 mm (link) | 18 | 20 | a twentieth over, two at the least |
+| Box header 2x3, 2.54 mm (link) | 20 | 22 | a twentieth over, two at the least |
+| Pin header 1x3, 2.54 mm (address jumper) | 144 | 152 | a twentieth over, two at the least |
+| Pin header 1x2, 2.54 mm | 2 | 4 | a twentieth over, two at the least |
+| Pin header 1x6, 2.54 mm | 1 | 3 | a twentieth over, two at the least |
+| DIP switch, 8-way | 84 | 89 | a twentieth over, two at the least |
+| Test loop, 1.0 mm hole | 21 | 23 | a twentieth over, two at the least |
+| DIP switch, 4-way | 1 | 2 | one over |
+| DIP switch, 1-way | 1 | 2 | one over |
+| Push button, 6 mm tactile | 2 | 3 | one over |
+| Potentiometer 1 M linear, 9 mm upright (Alpha RD901F-40) | 1 | 2 | one over |
+| Polyfuse 1.5 A (Bel 0ZRE0150FF) | 1 | 2 | one over |
+| Banana socket, 4 mm (not chosen: the hub is on hold) | 2 |  | not yet |
+| Jumper cap, 2.54 mm (one on every 1x3 and 1x2 pin header) | 146 | 154 | a twentieth over, two at the least |
+| **7129 parts soldered on 52 boards** | | | |
+<!-- bom.py: end parts -->
+
+Need is what the 52 boards carry. Buy is Need with spares by the rule in
+the last column; the rules are `RULES` in `sim/bom.py`, to be changed
+there.
+
+What to look for when buying:
+
+| Part | Look for | Why |
 |---|---|---|
-| coupon | 5 | every cell with a test loop on it: the ring, fan-out, the stacks, the bus driver, the clock card's oscillator, a flip-flop with its reset, the D053 line driver, a threshold fixture, a program row (D056) |
-| reg0 | 5 | one full logic card (99 transistors), run by hand on the panel's switches; the same design four times in the machine |
-| hub | 5 | the power entry, the bus pull-ups, both 64-way headers; the first ribbon is crimped against it. **On hold (2026-09-28)**: see below |
+| 2N7000 | TO-92, from Onsemi or Diodes Inc. | The boards' holes are 2.54 mm apart; a straight TO-92 has its leads 1.27 mm apart and is spread by hand or on a jig. Anti-static bag until soldered |
+| Resistors | 1/4 W, body no longer than 6.3 mm | They stand upright on 5.08 mm |
+| Electrolytics | 5 mm can, 2 mm between the leads, 16 V or more | A 25 V 100 uF is a 6.3 mm can and does not fit; the crowbar lets the rail reach 8 V before it fires |
+| Ceramic capacitors | 2.5 mm between the leads | Not the 5 mm kind |
+| Box headers | Shrouded, straight, 2.54 mm (2x32: XFCN BH254V-64P, LCSC C48603668, or any) | They are soldered on the **back** of the boards (D059) |
+| DIP switches | Slide type, 7.62 mm between the rows | |
+| Potentiometer | Alpha RD901F-40, 1 M linear | The footprint is this family's: two lugs 9.6 mm apart, 7.5 mm from the pins |
+| Polyfuse | Bel 0ZRE0150FF | The footprint is this part's kinked leads: 10.2 mm with a 1.9 mm offset |
+| LEDs | 3 mm, any colour; 2 mA types are bright behind 1 k | |
 
-Three five-packs on the 100 x 100 mm tier, about $10 of boards plus
-shipping. Upload `cards/<name>/fab/<name>-gerbers.zip` for each (the nine
-files the fab takes: copper, mask, silk, outline, drill, job; JLCPCB, 2
-layers, 1.6 mm, HASL, any colour); read the quote from the calculator and
-keep the cart out of git. The zip is written by `pcb.py` with the other
-fab outputs and checked against them by the order gate (section 5, item
-1). Parts for the pilot, one of each card built, from `bom.py` (`--per`):
+## 5. Cables and frame
 
-| Part | Footprint | coupon | reg0 | hub | Total |
-|---|---|---|---|---|---|
-| banana socket | Banana_Jack_1Pin |  |  | 2 | 2 |
-| 100u | CP_Radial_D5.0mm_P2.00mm |  |  | 1 | 1 |
-| 10u | CP_Radial_D5.0mm_P2.00mm | 1 | 1 |  | 2 |
-| 100n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 1 | 1 | 1 | 3 |
-| 47n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 1 |  |  | 1 |
-| 1N4148 | D_DO-35_SOD27_P7.62mm_Horizontal | 2 |  |  | 2 |
-| polyfuse | Fuse_BelFuse_0ZRE0150FF_L23.4mm_W5.3mm |  |  | 1 | 1 |
-| IDC header | IDC-Header_2x32_P2.54mm_Vertical | 1 | 1 | 2 | 4 |
-| LED | LED_D3.0mm | 1 | 3 | 1 | 5 |
-| pin header | PinHeader_1x02_P2.54mm_Vertical | 1 |  |  | 1 |
-| pin header | PinHeader_1x06_P2.54mm_Vertical | 1 |  |  | 1 |
-| 100 | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1 |  |  | 1 |
-| 100k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1 |  |  | 1 |
-| 10k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 3 | 2 | 4 | 9 |
-| 1Meg | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 5 |  |  | 5 |
-| 1k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 3 | 3 | 1 | 7 |
-| 220k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1 |  | 8 | 9 |
-| 22k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical |  | 2 |  | 2 |
-| 3.3k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1 |  |  | 1 |
-| 4.7k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 2 |  |  | 2 |
-| 47k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 36 | 47 |  | 83 |
-| 2N7000 | TO-92_Inline_Wide | 57 | 99 |  | 156 |
-| test loop | TestPoint_Loop_D2.50mm_Drill1.0mm | 15 |  | 6 | 21 |
+Counted on the boards:
 
-320 parts. The machine's totals in section 2 cover these, so buy the
-2N7000, the 47k and the 100 nF by the hundred once and the pilot uses the
-first of them; the polyfuse, the two banana sockets and the 100 µF
-are the hub's alone. A short 64-way ribbon with three sockets (section 3)
-is the pilot's bus.
+| Part | Need | Buy | Note |
+|---|---|---|---|
+| IDC socket 2x32 (ZHOURI FC-2.54-64P, LCSC C49261185, or any) | 53 | 60 | one for every bus header: 52 boards, the hub has two. A socket is crimped once |
+| IDC socket 2x3 | 20 | 24 | the ALU's and the counter's chains |
+| IDC socket 2x6 | 18 | 22 | the sequencer's operand link, the memory's address link |
+| Ribbon, 64-way, 1.27 mm | | | the length follows from the route behind the cards, which is not drawn yet |
+| Ribbon, 6-way and 12-way | | | offcuts of the 64-way, split along a groove |
 
-Open before the hub is ordered (2026-09-28, found by asking what the
-hardware does rather than what the DRC says):
+The frame's parts are in `docs/mounting.md`. They are bought after the
+ribbon's route is drawn: the space between card and rail is where the
+ribbon now runs, and the length of the standoffs depends on it.
 
-- The banana sockets are not chosen from a part. The footprint is a 6.1 mm
-  hole; a socket named here earlier (Hirschmann BIL 20) is M6 by one listing
-  and "8 mm mounting diameter" by another, and no drawing was read. The
-  sockets are bought and measured first: the bushing through 6.1 mm, the nut
-  and tag inside 15 mm, the length behind the board.
-- In the frame the black socket (y 45) stands over the rail, which runs
-  behind the card's mid-line from y 40 to 60 at the 12 mm of the standoffs;
-  a panel socket is longer than that behind the board. The sockets move
-  clear of the rail or the hub gets its own standoffs.
-- The 64-way headers go on the back of every board (D059, decided
-  2026-09-28). The copper does not change; the silk does (the header's
-  outline and pin 1 move to the back, the 0.8 mm labels go to 1.0 mm), so
-  **the coupon's and reg0's zips will be replaced too: nothing is uploaded
-  until that is done and the gate is green on the new files.**
+## 6. Before pressing order
 
-This document is due a rewrite (its counts say "26 boards" for 26 designs,
-52 boards built; it promises a buy column it does not have). Each card's
-`fab/<name>-assembly.svg` says which value goes where (the cards print no
-references and no values; `sim/assembly.py`).
+Run from `sim/`, on the commit that is ordered. Each must end as written.
 
-## 1. Boards
+| Command | Ends with |
+|---|---|
+| `python3 order_check.py <every design in the order>` | `ORDER GATE: all pass` |
+| `python3 order_check.py --machine` | `all pass` (every bus header and every link, pin by pin) |
+| `python3 order_check.py --selftest` | every planted fault caught |
+| `python3 bom.py --check` | the tables are current and the two counts agree |
+| `python3 rebuild_check.py` | `every builder writes what is committed` |
+| `python3 silk_proof.py <every design in the order>` | the prints in `sim/out/proof/`, looked at: every name readable, none across a pad |
 
-**Rewritten for cards on 2026-09-10 (D042); the parts table below is from
-`bom.py` over the routed cards, regenerated 2026-09-28 after D053 and D054
-(the clock card's extra stage, the panel's 10k pull-downs and 1k button
-drivers with their 100 ohm, the memory control card's mid-tick pulse). The
-board quotes still have to be read from the calculator with the actual
-gerbers.** The quotes that drove the decision, JLCPCB, 2-layer, five pieces:
+And by eye, in each design's `fab/` folder: the two renders and the
+assembly drawing.
 
-| Board as it was | Size (mm) | Quote |
-|---|---|---|
-| Sequencer | 449 × 470 | $258 + $93 shipping |
-| Sequencer, matrix turned | 290 × 520 | $153 + $74 shipping |
-| Memory | 368 × 377 | $135 + $74 shipping |
-| Registers | 266 × 285 | $49 + $30 shipping |
-
-About $1,300 for the machine at five of each. As cards (`cards.md`) it is
-25 designs of 100 x 100 mm on the $2 to $4 tier plus the sequencer, one
-package:
-
-| Design | Pieces needed | Five-pack |
-|---|---|---|
-| reg0, reg1, reg2, reg3 | 1 each | 4 |
-| alu0, alu1, alu2, alu3 | 1 each | 4 |
-| ctr0 .. ctr7 | 1 each | 8 |
-| memctl | 1 | 1 |
-| memslot | 8 | 2 |
-| prog | 6 for `list`, 20 for `sort` | 2 to 4 |
-| clock, hub, panel A, B, C, coupon | 1 each | 6 |
-| sequencer, 245 x 255, 4-layer (D051) | 1 | 1, about $65 |
-
-27 to 29 five-packs at $2 to $4 plus the sequencer: $120 to $180 of boards,
-one shipment of about $40. Every card has passed its three gates
-(docs/plan.md, `cards/README.md`); the numbers above are the tier prices,
-to be replaced by the calculator's when the carts are built.
-
-## 2. Parts
-
-Totals for one machine with twenty program cards (`sort`) and eight slot
-cards, from `sim/bom.py` over the routed cards and the sequencer. Buy the "buy" column: 2N7000 and resistors by the hundred
-are cheaper than by the exact count and you will drop some.
-
-| Part | Footprint | Total |
-|---|---|---|
-| banana socket | Banana_Jack_1Pin | 2 |
-| 100u | CP_Radial_D5.0mm_P2.00mm | 1 |
-| 10u | CP_Radial_D5.0mm_P2.00mm | 51 |
-| 1u | CP_Radial_D5.0mm_P2.00mm | 2 |
-| 2.2u | CP_Radial_D5.0mm_P2.00mm | 2 |
-| 100n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 52 |
-| 2.2n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 2 |
-| 47n | C_Disc_D5.0mm_W2.5mm_P2.50mm | 2 |
-| 1N4148 | D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp | 727 |
-| 1N4148 | D_DO-35_SOD27_P7.62mm_Horizontal | 6 |
-| polyfuse | Fuse_BelFuse_0ZRE0150FF_L23.4mm_W5.3mm | 1 |
-| IDC header | IDC-Header_2x03_P2.54mm_Vertical | 20 |
-| IDC header | IDC-Header_2x06_P2.54mm_Vertical | 18 |
-| IDC header | IDC-Header_2x32_P2.54mm_Vertical | 53 |
-| LED | LED_D3.0mm | 281 |
-| pin header | PinHeader_1x02_P2.54mm_Vertical | 2 |
-| pin header | PinHeader_1x03_P2.54mm_Vertical | 144 |
-| pin header | PinHeader_1x06_P2.54mm_Vertical | 1 |
-| pot | Potentiometer_Alpha_RD901F-40-00D_Single_Vertical | 1 |
-| 100 | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 4 |
-| 100k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 8 |
-| 10k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 133 |
-| 1Meg | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 78 |
-| 1k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 288 |
-| 220k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 11 |
-| 22k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 87 |
-| 3.3k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 81 |
-| 4.7k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 4 |
-| 47k | R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical | 1443 |
-| switch | SW_DIP_SPSTx01_Slide_9.78x4.72mm_W7.62mm_P2.54mm | 1 |
-| switch | SW_DIP_SPSTx04_Slide_9.78x12.34mm_W7.62mm_P2.54mm | 1 |
-| switch | SW_DIP_SPSTx08_Slide_9.78x22.5mm_W7.62mm_P2.54mm | 84 |
-| switch | SW_PUSH_6mm | 2 |
-| 2N7000 | TO-92_Inline_Wide | 3515 |
-| test loop | TestPoint_Loop_D2.50mm_Drill1.0mm | 21 |
-
-7129 parts on 26 boards: alu0, alu1, alu2, alu3, clock, coupon, ctr0, ctr1, ctr2, ctr3, ctr4, ctr5, ctr6, ctr7, hub, memctl, memslot, panela, panelb, panelc, prog, reg0, reg1, reg2, reg3, 03-sequencer
-
-Notes:
-
-- **2N7000**: Onsemi or Diodes Inc, TO-92. The footprint is the wide inline one (2.54 mm pitch), so the leads are bent apart with a jig. Keep them in the anti-static bag until they are soldered.
-- **Resistors**: 1/4 W axial, mounted vertical (DIN0207, 5.08 mm pitch). Every value on the bus boards is 47k (pull-ups), 1k (LED series and, since D053, the CLK and RST drivers) or 10k (bus pull-ups, the memory write gate, the panel's CLK and RST pull-downs); the panel adds 1 Meg pull-downs, the debounce values and the three 100 ohm in series with the CLK and RST drivers.
-- **LEDs**: 3 mm, any colour, one colour for the whole machine or one per board; 2 mA bright types look best behind 1k.
-- **Diodes**: 1N4148 everywhere (program words, control matrix, clock, panel).
-- **Capacitors**: 100 nF disc 2.5 mm pitch; electrolytics are 5 mm diameter, 2 mm pitch.
-- **Switches**: DIP-8 slide (the program words and the panel's levels), one DIP-4 (the panel's data), one DIP-1 (RUN); 6 mm tactile buttons for CLK and RST.
-- **Headers**: shrouded 2x32 box headers, 2.54 mm (XFCN BH254V-64P, LCSC C48603668, or any); 2x6 box headers for the sequencer-counter link; 1x3 pin headers for the page jumpers with four jumper caps per page.
-- **Hub**: two 4 mm banana sockets, one red and one black, panel type with a threaded bushing that passes a 6.1 mm hole (the board is the panel: a 6.1 mm hole in a 10.16 mm copper ring; the nut and solder tag clamped on the ring at the back are the connection, and the tag can be soldered to the ring as well), nut and tag within 15 mm across; not the shrouded safety type, which wants a 10.8 mm cutout (Cliff S16C and the like), and no part is named until one has been measured (section 0; D058; no USB, D057), and a pair of banana-to-banana leads for the bench supply; 1.5 A radial polyfuse (Bel 0ZRE0150FF, D052), 100 µF bulk. The machine draws up to about 1.2 A with every LED lit: run it from the bench supply at 5.0 V with the limit at 1.5 A; there is no other power entry.
-- **Clock**: 1 Meg 9 mm vertical pot (Alpha RD901F), 47 nF and 2.2 µF timing caps.
-- **Test loops**: 2.5 mm wire loops on the hub and the coupon, or bare wire. The coupon also wants a 3.3 nF capacitor with clip leads (the ribbon's load for its DRV loop) and a x10 scope probe; the expected readings assume both (`sim/results/coupon_expected.md`).
-
-## 3. Cables
-
-One 64-way ribbon per column face with 2 × 32 IDC sockets crimped along it,
-one per card (D043): about 6 m of 64-way ribbon (28 AWG, 1.27 mm pitch) and
-45 to 50 sockets (ZHOURI FC-2.54-64P, LCSC C49261185, or any), crimped in a
-bench vice or a $10 IDC jig. The neighbour links are 6-way and 12-way
-ribbon offcuts with 2 × 3 and 2 × 6 sockets, about 20 of each. No
-assembled cables.
-
-## 4. Frame
-
-From docs/mounting.md: 2020 aluminium extrusion, the 3D-printer profile,
-one rail per row of cards (the cards' holes are mid-height on their
-sides), seven rows per face, the sequencer on two rails of its own.
-
-| Part | Qty | Note |
-|---|---|---|
-| 2020 extrusion, 900 mm | 4 | uprights; sold cut to length |
-| 2020 extrusion, 460 mm | 35 | 25 card rails, 2 sequencer rails, 8 frame rails; 16 m in all |
-| 2020 corner brackets with screws | 140 | two per rail end |
-| M3 T-nuts for the 6 mm slot | 130 | two per card, four for the sequencer, spares |
-| M3 x 12 mm male-female standoffs | 130 | brass or nylon |
-| M3 x 6 mm screws | 260 | card to standoff, standoff to T-nut |
-| Rubber feet or a 500 mm plywood square | 1 | the base |
-
-About $150, all stock items; a face left empty needs no rails.
-
-## 5. Before pressing order
-
-1. `python3 sim/order_check.py <card> ...` prints `ORDER GATE: all pass` for every card in the order, on the committed files (it checks that the tree is clean under the card, that the project file carries the routed rules, ERC, DRC with schematic parity, JLCPCB's minimum rules, that the gerbers and drill in `fab/` are the committed board's, that the zip is those files, the 100 x 100 outline and its two mounting holes, every part's pads and polarity against the nets, that the assembly drawing is the board's, and that no copper of another net lies where the hardware clamps on the board: within 7.5 mm of a banana socket's centre or 3.3 mm of a mounting hole's, either face). Added 2026-09-28 after a re-audit of the pilot found the coupon's project file wiped by a schematic rebuild, which no one would have seen without re-running DRC on the committed board; the clamp check the same evening, after the hub's first route had put CLK 0.17 mm from the +5V socket's ring, under its nut, with DRC content at 0.15 mm. The sequencer is not a card; it gets `pcb.py`'s own DRC and the same look at its fab folder.
-   The gate covers what a tool can measure. What it cannot, and what the eyes are for (item 3), is listed here so the list can be argued with rather than remembered:
-   - the part fits its footprint: lead pitch and hole (the gate's `pins` rule ties pads to nets, not to a part's leads; the pairings are in `sim/README.md`), a bushing through its hole (M6 in 6.1 mm), a body clear of its neighbours (the socket heads and the fuse, the IDC shroud and the card edge);
-   - hardware in contact with copper it should not touch: the `clamp` check for the sockets and the mounting holes, and no washers wider than the mounting pad (docs/mounting.md);
-   - connectors keyed and numbered the way the ribbon is crimped: pin 1 left on both hub headers, the notch toward the card's edge (bring-up.md section 2 tests it before any card is on the ribbon);
-   - silk that says what the bench needs: the board name, pin 1, the socket colours, the fuse rating, the test loops' names; 53 labels on the pilot's three boards are 0.8 mm tall, under JLCPCB's stated 1.0 mm, and may print soft;
-   - what the builder is told: the cards print no values, so the assembly drawing is the only map (the gate's `asm` check keeps it the board's);
-   - what stands behind the board: a part's length through the board against the 12 mm to the rail (the hub's sockets), the ribbon's path against the cards' faces (docs/mounting.md, "Open");
-   - what the supply can do: until the hub carries its crowbar and reverse diode (D061), nothing stops a bench supply turned past 20 V or leads plugged in reversed.
-2. `sim/gate.py` is green with every card in the deck and the clock card running the machine from its own power-on reset: all thirteen programs at TYP, the six corner programs at LO, HI and MIX seeds 1 to 4, at 500 pF per bus line, at 4.5 and 4.25 V, with 100 pF between neighbouring bus lines (`sim/results/`, docs/cards.md steps 9 and 11).
-3. Look at the renders in each `fab/` folder for 30 seconds each: header on the top edge, pin 1 marked, LEDs on the front, the board name on the silk.
-4. `docs/bring-up.md` read once, so the test plan is known before the boards exist.
-5. For the pilot: only the three zips of section 0; the second order waits for the pilot's bench checks (bring-up.md sections 1, 2 and 4).
+What the machine gate (`sim/gate.py`, `sim/results/`) proved is the
+circuit; what the order gate proves is that the files are the circuit's.
+What neither can show is in `docs/audit.md` section 6: a part that does
+not match its usual drawing, the supply's drop along the ribbon, hands.
+That is what the pilot is for.

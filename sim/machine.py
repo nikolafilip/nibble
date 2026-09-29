@@ -35,6 +35,9 @@ CROSS_PF=int(os.environ.get('CROSS_PF','0'))        # coupling capacitance betwe
 VDD=float(os.environ.get('VDD','5'))                 # the supply at the hub; VDD=4.5 for a USB port at its minimum less the polyfuse and the ribbon
 POR_V0=float(os.environ.get('POR_V0','0'))           # volts on the clock card's power-on reset capacitor at t=0: the release comes earlier by 220 ms * ln(VDD/(VDD-POR_V0)),
                                                      # 44 us per mV, so a sweep of POR_V0 walks the reset release across a clock period (the release is asynchronous to the clock)
+HOLD=os.environ.get('HOLD','0')=='1'                  # the clock card's hold-off, on trial in the deck before it is on the card: 100 ohm and a transistor from the timing node X to ground,
+                                                     # gate on RST, so the clock stands still while RST is high and its first edge comes milliseconds after the release (tb_reset_release.py)
+RST_PRESS=[float(x) for x in os.environ.get('RST_PRESS','').split(',') if x]      # a finger on the panel's RST button: down at the first time, up at the second (seconds); the ticks are counted from the last release
 RESET_S=float(os.environ.get('RESET_S','0.2'))       # the run's allowance for the power-on reset before the ticks are budgeted (0.2 s covers the 236 ms release at MIX seed 2 for a
                                                      # full run; a t12 run there needs more); sweep_por.py, which pulls the release to about 20 ms with POR_V0, sets it to 0.03
 SW=[f'SW{i}' for i in range(4)]   # the panel's data switch levels, ports of the panel subcircuit so the deck can set them
@@ -161,6 +164,8 @@ def deck(program,boards,corner,trace,outfile,seed=1):
         if b in ('clk','clkc'):       # the clock board or card: RUN switch closed, pot at minimum, timing capacitor empty at power-up
             ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
             body=["Rrun +5V RUNSW 1m","Rpot RT X 1m","Rj2 Net-_J2-Pin_2_ 0 1G"]+(["Rhd HLT HLTD 100k","Chd HLTD 0 2.2n"] if dev=='dev' else [])      # the RC on HLT is drawn on the sheet (D050)
+            if HOLD:
+                hm={'TYP':'2N7000','LO':'2N7000_LO','HI':'2N7000_HI'}; body+=["Rhold X XH 100",f"Mhold XH RST GND {hm[random.Random(seed+1000).choice(['LO','TYP','HI'])] if corner=='MIX' else hm[corner]}"]      # a draw of its own: every other transistor keeps the model it has without the hold-off
             L+=sub[:-1]+body+[sub[-1]]; L.append(f"X{b} "+" ".join(ports)+f" {b}"); L.append(f".ic V(x{b}.X)=0 V(x{b}.POR)={POR_V0:g}")      # both capacitors empty (POR_V0 shifts the release): the card's power-on reset resets the machine
             probes+=[f'x{b}.X',f'x{b}.VD2']
             continue
@@ -206,7 +211,13 @@ def deck(program,boards,corner,trace,outfile,seed=1):
                 ports=ports_of(sub[1:-1]+body)      # the jumpers bring MAR1..3 (or their complements) onto the card: ports too, else they float inside
                 L+=[f".subckt memslot{p} "+" ".join(ports)]+sub[1:-1]+body+[sub[-1]]; L.append(f"Xmemslot{p} "+" ".join(ports)+f" memslot{p}")
             continue
-        ports,sub=subckt(b,export(b,dev=='dev'),corner,rng); L+=sub; L.append(f"X{b} "+" ".join(ports)+f" {b}")
+        ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
+        if b=='panelb' and RST_PRESS:      # the RST button (not in the export: a push button has no model): a switch from +5V to the 10k that leads into the debounce capacitor
+            rc=[l.split() for l in sub if l.split()[-1]=='100k' and 'RST_N' in l.split()[1:3]]; assert len(rc)==1, 'panelb: the 100k into RST_N not found'
+            node=[x for x in rc[0][1:3] if x!='RST_N'][0]; r10=[l.split() for l in sub if l.split()[-1]=='10k' and node in l.split()[1:3]]; assert len(r10)==1, 'panelb: the button\'s 10k not found'
+            pad=[x for x in r10[0][1:3] if x!=node][0]; dn,up=RST_PRESS
+            sub[-1:]=[f"Vpress PRESSED 0 PWL(0 0 {dn:.9g} 0 {dn+1e-6:.9g} 5 {up:.9g} 5 {up+1e-6:.9g} 0)",f"Spress +5V {pad} PRESSED 0 ODRV",sub[-1]]
+        L+=sub; L.append(f"X{b} "+" ".join(ports)+f" {b}")
         probes+=[f"x{b}.{n}" for n in BOARD[b][2]]
     probes+=bus.SIGNALS+LINK+['CLK','RST']
     # clock and reset (until the clock board exists): pulse gated by HLT
@@ -401,7 +412,7 @@ def run(prog,boards,corner='TYP',ticks=None,tag=None,seed=1):
     words,labels,meta=asm.assemble(open(prog).read())
     m=emu.Machine(words,inputs=[int(x) for x in meta.get('input','').split()]); m.run()
     trace=m.trace if ticks is None else m.trace[:ticks]
-    tag=tag or f"machine_{os.path.basename(prog).split('.')[0]}_{'-'.join(boards).replace('@','')}_{corner}{seed if corner=='MIX' else ''}{f'_t{ticks}' if ticks else ''}{f'_por{POR_V0*1e6:.0f}uV' if POR_V0 else ''}"     # a --ticks run keeps its own files, so does a shifted reset
+    tag=tag or f"machine_{os.path.basename(prog).split('.')[0]}_{'-'.join(boards).replace('@','')}_{corner}{seed if corner=='MIX' else ''}{f'_t{ticks}' if ticks else ''}{f'_por{POR_V0*1e6:.0f}uV' if POR_V0 else ''}{'_hold' if HOLD else ''}{f'_press{RST_PRESS[0]*1e6:.0f}us' if RST_PRESS else ''}"     # a --ticks run keeps its own files, so does a shifted reset
     rows,bad=run_trace(words,trace,boards,corner,tag,seed)
     return trace,rows,bad
 

@@ -38,6 +38,7 @@ POR_V0=float(os.environ.get('POR_V0','0'))           # volts on the clock card's
 HOLD=os.environ.get('HOLD','0')=='1'                  # the clock card's hold-off, on trial in the deck before it is on the card: 100 ohm and a transistor from the timing node X to ground,
                                                      # gate on RST, so the clock stands still while RST is high and its first edge comes milliseconds after the release (tb_reset_release.py)
 RST_PRESS=[float(x) for x in os.environ.get('RST_PRESS','').split(',') if x]      # a finger on the panel's RST button: down at the first time, up at the second (seconds); the ticks are counted from the last release
+END_AFTER_RELEASE=os.environ.get('END_AFTER_RELEASE','0')=='1'      # a --ticks 12 run ends itself 47 ms after RST fell for the last time, whenever that is (a corner whose release time is not known beforehand)
 RESET_S=float(os.environ.get('RESET_S','0.2'))       # the run's allowance for the power-on reset before the ticks are budgeted (0.2 s covers the 236 ms release at MIX seed 2 for a
                                                      # full run; a t12 run there needs more); sweep_por.py, which pulls the release to about 20 ms with POR_V0, sets it to 0.03
 SW=[f'SW{i}' for i in range(4)]   # the panel's data switch levels, ports of the panel subcircuit so the deck can set them
@@ -286,6 +287,10 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     # stop: the oscillator keeps swinging behind the gate, so the idle tail after the halt cost two thirds of a running second (40 % of fib's run)
     tend=edges[-1]+T/2 if not real_clock else RESET_S+len(trace)*5e-3
     if real_clock: L+=["Rstop HLT HSTOP 100k","Cstop HSTOP 0 100n"]
+    if RST_PRESS or END_AFTER_RELEASE:      # when the button's debounce lets RST go is the panel's transistors' business (0.1 to 0.4 s after the finger): the run ends itself 47 ms after RST
+        # fell for the last time (twelve ticks take 36 ms at the slowest corner). PSTOP charges through 1 Meg into 68 nF once the finger is up, and RST, while high, holds it empty
+        assert real_clock and len(trace)<=12, 'RST_PRESS and END_AFTER_RELEASE are for a --ticks 12 run with the clock card'
+        L+=[f"Vpstop PSRC 0 PWL(0 0 {RST_PRESS[1]:.9g} 0 {RST_PRESS[1]+1e-6:.9g} {VDD})" if RST_PRESS else f"Vpstop PSRC 0 {VDD}","Rpstop PSRC PSTOP 1Meg","Cpstop PSTOP 0 68n","Spstop PSTOP 0 RST 0 ODRV"]
     top=set(tok for l in L if l[0] not in '.*+' and not l.startswith(('.subckt','.ends')) for tok in l.split()[1:])
     probes=[p for p in probes if '.' in p or p in top]     # a bus line no board touches is not a node in the deck
     # the ribbons: eight 64-way cables of about half a metre, 60 to 80 pF per metre per line, lumped at the hub as CABLE_PF per header line
@@ -301,9 +306,10 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     # transistors floats, so ngspice's OP methods all fail and its transient fallback finds one by luck (gcd at MIX2 did not).
     # uic skips the OP: the run is a power-up from 0 V, the card's reset does the rest, and A, B and OUT come up in whatever
     # state the latches fall into, as on the bench (compare() checks them only once the program has written them).
-    L+=[".save "+" ".join(f"v({p})" for p in probes+(['HSTOP'] if real_clock else [])),      # ngspice evaluates a stop condition only on a saved node
+    L+=[".save "+" ".join(f"v({p})" for p in probes+(['HSTOP'] if real_clock else [])+(['PSTOP'] if RST_PRESS or END_AFTER_RELEASE else [])),      # ngspice evaluates a stop condition only on a saved node
      f".tran 1u {tend:.6g}"+(" uic" if real_clock else ""),".option method=gear cshunt=1e-12 abstol=1e-10 chgtol=1e-12",".control"]
     if real_clock: L.append(f"stop when v(HSTOP) > {VDD/2:.3g}")
+    if RST_PRESS or END_AFTER_RELEASE: L.append(f"stop when v(PSTOP) > {VDD/2:.3g}")
     L+=["run","set wr_singlescale","set wr_vecnames",f"wrdata {outfile} "+" ".join(f"v({p})" for p in probes),"quit",".endc",".end"]
     return "\n".join(L)+"\n", probes, edges
 
@@ -412,7 +418,7 @@ def run(prog,boards,corner='TYP',ticks=None,tag=None,seed=1):
     words,labels,meta=asm.assemble(open(prog).read())
     m=emu.Machine(words,inputs=[int(x) for x in meta.get('input','').split()]); m.run()
     trace=m.trace if ticks is None else m.trace[:ticks]
-    tag=tag or f"machine_{os.path.basename(prog).split('.')[0]}_{'-'.join(boards).replace('@','')}_{corner}{seed if corner=='MIX' else ''}{f'_t{ticks}' if ticks else ''}{f'_por{POR_V0*1e6:.0f}uV' if POR_V0 else ''}{'_hold' if HOLD else ''}{f'_press{RST_PRESS[0]*1e6:.0f}us' if RST_PRESS else ''}"     # a --ticks run keeps its own files, so does a shifted reset
+    tag=tag or f"machine_{os.path.basename(prog).split('.')[0]}_{'-'.join(boards).replace('@','')}_{corner}{seed if corner=='MIX' else ''}{f'_t{ticks}' if ticks else ''}{f'_por{POR_V0*1e6:.0f}uV' if POR_V0 else ''}{'_hold' if HOLD else ''}{f'_press{RST_PRESS[0]*1e6:.0f}us' if RST_PRESS else ''}{'_ear' if END_AFTER_RELEASE else ''}"     # a --ticks run keeps its own files, so does a shifted reset
     rows,bad=run_trace(words,trace,boards,corner,tag,seed)
     return trace,rows,bad
 

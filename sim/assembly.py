@@ -24,7 +24,7 @@ def board(name):
 S=10                                                  # px per mm
 COL={'1k':'#d62728','10k':'#1f77b4','22k':'#ff7f0e','1Meg':'#9467bd','220k':'#2ca02c','100k':'#17becf','4.7k':'#8c564b','3.3k':'#e377c2','100':'#bcbd22'}
 MORE=['#7f3c8d','#11a579','#3969ac','#f2b701','#e73f74','#80ba5a','#e68310','#008695']
-KIND=[('R_Axial','resistor'),('TO-92','2N7000'),('D_DO-35','diode'),('LED','LED'),('CP_Radial','electrolytic'),('C_Disc','capacitor'),('TestPoint','test loop'),
+KIND=[('R_Axial','resistor'),('TO-92','2N7000'),('TO-220','SCR'),('D_DO-35','diode'),('D_DO-41','zener'),('D_DO-201','diode'),('LED','LED'),('CP_Radial','electrolytic'),('C_Disc','capacitor'),('TestPoint','test loop'),
       ('IDC-Header','box header'),('PinHeader','pin header'),('MountingHole','mounting hole'),('Banana','socket'),('Fuse','fuse'),
       ('SW_DIP','DIP switch'),('SW_PUSH','push button'),('Potentiometer','potentiometer')]
 GREY=('2N7000','box header','pin header','mounting hole')     # drawn grey: nothing to tell apart
@@ -82,6 +82,7 @@ def draw(name,out=None,d=None):
     kinds={p['kind'] for p in parts}
     notes=['Square pad = pad 1: the cathode of a diode or an LED, the plus of an electrolytic, pin 1 of a header.',
            'Grey and unlabelled: the commonest resistor of the card (see the legend) and the 2N7000, flat side as the outline shows. Resistors stand upright on 5.08 mm.']
+    if 'SCR' in kinds: notes.append('SCR (the crowbar, D061): its metal tab toward the top edge, as the outline\'s thick side shows; square pad = cathode. The zener and the large diode: band on the square pad.')
     if any(p['kind']=='diode' and p['upright'] for p in parts): notes.append('Upright diodes (black, unlabelled): the body stands on the square pad, band down; the bare lead bends over to the round pad.')
     dips={len(p['pads'])//2 for p in parts if p['kind']=='DIP switch'}
     if dips: notes.append('DIP switches (black pads, named on the silkscreen): a closed switch (ON) is '+('a 1' if max(dips)>1 else 'RUN, an open one STEP')+'. They work either way round: fit each with ON toward the right edge.')
@@ -105,17 +106,18 @@ def draw(name,out=None,d=None):
         k=p['kind']; pads=p['pads']
         if not pads: continue
         c='#bdbdbd' if (k=='resistor' and p['val']==common) or k in GREY else col.get(p['val'],'#111111') if k=='resistor' else {'diode':'#111111','LED':'#d62728','electrolytic':'#1f77b4','capacitor':'#ff7f0e','test loop':'#2ca02c','socket':'#111111','fuse':'#8c564b'}.get(k,'#111111')
-        if k in ('resistor','diode','LED','electrolytic','capacitor','fuse') and len(pads)==2:
+        if k in ('resistor','diode','zener','LED','electrolytic','capacitor','fuse') and len(pads)==2:
             o.append(f'<path d="M{pads[0][2]*S:.1f} {pads[0][3]*S:.1f}L{pads[1][2]*S:.1f} {pads[1][3]*S:.1f}" stroke="{c}" stroke-width="{7 if c!="#bdbdbd" else 4}" stroke-linecap="round" fill="none" opacity="0.85"/>')
         for n,typ,x,y,r in pads:
             r=min(r,3.2) if k!='socket' else r; f='#ffffff' if typ!='np_thru_hole' else '#dddddd'
-            if n=='1' and k in ('diode','LED','electrolytic','box header','pin header'): o.append(f'<rect x="{(x-r*0.8)*S:.1f}" y="{(y-r*0.8)*S:.1f}" width="{r*1.6*S:.1f}" height="{r*1.6*S:.1f}" fill="{f}" stroke="{c if c!="#bdbdbd" else "#555"}" stroke-width="2"/>')
+            if n=='1' and k in ('diode','zener','SCR','LED','electrolytic','box header','pin header'): o.append(f'<rect x="{(x-r*0.8)*S:.1f}" y="{(y-r*0.8)*S:.1f}" width="{r*1.6*S:.1f}" height="{r*1.6*S:.1f}" fill="{f}" stroke="{c if c!="#bdbdbd" else "#555"}" stroke-width="2"/>')
             else: o.append(f'<circle cx="{x*S:.1f}" cy="{y*S:.1f}" r="{r*0.8*S:.1f}" fill="{f}" stroke="{c if c!="#bdbdbd" else "#888"}" stroke-width="{2 if c!="#bdbdbd" else 1.2}"/>')
         if c!='#bdbdbd' and k not in BARE and not (k=='diode' and p['upright']):
             cx=sum(q[2] for q in pads)/len(pads); cy=sum(q[3] for q in pads)/len(pads)
             horiz=len(pads)<2 or abs(pads[0][2]-pads[-1][2])>=abs(pads[0][3]-pads[-1][3])
-            t=p['val'] if k not in ('test loop','socket') else p['val'].replace('TP_','')
+            t=p['val'].replace('TP_','') if k=='test loop' else ('RED socket' if '+5V' in p['val'] else 'BLACK socket') if k=='socket' else p['val']
             wd=len(t)*1.0+0.4; spots=[(cx,cy-2.3,0),(cx,cy+2.4,0)] if horiz or len(pads)<2 else [(cx+1.9,cy,-90),(cx-1.9,cy,-90)]     # above, else below; beside an upright part (reading upward), right, else left
+            if k=='socket': spots=[(cx,cy-4.6,0)]      # inside the socket's circle, above its four pins
             def free(x,y,rot):                        # no pad of another part under the label's box
                 hw,hh=(wd/2,0.9) if rot==0 else (0.9,wd/2)
                 return not any(abs(qx-x)<hw+qr*0.8 and abs(qy-y)<hh+qr*0.8 for q in parts if q is not p for _,_,qx,qy,qr in q['pads'])
@@ -135,7 +137,8 @@ def draw(name,out=None,d=None):
         if k in ('box header','pin header'): return f'{k} {int(m.group(1))}x{int(m.group(2))}'+(', on the back' if p['back'] else '')
         if k=='DIP switch': return f'DIP switch, {len(p["pads"])//2}-way'
         if k=='diode' and p['upright']: return f'diode {p["val"]}, upright'
-        return k if k in ('test loop','socket','mounting hole','push button') or p['val']==k else f'{k} {p["val"]}'
+        if k=='socket': return 'banana socket, '+('red' if '+5V' in p['val'] else 'black')
+        return k if k in ('test loop','mounting hole','push button') or p['val']==k else f'{k} {p["val"]}'
     oc=collections.Counter(what(p) for p in parts if p['kind']!='resistor')
     for t,n in sorted(oc.items(),key=lambda kv:(-kv[1],kv[0])): L(f'{t}  x {n}',16); y+=24
     if empty: y+=12; L(f'left empty  x {len(empty)}',16,'#777'); y+=24

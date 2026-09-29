@@ -19,7 +19,9 @@ Per card, from the files in cards/<card>/ as committed:
   zip      fab/<card>-gerbers.zip holds exactly the nine files the fab needs, byte-identical to fab/
   outline  the edge cuts span exactly 100.00 x 100.00 mm; the drill file has two 3.2 mm mounting holes at (4,50) and (96,50)
            (the sequencer: 245.00 x 255.00 mm and four holes, 4 mm in from the sides at y = 20 and 251)
-  pins     every numbered through-hole pad of every part is on a net; each 2N7000 has its gate off the rails, its source on GND, a
+  pins     (the hub's crowbar: the SCR's anode on +5V and cathode on GND, its gate on neither; the zener from +5V to the gate;
+           the reverse diode with its cathode on +5V and its anode on GND, on purpose)
+           every numbered through-hole pad of every part is on a net; each 2N7000 has its gate off the rails, its source on GND, a
            stack or a resistor, its drain on a pull-up, a stack, an LED, the bus header or a rail; no diode, LED or electrolytic
            reversed against the rails (pad 1 is the cathode / the plus, as the KiCad symbols and footprints number them); an
            electrolytic has its minus on GND or its plus on the supply (a timing capacitor sits between a signal and GND)
@@ -170,6 +172,15 @@ def pin_rules(pcb):
         elif fp.startswith('D_DO-35') or fp.startswith('LED'):
             k,a=P['1'][1],P['2'][1]
             if k in ('+5V','VBUS') or a=='GND': bad.append((ref,'reversed against the rails',(k,a)))
+        elif fp.startswith('TO-220'):          # the crowbar's SCR (D061): cathode, anode, gate
+            k,a,g=P['1'][1],P['2'][1],P['3'][1]
+            if k!='GND' or a!='+5V' or g in RAIL or not g: bad.append((ref,'SCR not across the rail, or its gate on a rail',(k,a,g)))
+        elif fp.startswith('D_DO-41'):         # the crowbar's zener: it stands against the rail on purpose, cathode on +5V, anode on the SCR's gate
+            k,a=P['1'][1],P['2'][1]
+            if k!='+5V' or a in RAIL or not a: bad.append((ref,'zener not from +5V to the gate',(k,a)))
+        elif fp.startswith('D_DO-201'):        # the reverse diode: across the rail the other way round on purpose
+            k,a=P['1'][1],P['2'][1]
+            if k!='+5V' or a!='GND': bad.append((ref,'reverse diode not cathode on +5V, anode on GND',(k,a)))
         elif fp.startswith('CP_Radial'):
             p,m=P['1'][1],P['2'][1]          # a timing capacitor has its plus on a signal and its minus on GND; between two signals nothing here says which way round, so that fails until someone looks
             if p=='GND' or m in ('+5V','VBUS') or not (m=='GND' or p in ('+5V','VBUS')): bad.append((ref,'electrolytic polarity',(p,m)))
@@ -189,7 +200,10 @@ def selftest():
            ('Potentiometer_Alpha','RV2',{'':('thru_hole',None),'1':('thru_hole','Y'),'2':('thru_hole',None),'3':('thru_hole','A')},True),
            ('D_DO-35_SOD27','D1',T('+5V','Y'),True),('D_DO-35_SOD27','D2',T('Y','GND'),True),('D_DO-35_SOD27','D3',T('Y','A'),False),
            ('LED_D5.0mm','D4',T('GND','Y'),False),('TO-92_Inline','Q2',T('GND','+5V','Y'),True),('TO-92_Inline','Q3',T('+5V','A','Y'),True),
-           ('TO-92_Inline','Q4',T('GND','A','GND'),True),('TO-92_Inline','Q5',T('Y','A','Z'),True)]
+           ('TO-92_Inline','Q4',T('GND','A','GND'),True),('TO-92_Inline','Q5',T('Y','A','Z'),True),
+           ('TO-220-3_Vertical','Q6',T('GND','+5V','A'),False),('TO-220-3_Vertical','Q7',T('+5V','GND','A'),True),('TO-220-3_Vertical','Q8',T('GND','+5V','GND'),True),
+           ('D_DO-41_SOD81','D5',T('+5V','A'),False),('D_DO-41_SOD81','D6',T('A','+5V'),True),('D_DO-41_SOD81','D7',T('+5V','GND'),True),
+           ('D_DO-201AD','D8',T('+5V','GND'),False),('D_DO-201AD','D9',T('GND','+5V'),True)]
     wrong=[(ref,want) for fp,ref,P,want in cases if bool([b for b in pin_rules(base+[(fp,ref,P)]) if b[0]==ref])!=want]
     print(f'pins selftest: {len(cases)-len(wrong)} of {len(cases)} cases as expected'+''.join(f'\n  {r}: the rule {"kept quiet" if w else "objected"}' for r,w in wrong))
     # the machine rules on the real boards with one thing broken at a time: each must be caught, and on its own board

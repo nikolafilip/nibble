@@ -1,0 +1,146 @@
+(footprint "Banana_CalTest_CT3151V1_Vertical"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "4 mm banana socket standing on the board, Cal Test Electronics CT3151V1 (-2 red, -0 black): body 13.5 mm across and 22 mm high, four pins 1.17 mm on a 4.76 mm diamond in 1.60 mm holes, 3.17 mm long below the seat. Drawn from the maker's drawing P315100 rev H, sheet 3 (vertical, 19.0 mm), http://www.caltestelectronics.com/images/attachments/P315100rH_drawing.pdf")
+	(tags "banana socket 4mm vertical CT3151V1")
+	(property "Reference" "REF**"
+		(at 0 -8.2 0)
+		(layer "F.SilkS")
+		(uuid "943ba990-b49b-57d6-b305-9ddb539749c8")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "Banana_CalTest_CT3151V1_Vertical"
+		(at 0 8.2 0)
+		(layer "F.Fab")
+		(uuid "c219b768-b4b8-56d4-b888-8ed3652568e2")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" "http://www.caltestelectronics.com/images/attachments/P315100rH_drawing.pdf"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "98639a74-2075-5147-8378-0e8d5a9ebd9b")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "c7f4c2cc-500c-56df-a232-208853038f59")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_circle
+		(center 0 0)
+		(end 6.87 0)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "330674c1-9744-502c-854b-35da57cea3b0")
+	)
+	(fp_circle
+		(center 0 0)
+		(end 7.0 0)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "40d5cd41-f06a-5bbc-8230-965076f19e48")
+	)
+	(fp_circle
+		(center 0 0)
+		(end 6.75 0)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "5e885213-8584-56a4-bd1f-d42ee3d7722a")
+	)
+	(fp_circle
+		(center 0 0)
+		(end 2.0 0)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "87b2af32-49fb-5b30-b4fd-654840f7326f")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 4.5 0)
+		(layer "F.Fab")
+		(uuid "58eecc28-ce48-52ab-94af-47633aca2c55")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.12)
+			)
+		)
+	)
+	(pad "1" thru_hole circle
+		(at -2.38 0)
+		(size 2.8 2.8)
+		(drill 1.6)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "c81972f4-6cc6-58d3-adc2-136c63dcb938")
+	)
+	(pad "1" thru_hole circle
+		(at 0 -2.38)
+		(size 2.8 2.8)
+		(drill 1.6)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "4e30c951-76ab-5c55-a494-892de7c1a0f4")
+	)
+	(pad "1" thru_hole circle
+		(at 2.38 0)
+		(size 2.8 2.8)
+		(drill 1.6)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "8399e1f5-36c2-5aa3-bbe7-586c82ab2291")
+	)
+	(pad "1" thru_hole circle
+		(at 0 2.38)
+		(size 2.8 2.8)
+		(drill 1.6)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "fe3d1cc5-1d22-5537-a612-161d67caca6b")
+	)
+	(embedded_fonts no)
+)

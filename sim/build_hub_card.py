@@ -1,5 +1,5 @@
-"""Generate cards/hub (KiCad project): the bus hub card (docs/cards.md, D043). Power entry (two 4 mm banana sockets, a polyfuse), the four bus pull-ups, the
-eight M-line pull-downs, test loops, and two bus headers, one per column face's ribbon, wired pin for pin. No logic.
+"""Generate cards/hub (KiCad project): the bus hub card (docs/cards.md, D043). Power entry (two 4 mm banana sockets, a polyfuse, a crowbar and a
+reverse diode), the four bus pull-ups, the eight M-line pull-downs, test loops, and two bus headers, one per column face's ribbon, wired pin for pin. No logic.
 The 64 lines are routed; ground is wired on the front as a ring and bars instead of a pour, which the lines cut to islands. Run from sim/:  python3 build_hub_card.py"""
 import os, ksch, frame, bus
 G=ksch.G; OUT=os.path.join(ksch.CARDS,'hub'); PROJECT='hub'
@@ -8,6 +8,33 @@ YV1,YV2=14.0,86.0           # the +5V trunks (front) below the top header and ab
 XT=90.0; XV=92.2            # the trunks end at XT; a back-side link at XV joins them and feeds the bottom header's pin 64
 XG=91.0; YG1,YG2=2.0,97.5   # the ground ring on the front: a bar above the top header's pads, one below the bottom's, joined down the right edge
 YB1,YB2=22.0,45.08          # ground bars: the LED and capacitors; the M pull-downs
+
+def crowbar(w,R,bx,by,WIDE,YK):
+    """D061, values from sim/tb_crowbar.py (sim/results/crowbar.md): behind the polyfuse, across +5V and GND, a 6.2 V zener into the gate of an SCR that
+    shorts the rail, 100 ohm and 100 nF from the gate to ground, and a 3 A diode the other way round for crossed leads. Fires between 6.3 and 7.8 V.
+    None of it is in the machine's SPICE export (sim=False), like the rest of the power entry (D052).
+    Board: the SCR below the fuse's +5V pad with its tab toward the fuse (room for a clip-on heatsink above it), the loop in 2 mm copper on the front:
+    fuse -> anode, cathode -> the black socket; the diode left of it between the same two tracks; the gate's three small parts right of the SCR, on
+    the side of its gate pin (left of it they stood behind the cathode's track, and the router could not bring the gate across: one net open)."""
+    P=lambda name,val,xx,yy,rot,foot,desc: w.symbol("Device",name,w.ref('Q' if name.startswith('Q') else 'D' if name.startswith('D') else 'R' if name=='R' else 'C'),val,xx,yy,rot,
+                                                     ('1','2','3') if name.startswith('Q') else ('1','2'),foot,[("Description",desc,True)],sim=False)
+    yv,yg,yq=by-6*G,by+8*G,by+G; sx=bx+14*G; xd=bx+20*G; xr,xc=bx+4*G,bx+8*G
+    w.T("CROWBAR (D061): above about 6.3 to 7.8 V the zener fires the SCR, which holds the rail near 1 V until the supply is switched off; the diode takes crossed leads.\n"
+        "Run the supply with its limit at 1.5 A: the SCR then holds a fault for as long as it takes to notice. At 3 A or more it wants a clip-on heatsink.",bx-4*G,by-11*G,1.4)
+    w.PW('+5V',bx,yv-2*G); w.W(bx,yv-2*G,bx,yv); w.W(bx,yv,xd,yv); w.J(bx,yv); w.J(sx,yv)
+    w.PW('GND',xd,yg+2*G); w.W(xd,yg,xd,yg+2*G); w.W(bx+4*G,yg,xd,yg); w.J(xd,yg); w.J(xc,yg); w.J(sx,yg)
+    dz=P("D_Zener","1N4735A",bx,by-2*G,270,"Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal","zener diode 6.2 V 1.3 W")      # rot 270: K at the top, A at the bottom
+    w.W(bx,by-3.5*G,bx,yv); w.W(bx,by-0.5*G,bx,yq); w.W(bx,yq,sx-1.5*G,yq); w.J(xr,yq); w.J(xc,yq)
+    rg=P("R","100",xr,by+3.5*G,0,w.R_FOOT,"Resistor"); w.W(xr,yq,xr,by+2*G); w.W(xr,by+5*G,xr,yg)
+    cg=P("C","100n",xc,by+3.5*G,0,w.C_FOOT,"Capacitor"); w.W(xc,yq,xc,by+2*G); w.W(xc,by+5*G,xc,yg)
+    q=P("Q_SCR_KAG","BT151-500R",sx,by,0,"Package_TO_SOT_THT:TO-220-3_Vertical","SCR 12 A, TO-220: pin 1 cathode, 2 anode (and the tab), 3 gate")      # A at the top, K at the bottom, G at the left
+    w.W(sx,by-1.5*G,sx,yv); w.W(sx,by+1.5*G,sx,yg)
+    dr=P("D","1N5408",xd,by+G,270,"Diode_THT:D_DO-201AD_P15.24mm_Horizontal","rectifier diode 3 A, across the rail the other way round"); w.W(xd,by-0.5*G,xd,yv); w.W(xd,by+2.5*G,xd,yg)
+    XA,YQ,YT=36.2,34.0,29.81          # the SCR's anode pin stands under the fuse's +5V pad (36.2, 17.9); the +5V tee at YT
+    w.at(q,XA-2.54,YQ,0); w.at(dr,27.5,YT,270); w.at(dz,46.3,YT,270); w.at(rg,42.0,YK-5.08,270); w.at(cg,38.2,YK-2.5,270)
+    R('+5V',XA,17.9,XA,YQ,WIDE); R('+5V',XA,YT,27.5,YT,WIDE); R('+5V',XA,YT,46.3,YT,0.8)
+    R('GND',14.0+2.38,YK,42.0,YK,WIDE); R('GND',XA-2.54,YQ,XA-2.54,YK,WIDE)
+    w.label("CROWBAR",28.5,50.0,1.0)
 
 def main():
     os.makedirs(OUT,exist_ok=True); root=ksch.U()
@@ -19,28 +46,25 @@ def main():
         "The M0..M7 pull-downs (220k) also live here: the program cards diode-OR onto the M lines, so an unselected card leaves them floating and the hub reads them as 0 (D019, D021); 220k, not 1 Meg, so a line falls within the fetch tick against the ribbon and the cards' diodes (D048).\n"
         "Bulk capacitance for the whole machine, a power LED, and test loops on the bus lines and the clock for a logic analyser.\n"
         "Board: ground is a wired ring and bars, not a pour (the 64 lines through the card cut a pour to islands).",10*G,14*G,1.6)
-    # power entry (D052, D057, D058): the bench supply's banana leads into two 4 mm sockets standing on the front face, 19.05 mm apart
+    # power entry (D052, D057, D058, D063): the bench supply's banana leads into two 4 mm sockets standing on the front face, 19.05 mm apart
     # (a dual banana plug fits too), red +5V above black GND at the left edge -> polyfuse -> +5V. No USB, no terminal: the machine is bench-powered.
     x,y=16*G,30*G
-    BAN="Connector:Banana_Jack_1Pin"     # a panel-type 4 mm socket whose bushing passes a 6 mm hole (none named until one is measured, order-1.md), the board as its panel:
-                                         # a 6.1 mm hole in a 10.16 mm copper ring, the nut and solder tag clamped on the ring at the back make the connection
+    BAN="nibble:Banana_CalTest_CT3151V1_Vertical"     # Cal Test CT3151V1-2 (red), -0 (black): soldered to the board on four pins, 1.6 mm of pin behind it (the frame's rail is 12 mm
+                                                      # behind the card: a panel socket's bushing, nut and tag did not clear it). lib/nibble.pretty, drawn from the maker's drawing
     red=w.symbol("Connector_Generic","Conn_01x01",w.ref('J'),"BENCH +5V",x,y,0,('1',),BAN,[("Description","4 mm banana socket, red: bench supply +5 V",True)],sim=False)
     blk=w.symbol("Connector_Generic","Conn_01x01",w.ref('J'),"BENCH GND",x,y+6*G,0,('1',),BAN,[("Description","4 mm banana socket, black: bench supply ground",True)],sim=False)
-    w.at(red,14.0,26.0,0); w.at(blk,14.0,45.05,0)
-    for cx,cy in ((14.0,26.0),(14.0,45.05)):   # the nut and tag reach 6.4 mm from the centre (an M6 nut's corners, a 12 mm tag) over 25 um of mask: no other
-        w.keepouts.append((cx-7.5,cy-7.5,cx+7.5,cy+7.5))   # copper within 7.5 mm on either face (the router laid CLK 0.17 mm from the ring on the first route, 2026-09-28)
-    # CLK and RST leave the top header from the columns right above the sockets (pins 6 and 8, the lower row, since the header went to the back); fenced out of the squares, the router gave
-    # them up, so they are led by hand on the back: a step down and right off the pin, left below the header's pads, down the free strip at the card's edge
-    # (the GND rail there is on the front), right between the two squares, to a fixed via past them that the router wires on (a bare track end
-    # it does not: two dangling tails on the first try; the sequencer's matrix tails end in vias for the same reason, ksch.py)
-    for net,xp,xg,yh,xe,ye,xv in (('CLK',15.71,16.98,12.0,5.0,35.0,24.0),('RST',18.25,19.52,12.6,5.6,34.0,22.6)):
-        for x1,y1,x2,y2 in ((xp,7.5,xg,8.77),(xg,8.77,xg,yh),(xg,yh,xe,yh),(xe,yh,xe,ye),(xe,ye,xv,ye)): R(net,x1,y1,x2,y2,0.2,'B.Cu')
-        w.vias.append((net,xv,ye,True))      # a hand-off via (pcb.py drops it again when the router stays on the back)
+    XS,YR,YK=14.0,26.0,45.05
+    w.at(red,XS,YR,0); w.at(blk,XS,YK,0)
+    WIDE=2.0                  # the entry's loop carries what the supply is limited to once the crowbar has fired, until the polyfuse trips: 2 mm of copper, not 0.8
+    for net,cy in (('VBUS',YR),('GND',YK)):      # a socket's four pins stand on a 4.76 mm diamond: joined round it on both faces
+        P4=[(XS-2.38,cy),(XS,cy-2.38),(XS+2.38,cy),(XS,cy+2.38)]
+        for k in range(4):
+            for layer in ('F.Cu','B.Cu'): R(net,*P4[k],*P4[(k+1)%4],1.2,layer)
     w.W(x-2*G,y,x-5*G,y); w.L('VBUS',x-5*G,y,180,'output')
     w.W(x-2*G,y+6*G,x-5*G,y+6*G); w.PW('GND',x-5*G,y+6*G); w.W(x-5*G,y+6*G,x-5*G,y+8*G); w.pwr_flag(x-5*G,y+8*G)     # flagged as the machine's source of ground
-    R('VBUS',14.0,26.0,20.0,26.0,0.8); R('VBUS',20.0,26.0,20.0,16.0,0.8); R('VBUS',20.0,16.0,26.0,16.0,0.8)     # red socket to the fuse, wide
-    R('GND',14.0,45.05,3.0,45.05,0.8); R('GND',3.0,45.05,3.0,YG1,0.8)                                            # black socket along the left edge up to the ring (nothing else lives there)
-    w.label("BENCH IN",20.5,23.0,1.0); w.label("+5V",20.5,26.8,1.0); w.label("GND",20.5,45.8,1.0)
+    R('VBUS',XS+2.38,YR,20.0,YR,WIDE); R('VBUS',20.0,YR,20.0,16.0,WIDE); R('VBUS',20.0,16.0,26.0,16.0,WIDE)     # red socket to the fuse
+    R('GND',XS-2.38,YK,3.0,YK,0.8); R('GND',3.0,YK,3.0,YG1,0.8)                                                  # black socket along the left edge up to the ring (nothing else lives there)
+    w.label("BENCH IN",8.0,35.5,1.0); w.label("+5V",21.8,28.6,1.0); w.label("GND",21.8,48.2,1.0)
     fx=x+12*G
     w.L('VBUS',fx,y-4*G,180,'input'); w.W(fx,y-4*G,fx,y-3*G)
     fuse=w.symbol("Device","Polyfuse",w.ref('F'),"1.5A",fx,y-1.5*G,0,('1','2'),"Fuse:Fuse_BelFuse_0ZRE0150FF_L23.4mm_W5.3mm",[("Description","resettable fuse, 1.5 A hold",True)],sim=False)
@@ -95,11 +119,13 @@ def main():
             R('GND',x4,y4,x4,YG2); R('GND',x63,y63,XG,y63)
     for yv in (YV1,YV2): R('+5V',XT,yv,XV,yv,0.8,'B.Cu'); w.vias.append(('+5V',XT,yv))      # the trunks' ends meet the back-side link
     R('GND',3.0,YG1,XG,YG1); R('GND',XG,YG1,XG,YG2); R('GND',13.17,YG2,XG,YG2)                # the ground ring (its top bar starts at the black socket's run)
+    crowbar(w,R,100*G,60*G,WIDE,YK)      # last, so that every part that is in the machine's simulation keeps the reference it had (the export is the same line for line)
     # the 64 lines are the router's (through-hole pads sit on both layers, so no straight pre-route can pass the parts): no ground pour,
     # its ring and bars are wired above, so the lines cannot cut the ground into islands
     W=16*G+2*22*G+10*G; H=hy+24*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
-    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(frame.CARD,frame.CARD),extra=dict(silk_big=[("NIBBLE  BUS HUB",34.0,76.0,1.5)],hide_refs=['R','D','C','J','TP','F'],rules=dict(track=0.2,clearance=0.15),holes=frame.HOLES,no_pour=True,router=dict(jar='freerouting-2.4.1.jar')))      # freerouting 1.9 drops an M5 via inside the 0.35 mm-pitch bundle of the 64 bus lines (two shorts, both runs); 2.4.1 (Java 25, NIBBLE_JAVA) routes it clean
+    ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(frame.CARD,frame.CARD),extra=dict(silk_big=[("NIBBLE  BUS HUB",34.0,76.0,1.5)],hide_refs=['R','D','C','J','TP','F','Q'],rules=dict(track=0.2,clearance=0.15),holes=frame.HOLES,no_pour=True,router=dict(jar='freerouting-2.4.1.jar')))      # freerouting 1.9 drops an M5 via inside the 0.35 mm-pitch bundle of the 64 bus lines (two shorts, both runs); 2.4.1 (Java 25, NIBBLE_JAVA) routes it clean
     ksch.write_project(OUT,PROJECT)
+    open(os.path.join(OUT,'fp-lib-table'),'w').write('(fp_lib_table\n\t(version 7)\n\t(lib (name "nibble") (type "KiCad") (uri "${KIPRJMOD}/../../lib/nibble.pretty") (options "") (descr "Nibble\'s own footprints, drawn from makers\' drawings"))\n)\n')      # the project's own table: KiCad and kicad-cli find the sockets' footprint
     print("wrote",OUT)
 if __name__=='__main__': main()

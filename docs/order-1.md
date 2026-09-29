@@ -14,7 +14,7 @@ piece of fibreglass that is built. The machine is 26 designs and 52 boards.
 | | State |
 |---|---|
 | Coupon, register bit 0 | Ready. `ORDER GATE: all pass` on all 26 boards at commit `c2fe13f` (2026-09-29), the first with the headers on the back; every command of section 6 ended as written |
-| Hub | **On hold.** Its banana sockets are not chosen, the black one stands over the frame's rail, and it gets a crowbar (D061). The plan for it waits for approval |
+| Hub | Ready, with its new sockets and its crowbar (D061, D063) |
 | Everything else | After the pilot is built and measured (D055) |
 | Cables, frame | After `docs/mounting.md` is redrawn for the ribbon behind the cards (D059); `docs/audit.md` section 5 has the open points |
 
@@ -65,7 +65,7 @@ One board of each of the three designs:
 |---|---|---|---|---|
 | 2N7000 transistor, TO-92 | 57 | 99 |  | 156 |
 | 1N4148 diode, DO-35 | 2 |  |  | 2 |
-| Resistor 100 ohm, 1/4 W axial | 1 |  |  | 1 |
+| Resistor 100 ohm, 1/4 W axial | 1 |  | 1 | 2 |
 | Resistor 1 kohm, 1/4 W axial | 3 | 3 | 1 | 7 |
 | Resistor 3.3 kohm, 1/4 W axial | 1 |  |  | 1 |
 | Resistor 4.7 kohm, 1/4 W axial | 2 |  |  | 2 |
@@ -78,15 +78,18 @@ One board of each of the three designs:
 | LED, 3 mm | 1 | 3 | 1 | 5 |
 | Electrolytic capacitor 100 uF, 5 mm can, 2 mm pitch, 16 V or more |  |  | 1 | 1 |
 | Electrolytic capacitor 10 uF, 5 mm can, 2 mm pitch, 16 V or more | 1 | 1 |  | 2 |
-| Ceramic capacitor 100 nF, 2.5 mm pitch | 1 | 1 | 1 | 3 |
+| Ceramic capacitor 100 nF, 2.5 mm pitch | 1 | 1 | 2 | 4 |
 | Ceramic capacitor 47 nF, 2.5 mm pitch | 1 |  |  | 1 |
 | Box header 2x32, 2.54 mm (the bus) | 1 | 1 | 2 | 4 |
 | Pin header 1x2, 2.54 mm | 1 |  |  | 1 |
 | Pin header 1x6, 2.54 mm | 1 |  |  | 1 |
 | Test loop, 1.0 mm hole | 15 |  | 6 | 21 |
+| SCR BT151-500R, TO-220 (the crowbar) |  |  | 1 | 1 |
+| Zener diode 1N4735A, 6.2 V 1.3 W (the crowbar) |  |  | 1 | 1 |
+| Rectifier diode 1N5408, 3 A (crossed leads) |  |  | 1 | 1 |
 | Polyfuse 1.5 A (Bel 0ZRE0150FF) |  |  | 1 | 1 |
-| Banana socket, 4 mm (not chosen: the hub is on hold) |  |  | 2 | 2 |
-| **320 parts on one board of each** | 134 | 159 | 27 | |
+| Banana socket, 4 mm, for the board, upright: Cal Test CT3151V1-2 (red) and CT3151V1-0 (black), one of each |  |  | 2 | 2 |
+| **325 parts on one board of each** | 134 | 159 | 32 | |
 <!-- bom.py: end pilot -->
 
 All of these come out of the machine's quantities in section 4, the
@@ -102,7 +105,7 @@ banana-to-banana leads, and a short 64-way ribbon with three sockets.
 |---|---|---|---|
 | 2N7000 transistor, TO-92 | 3515 | 3900 | a tenth over, to the next 100 |
 | 1N4148 diode, DO-35 | 733 | 900 | a tenth over, to the next 100 |
-| Resistor 100 ohm, 1/4 W axial | 4 | 100 | a tenth over, to the next 100 (they come in hundreds) |
+| Resistor 100 ohm, 1/4 W axial | 5 | 100 | a tenth over, to the next 100 (they come in hundreds) |
 | Resistor 1 kohm, 1/4 W axial | 288 | 400 | a tenth over, to the next 100 (they come in hundreds) |
 | Resistor 3.3 kohm, 1/4 W axial | 81 | 100 | a tenth over, to the next 100 (they come in hundreds) |
 | Resistor 4.7 kohm, 1/4 W axial | 4 | 100 | a tenth over, to the next 100 (they come in hundreds) |
@@ -117,7 +120,7 @@ banana-to-banana leads, and a short 64-way ribbon with three sockets.
 | Electrolytic capacitor 10 uF, 5 mm can, 2 mm pitch, 16 V or more | 51 | 60 | a tenth over, to the next 10 |
 | Electrolytic capacitor 2.2 uF, 5 mm can, 2 mm pitch, 16 V or more | 2 | 10 | a tenth over, to the next 10 |
 | Electrolytic capacitor 1 uF, 5 mm can, 2 mm pitch, 16 V or more | 2 | 10 | a tenth over, to the next 10 |
-| Ceramic capacitor 100 nF, 2.5 mm pitch | 52 | 60 | a tenth over, to the next 10 |
+| Ceramic capacitor 100 nF, 2.5 mm pitch | 53 | 60 | a tenth over, to the next 10 |
 | Ceramic capacitor 47 nF, 2.5 mm pitch | 2 | 10 | a tenth over, to the next 10 |
 | Ceramic capacitor 2.2 nF, 2.5 mm pitch | 2 | 10 | a tenth over, to the next 10 |
 | Box header 2x32, 2.54 mm (the bus) | 53 | 56 | a twentieth over, two at the least |
@@ -128,14 +131,17 @@ banana-to-banana leads, and a short 64-way ribbon with three sockets.
 | Pin header 1x6, 2.54 mm | 1 | 3 | a twentieth over, two at the least |
 | DIP switch, 8-way | 84 | 89 | a twentieth over, two at the least |
 | Test loop, 1.0 mm hole | 21 | 23 | a twentieth over, two at the least |
+| SCR BT151-500R, TO-220 (the crowbar) | 1 | 2 | one over |
+| Zener diode 1N4735A, 6.2 V 1.3 W (the crowbar) | 1 | 2 | one over |
+| Rectifier diode 1N5408, 3 A (crossed leads) | 1 | 2 | one over |
 | DIP switch, 4-way | 1 | 2 | one over |
 | DIP switch, 1-way | 1 | 2 | one over |
 | Push button, 6 mm tactile | 2 | 3 | one over |
 | Potentiometer 1 M linear, 9 mm upright (Alpha RD901F-40) | 1 | 2 | one over |
 | Polyfuse 1.5 A (Bel 0ZRE0150FF) | 1 | 2 | one over |
-| Banana socket, 4 mm (not chosen: the hub is on hold) | 2 |  | not yet |
+| Banana socket, 4 mm, for the board, upright: Cal Test CT3151V1-2 (red) and CT3151V1-0 (black), one of each | 2 | 2 | none over: two are fitted |
 | Jumper cap, 2.54 mm (one on every 1x3 and 1x2 pin header) | 146 | 154 | a twentieth over, two at the least |
-| **7129 parts soldered on 52 boards** | | | |
+| **7134 parts soldered on 52 boards** | | | |
 <!-- bom.py: end parts -->
 
 Need is what the 52 boards carry. Buy is Need with spares by the rule in
@@ -155,6 +161,8 @@ What to look for when buying:
 | Potentiometer | Alpha RD901F-40, 1 M linear | The footprint is this family's: two lugs 9.6 mm apart, 7.5 mm from the pins |
 | Polyfuse | Bel 0ZRE0150FF | The footprint is this part's kinked leads: 10.2 mm with a 1.9 mm offset |
 | LEDs | 3 mm, any colour; 2 mA types are bright behind 1 k | |
+| Banana sockets | Cal Test CT3151V1-2 (red) and CT3151V1-0 (black), the V1 (upright, 19 mm) | The footprint is this part's four pins. The plain CT3151 lies on its side and does not fit |
+| SCR, zener, large diode | BT151-500R (TO-220), 1N4735A (6.2 V, 1.3 W), 1N5408 | The crowbar's values are the bench's (`sim/results/crowbar.md`). A clip-on TO-220 heatsink if the supply's limit is ever above 1.5 A |
 
 ## 5. Cables and frame
 

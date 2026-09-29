@@ -38,7 +38,7 @@ def build(projdir,name,route=True,passes=300,dsn_only=False,ses_file=None):
     for ref,(val,fp,dnp) in comps.items():
         if not fp or int(re.sub(r'\D','',ref) or 0)>=9000: continue     # testbench parts (refs 9000 and up) are not on the board
         lib,fn=fp.split(':')
-        m=pcbnew.FootprintLoad(f'{F}/{lib}.pretty',fn)
+        m=pcbnew.FootprintLoad(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','lib','nibble.pretty') if lib=='nibble' else f'{F}/{lib}.pretty',fn)     # nibble: the repository's own footprints (lib/nibble.pretty), drawn from makers' drawings
         if m is None: missing.append(fp); continue
         m.SetReference(ref); m.SetValue(val)
         hidden=any(ref.startswith(pfx) for pfx in plan['extra'].get('hide_refs',[]))

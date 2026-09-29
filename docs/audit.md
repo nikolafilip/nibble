@@ -88,7 +88,8 @@ ordered first. The counts are the whole machine's: 52 boards, 7129 parts.
 | Potentiometer (1) | 1.0 mm pins 2.5 mm apart, two slotted lug holes 9.6 mm apart, 7.5 mm from the pins | Alpha RD901F-40, 9 mm, 1 M linear | Another maker's 9 mm pot only after its drawing has been laid on these numbers |
 | Polyfuse (1) | 1.0 mm, 10.2 mm with a 1.9 mm offset | Bel 0ZRE0150FF | The offset is this family's kinked leads |
 | Test loop (21) | 1.0 mm | the miniature size | The larger sizes want 1.6 mm |
-| Banana socket (2) | 6.1 mm in a 10.16 mm ring | not chosen (the hub is on hold) | |
+| Banana socket (2) | four 1.6 mm holes on a 4.76 mm diamond | Cal Test CT3151V1 (D063); footprint drawn from the maker's drawing, `lib/nibble.pretty` | It stands on four solder joints without the panel its drawing has in front of it |
+| Crowbar: SCR, zener, 3 A diode (1 each) | TO-220 1.1 mm holes; DO-41 1.1 mm, 10.16 mm; DO-201AD 1.6 mm, 15.24 mm | BT151-500R (pin 1 cathode, 2 anode, 3 gate: read in its datasheet), 1N4735A, 1N5408 | none |
 
 ## 5. Open: how the ribbons run
 

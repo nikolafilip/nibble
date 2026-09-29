@@ -55,7 +55,7 @@ the table, power off and look for a bridge between the three TO-92 pads.
 | Card | Transistors | Expected current (5 V) | Soldering time |
 |---|---|---|---|
 | coupon | 57 | 5 to 8 mA with IN low, 11 to 14 mA with IN high (the oscillator's 1k driver runs always; the LED and the row when IN is up) | 1.5 h |
-| hub | 0 | under 5 mA (the LED) | 1 h (the headers, the two sockets) |
+| hub | 0 | under 6 mA (the LED, and half a milliamp in the crowbar's zener) | 1 h (the headers, the two sockets, the crowbar) |
 | panel A, B, C | 28, 20, 32 | 5 to 40 mA depending on the LEDs lit; B 10 mA more, its two button drivers idle low through 1k (D053) | 2 h each |
 | register bit | 99 | 5 to 12 mA | 2.5 h each |
 | ALU bit | 66 to 73 | 4 to 9 mA | 2 h each |
@@ -116,7 +116,20 @@ to +5V; the eight M pull-downs read 220k to ground; the red banana
 socket beeps to the fuse's first pad and, through the fuse, to header
 pin 1; the black one to header pin 3. Plug the bench supply's leads into
 the sockets (red +5V, black GND; 5.0 V, limit 300 mA): the power LED
-lights, the current is under 5 mA. Crimp the first ribbon: a short piece with three sockets for the
+lights, the current is under 6 mA. The sockets stand on four solder joints:
+push a plug in with a finger behind the board.
+
+The crowbar, once, before any card is on the ribbon: supply at 5.0 V, limit
+at 0.5 A, nothing plugged into the hub's headers. Turn the voltage up
+slowly. Somewhere between 6.3 and 7.8 V the supply drops into its current
+limit and the rail reads about 0.8 V: the SCR has fired. Switch the output
+off, set 5.0 V, switch on: 5 V again. If the rail follows the knob past
+8 V, switch off: the zener or the SCR is in the wrong way round (the
+assembly drawing has the square pads). With the machine running and the
+limit at 1.5 A the supply cannot lift the rail above 7.5 V and the crowbar
+may not fire at all: that is the limit doing the same job. Keep the limit
+at 1.5 A; with it at 3 A or more a fired SCR overheats unless it has a
+clip-on heatsink. Crimp the first ribbon: a short piece with three sockets for the
 bench, then the long ones for the column.
 
 Every ribbon, before it sees power: with nothing plugged into it but the

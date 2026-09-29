@@ -49,6 +49,20 @@ cards (68 words); a third face is needed for `sort`.
 
 ## The ribbons
 
+**Open (2026-09-28): the route below cannot be built as written.** An IDC
+socket lies across its ribbon, so the ribbon leaves a header at right
+angles to the header's long side. The cards' headers lie along their top
+edges; the ribbon therefore runs down a column of cards, not along a row,
+and a 64-way ribbon is 81 mm wide: run over the front it covers 81 of each
+card's 100 mm, LEDs included. The model (`column.html`) draws the same
+impossible route. No board changes with the answer; what changes is the
+face the headers are soldered on and where the ribbon goes. The choices
+on the table: headers on the back of every board and the ribbon down the
+back of each column, between the two standoffs and through the 12 mm
+between card and rail; or headers on the front and the ribbon behind,
+looped forward through the 10 mm gap above each card (about half as much
+ribbon again, so the deck is rerun above 500 pF). Not decided.
+
 Two 64-way ribbons (D043). Ribbon A starts at the hub's top header, runs
 along the front face's bottom row of headers (every card's header is on
 its top edge, at the same place on every card, so the sockets sit at a

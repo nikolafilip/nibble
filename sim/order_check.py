@@ -17,6 +17,7 @@ Per card, from the files in cards/<card>/ as committed:
   pins     every through-hole pad of every part is on a net; each 2N7000 has its gate off the rails, its source on GND, a stack
            or a resistor, its drain on a pull-up, a stack, an LED, the bus header or a rail; no diode, LED or electrolytic
            reversed against the rails (pad 1 is the cathode / the plus, as the KiCad symbols and footprints number them)
+  asm      fab/<card>-assembly.svg, the drawing that says which value goes where (the cards print none), is the committed board's
   clamp    no copper of another net, on either face, within reach of the hardware clamped on the board: 7.5 mm of a banana socket's
            centre (an M6 nut's corners and a 12 mm solder tag reach 6.4 mm over 25 um of mask) and 3.3 mm of a mounting hole's (an M3
            hex standoff's corners reach 3.2 mm, no washers: docs/mounting.md). The DRC sees 0.15 mm of clearance and is content; the
@@ -107,6 +108,9 @@ def check_card(name,make_zip=False):
     note['outline']=f'{w:.2f} x {h:.2f} mm, {len(holes)} holes, {len(mh)} of {HOLE_D} mm'
     # pins
     bad=pin_rules(pcb); res['pins']=not bad; note['pins']='all parts on nets, polarity rules pass' if not bad else '; '.join(f'{r} {w}' for r,w,_ in bad[:4])
+    # asm
+    import assembly; ap=os.path.join(fab,f'{name}-assembly.svg'); at=os.path.join(tmp,'asm.svg'); assembly.draw(name,out=at,d=d)
+    res['asm']=os.path.exists(ap) and open(ap).read()==open(at).read(); note['asm']='the drawing is the board\'s' if res['asm'] else 'missing or stale (python3 assembly.py <card>)'
     # clamp
     bad,nclamp=clamp_rules(pcb); res['clamp']=not bad and nclamp>0
     note['clamp']=f'{nclamp} clamp sites, nothing of another net in reach' if not bad else '; '.join(f'{r}: {w}' for r,w in bad[:4])

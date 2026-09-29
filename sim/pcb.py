@@ -385,6 +385,7 @@ def outputs(pcb,name):
     for side,fn in [('top',f'{name}-top.png'),('bottom',f'{name}-bottom.png')]:
         subprocess.run([K,'pcb','render','--side',side,'--width','2000','--height','1400','--quality','high','-o',os.path.join(fab,fn),pcb],capture_output=True)
     import order_check; order_check.write_zip(fab,name)      # fab/<name>-gerbers.zip: the nine files the fab takes, the file that gets uploaded
+    import assembly; assembly.draw(name,d=d)                 # fab/<name>-assembly.svg: which value goes where (the cards print no values)
     print('fab outputs in',fab)
 
 if __name__=='__main__':

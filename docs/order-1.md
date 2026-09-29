@@ -13,7 +13,7 @@ frame.
 |---|---|---|
 | coupon | 5 | every cell with a test loop on it: the ring, fan-out, the stacks, the bus driver, the clock card's oscillator, a flip-flop with its reset, the D053 line driver, a threshold fixture, a program row (D056) |
 | reg0 | 5 | one full logic card (99 transistors), run by hand on the panel's switches; the same design four times in the machine |
-| hub | 5 | the power entry, the bus pull-ups, both 64-way headers; the first ribbon is crimped against it |
+| hub | 5 | the power entry, the bus pull-ups, both 64-way headers; the first ribbon is crimped against it. **On hold (2026-09-28)**: see below |
 
 Three five-packs on the 100 x 100 mm tier, about $10 of boards plus
 shipping. Upload `cards/<name>/fab/<name>-gerbers.zip` for each (the nine
@@ -54,6 +54,27 @@ fab outputs and checked against them by the order gate (section 5, item
 first of them; the polyfuse, the two banana sockets and the 100 µF
 are the hub's alone. A short 64-way ribbon with three sockets (section 3)
 is the pilot's bus.
+
+Open before the hub is ordered (2026-09-28, found by asking what the
+hardware does rather than what the DRC says):
+
+- The banana sockets are not chosen from a part. The footprint is a 6.1 mm
+  hole; a socket named here earlier (Hirschmann BIL 20) is M6 by one listing
+  and "8 mm mounting diameter" by another, and no drawing was read. The
+  sockets are bought and measured first: the bushing through 6.1 mm, the nut
+  and tag inside 15 mm, the length behind the board.
+- In the frame the black socket (y 45) stands over the rail, which runs
+  behind the card's mid-line from y 40 to 60 at the 12 mm of the standoffs;
+  a panel socket is longer than that behind the board. The sockets move
+  clear of the rail or the hub gets its own standoffs.
+- Which face the 64-way headers are soldered on waits for the ribbon's
+  route (docs/mounting.md, "Open"); the boards are the same either way, but
+  cards with headers on different faces cannot share a ribbon.
+
+The coupon and reg0 depend on none of these except the last, which is a
+question for the soldering iron, not the fab. Each card's
+`fab/<name>-assembly.svg` says which value goes where (the cards print no
+references and no values; `sim/assembly.py`).
 
 ## 1. Boards
 
@@ -146,7 +167,7 @@ Notes:
 - **Capacitors**: 100 nF disc 2.5 mm pitch; electrolytics are 5 mm diameter, 2 mm pitch.
 - **Switches**: DIP-8 slide (the program words and the panel's levels), one DIP-4 (the panel's data), one DIP-1 (RUN); 6 mm tactile buttons for CLK and RST.
 - **Headers**: shrouded 2x32 box headers, 2.54 mm (XFCN BH254V-64P, LCSC C48603668, or any); 2x6 box headers for the sequencer-counter link; 1x3 pin headers for the page jumpers with four jumper caps per page.
-- **Hub**: two 4 mm banana sockets, one red and one black, panel type with an M6 threaded bushing (the board is the panel: a 6.1 mm hole in a 10.16 mm copper ring; the nut and solder tag clamped on the ring at the back are the connection, and the tag can be soldered to the ring as well). Hirschmann BIL 20 (M6, panels to 2 mm; 930 176-100 black, -101 red) or any such pair whose nut and tag stay within 15 mm across; not the shrouded safety type, which wants a 10.8 mm cutout (Cliff S16C and the like; D058; no USB, D057), and a pair of banana-to-banana leads for the bench supply; 1.5 A radial polyfuse (Bel 0ZRE0150FF, D052), 100 µF bulk. The machine draws up to about 1.2 A with every LED lit: run it from the bench supply at 5.0 V with the limit at 1.5 A; there is no other power entry.
+- **Hub**: two 4 mm banana sockets, one red and one black, panel type with a threaded bushing that passes a 6.1 mm hole (the board is the panel: a 6.1 mm hole in a 10.16 mm copper ring; the nut and solder tag clamped on the ring at the back are the connection, and the tag can be soldered to the ring as well), nut and tag within 15 mm across; not the shrouded safety type, which wants a 10.8 mm cutout (Cliff S16C and the like), and no part is named until one has been measured (section 0; D058; no USB, D057), and a pair of banana-to-banana leads for the bench supply; 1.5 A radial polyfuse (Bel 0ZRE0150FF, D052), 100 µF bulk. The machine draws up to about 1.2 A with every LED lit: run it from the bench supply at 5.0 V with the limit at 1.5 A; there is no other power entry.
 - **Clock**: 1 Meg 9 mm vertical pot (Alpha RD901F), 47 nF and 2.2 µF timing caps.
 - **Test loops**: 2.5 mm wire loops on the hub and the coupon, or bare wire. The coupon also wants a 3.3 nF capacitor with clip leads (the ribbon's load for its DRV loop) and a x10 scope probe; the expected readings assume both (`sim/results/coupon_expected.md`).
 
@@ -179,12 +200,15 @@ About $150, all stock items; a face left empty needs no rails.
 
 ## 5. Before pressing order
 
-1. `python3 sim/order_check.py <card> ...` prints `ORDER GATE: all pass` for every card in the order, on the committed files (it checks that the tree is clean under the card, that the project file carries the routed rules, ERC, DRC with schematic parity, JLCPCB's minimum rules, that the gerbers and drill in `fab/` are the committed board's, that the zip is those files, the 100 x 100 outline and its two mounting holes, every part's pads and polarity against the nets, and that no copper of another net lies where the hardware clamps on the board: within 7.5 mm of a banana socket's centre or 3.3 mm of a mounting hole's, either face). Added 2026-09-28 after a re-audit of the pilot found the coupon's project file wiped by a schematic rebuild, which no one would have seen without re-running DRC on the committed board; the clamp check the same evening, after the hub's first route had put CLK 0.17 mm from the +5V socket's ring, under its nut, with DRC content at 0.15 mm. The sequencer is not a card; it gets `pcb.py`'s own DRC and the same look at its fab folder.
+1. `python3 sim/order_check.py <card> ...` prints `ORDER GATE: all pass` for every card in the order, on the committed files (it checks that the tree is clean under the card, that the project file carries the routed rules, ERC, DRC with schematic parity, JLCPCB's minimum rules, that the gerbers and drill in `fab/` are the committed board's, that the zip is those files, the 100 x 100 outline and its two mounting holes, every part's pads and polarity against the nets, that the assembly drawing is the board's, and that no copper of another net lies where the hardware clamps on the board: within 7.5 mm of a banana socket's centre or 3.3 mm of a mounting hole's, either face). Added 2026-09-28 after a re-audit of the pilot found the coupon's project file wiped by a schematic rebuild, which no one would have seen without re-running DRC on the committed board; the clamp check the same evening, after the hub's first route had put CLK 0.17 mm from the +5V socket's ring, under its nut, with DRC content at 0.15 mm. The sequencer is not a card; it gets `pcb.py`'s own DRC and the same look at its fab folder.
    The gate covers what a tool can measure. What it cannot, and what the eyes are for (item 3), is listed here so the list can be argued with rather than remembered:
    - the part fits its footprint: lead pitch and hole (the gate's `pins` rule ties pads to nets, not to a part's leads; the pairings are in `sim/README.md`), a bushing through its hole (M6 in 6.1 mm), a body clear of its neighbours (the socket heads and the fuse, the IDC shroud and the card edge);
    - hardware in contact with copper it should not touch: the `clamp` check for the sockets and the mounting holes, and no washers wider than the mounting pad (docs/mounting.md);
    - connectors keyed and numbered the way the ribbon is crimped: pin 1 left on both hub headers, the notch toward the card's edge (bring-up.md section 2 tests it before any card is on the ribbon);
-   - silk that says what the bench needs: the board name, pin 1, the socket colours, the fuse rating, the test loops' names.
+   - silk that says what the bench needs: the board name, pin 1, the socket colours, the fuse rating, the test loops' names; 53 labels on the pilot's three boards are 0.8 mm tall, under JLCPCB's stated 1.0 mm, and may print soft;
+   - what the builder is told: the cards print no values, so the assembly drawing is the only map (the gate's `asm` check keeps it the board's);
+   - what stands behind the board: a part's length through the board against the 12 mm to the rail (the hub's sockets), the ribbon's path against the cards' faces (docs/mounting.md, "Open");
+   - what the supply can do: nothing on the hub stops a bench supply turned past 20 V or leads plugged in reversed.
 2. `sim/gate.py` is green with every card in the deck and the clock card running the machine from its own power-on reset: all thirteen programs at TYP, the six corner programs at LO, HI and MIX seeds 1 to 4, at 500 pF per bus line, at 4.5 and 4.25 V, with 100 pF between neighbouring bus lines (`sim/results/`, docs/cards.md steps 9 and 11).
 3. Look at the renders in each `fab/` folder for 30 seconds each: header on the top edge, pin 1 marked, LEDs on the front, the board name on the silk.
 4. `docs/bring-up.md` read once, so the test plan is known before the boards exist.

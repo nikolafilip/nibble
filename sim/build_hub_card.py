@@ -23,7 +23,7 @@ def main():
     # power entry (D052, D057, D058): the bench supply's banana leads into two 4 mm sockets standing on the front face, 19.05 mm apart
     # (a dual banana plug fits too), red +5V above black GND at the left edge -> polyfuse -> +5V. No USB, no terminal: the machine is bench-powered.
     x,y=16*G,30*G
-    BAN="Connector:Banana_Jack_1Pin"     # a panel-type 4 mm socket with an M6 bushing (Hirschmann BIL 20 or any red/black pair on a 6 mm hole), the board as its panel:
+    BAN="Connector:Banana_Jack_1Pin"     # a panel-type 4 mm socket whose bushing passes a 6 mm hole (none named until one is measured, order-1.md), the board as its panel:
                                          # a 6.1 mm hole in a 10.16 mm copper ring, the nut and solder tag clamped on the ring at the back make the connection
     red=w.symbol("Connector_Generic","Conn_01x01",w.ref('J'),"BENCH +5V",x,y,0,('1',),BAN,[("Description","4 mm banana socket, red: bench supply +5 V",True)],sim=False)
     blk=w.symbol("Connector_Generic","Conn_01x01",w.ref('J'),"BENCH GND",x,y+6*G,0,('1',),BAN,[("Description","4 mm banana socket, black: bench supply ground",True)],sim=False)

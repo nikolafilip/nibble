@@ -6,7 +6,9 @@ clock period on the whole card deck and asks the emulator at each phase.
 
 For each corner: one calibration run with the release pulled to about --early ms (POR_V0 on the clock card's reset capacitor,
 machine.py; the release times at POR_V0=0 are the gate25 files' 122.7 / 38.3 / 236.0 ms) tells where the nearest clock edge fell
-(Y) and the period (P); then one run per wanted offset o, shifting the release by a further (o - Y) mod P so the nearest edge lands
+(Y) and the period (P); a second one, asked for half a period earlier, tells how much of an asked shift arrives (k: the capacitor
+is not a bare RC, the first TYP calibration released 2.6 % earlier than asked, which over a period is 40 us, the width of the window
+being walked); then one run per wanted offset o, shifting the release by a further ((o - Y) mod P) / k so the nearest edge lands
 o us after it (negative: before it). Every run is fib for 12 ticks; the scorer's own "reset: released at" line gives the offset
 each run actually got, which is what the table records. Pulling the release to 20 ms changes nothing the machine sees (the
 oscillator has run ten periods, every node has been at its rail for milliseconds) and makes a run minutes instead of most of an
@@ -55,12 +57,17 @@ def main():
     with ThreadPoolExecutor(jobs) as ex:
         cal={c:ex.submit(run,c,por_v0(REL0[c]-early),reset_s,ledger,done) for c in corners}
         cal={c:f.result() for c,f in cal.items()}
+        cal2={c:ex.submit(run,c,por_v0(REL0[c]-early+cal[c]['period_ms']*0.5e-3),reset_s,ledger,done) for c in corners if cal[c]['period_ms']}
+        cal2={c:f.result() for c,f in cal2.items()}
         plan=[]
         for c in corners:
             Y=cal[c]['edge_us']; P=cal[c]['period_ms']
-            if Y is None or P is None: print(f'{c}: the calibration run gave no release line, skipped'); continue
+            if Y is None or P is None or cal2[c]['edge_us'] is None: print(f'{c}: a calibration run gave no release line, skipped'); continue
+            k=((cal2[c]['edge_us']-Y)%(P*1e3))/(P*0.5e3); cal[c]['k']=k       # the share of an asked shift that arrives (asked: half a period)
+            if not 0.8<k<1.2: print(f'{c}: the second calibration moved the edge {k:.2f} of what was asked, skipped'); cal[c]['edge_us']=None; continue
+            print(f'  {c}: an asked shift arrives x{k:.4f}',flush=True)
             for o in offsets:
-                extra=((o-Y)%(P*1e3))*1e-6                                   # seconds of further shift so the nearest edge lands o us after the release
+                extra=((o-Y)%(P*1e3))*1e-6/k                                 # seconds of further shift so the nearest edge lands o us after the release
                 plan.append((c,o,por_v0(REL0[c]-early+extra)))
         futs=[(c,o,ex.submit(run,c,v0,reset_s,ledger,done)) for c,o,v0 in plan]
         rows=[(c,o,f.result()) for c,o,f in futs]
@@ -69,15 +76,16 @@ def main():
        'positive after. The cards let go of their resets over the 45 us after the release, so an edge at 0 to +45 us is the straddle.','']
     for c in corners:
         if c not in cal or cal[c]['edge_us'] is None: continue
-        L+=[f"## {c}: calibration release {cal[c]['released_ms']} ms, edge {cal[c]['edge_us']:+.0f} us, period {cal[c]['period_ms']} ms ({'pass' if cal[c]['ok'] else 'FAIL'})",'',
+        L+=[f"## {c}: calibration release {cal[c]['released_ms']} ms, edge {cal[c]['edge_us']:+.0f} us, period {cal[c]['period_ms']} ms ({'pass' if cal[c]['ok'] else 'FAIL'}); second calibration edge {cal2[c]['edge_us']:+.0f} us ({'pass' if cal2[c]['ok'] else 'FAIL'}), an asked shift arrives x{cal[c]['k']:.4f}",'',
             '| wanted us | POR_V0 V | release ms | edge us | period ms | result | time |','|---|---|---|---|---|---|---|']
         for cc,o,r in rows:
             if cc!=c: continue
             e=f"{r['edge_us']:+.0f}" if r['edge_us'] is not None else 'none'
             L.append(f"| {o:+d} | {r['v0']:.4f} | {r['released_ms']} | {e} | {r['period_ms']} | {'pass' if r['ok'] else 'FAIL'}: {r['summary']}{' (rung %d)'%r['rung'] if r['rung']>1 else ''} | {r['secs']:.0f} s |")
         L.append('')
-    n=sum(1 for _,_,r in rows if r['ok']); L.append(f"{n} of {len(rows)} sweep runs pass; calibrations {sum(1 for c in cal if cal[c]['ok'])} of {len(cal)}.")
+    cals=list(cal.values())+list(cal2.values())
+    n=sum(1 for _,_,r in rows if r['ok']); L.append(f"{n} of {len(rows)} sweep runs pass; calibrations {sum(1 for r in cals if r['ok'])} of {len(cals)}.")
     open(os.path.join(OUT,'sweep_por.md'),'w').write('\n'.join(L)+'\n'); print('\n'.join(L[-1:]))
-    sys.exit(0 if n==len(rows) and all(cal[c]['ok'] for c in cal) else 1)
+    sys.exit(0 if rows and n==len(rows) and all(r['ok'] for r in cals) else 1)
 
 if __name__=='__main__': main()

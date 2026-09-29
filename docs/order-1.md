@@ -13,8 +13,7 @@ piece of fibreglass that is built. The machine is 26 designs and 52 boards.
 
 | | State |
 |---|---|
-| Coupon, register bit 0 | Ready. `ORDER GATE: all pass` on all 26 boards at commit `c2fe13f` (2026-09-29), the first with the headers on the back; every command of section 6 ended as written |
-| Hub | Ready, with its new sockets and its crowbar (D061, D063) |
+| Coupon, register bit 0, hub (the pilot) | Ready. `ORDER GATE: all pass` on all 26 boards at commit `9519ed3` (2026-09-29): the headers on the back, the hub with its new sockets and its crowbar (D061, D063). Every command of section 6 ended as written |
 | Everything else | After the pilot is built and measured (D055) |
 | Cables, frame | After `docs/mounting.md` is redrawn for the ribbon behind the cards (D059); `docs/audit.md` section 5 has the open points |
 

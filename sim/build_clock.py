@@ -76,7 +76,7 @@ def main():
     ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(BW,BH),extra=dict(silk_big=[("NIBBLE CLOCK",10,BH-8,1.8)],hide_refs=['Q','R']))
     W=10*G+cols*w.CELL_W+30*G; H=y3+14*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
-    open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))
+    ksch.write_project(OUT,PROJECT)
     print("wrote",OUT,"transistors",d.ntransistors(),"tiles",w.pcb_extent)
 
 if __name__=='__main__': main()

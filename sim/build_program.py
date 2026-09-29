@@ -67,7 +67,7 @@ def main():
     json.dump(dict(diodes=mapping,jumpers={f'JS{i}':[f'PC{i+4}',f'PN{i}'] for i in range(4)}),open(os.path.join(OUT,f'{PROJECT}.map.json'),'w'),indent=0)
     W=10*G+cols*w.CELL_W+30*G; H=yend+12*G+4*12*G+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
-    open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))
+    ksch.write_project(OUT,PROJECT)
     print("wrote",OUT,"transistors",d.ntransistors(),"board",(BW,BH),"tiles",w.pcb_extent)
 
 if __name__=='__main__': main()

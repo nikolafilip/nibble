@@ -76,7 +76,7 @@ def main():
     w.rails.append(('GND','B.Cu',x64,HY-2.54,SX-3,HY-2.54,0.5)); w.vias.append(('GND',SX-3,HY-2.54))
     W=10*G+16*w.CELL_W+30*G; H=yend+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
-    open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))
+    ksch.write_project(OUT,PROJECT)
     ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(BW,BH),extra=dict(silk_big=[("NIBBLE FRONT PANEL",8,5,1.8)],hide_refs=['Q','R','D']))
     print("wrote",OUT,"transistors",d.ntransistors(),"leds",d.nleds(),"resistors",d.nresistors(),"pcb extent",w.pcb_extent)
 if __name__=='__main__': main()

@@ -92,6 +92,6 @@ def main():
     for k,(n,pw) in enumerate([('N1','0 0 0.9995m 0 1.0005m 5 12m 5'),('N2','0 0 1.9995m 0 2.0005m 5 12m 5'),('N3','0 0 2.9995m 0 3.0005m 5 12m 5'),('RST','0 5 0.9995m 5 1.0005m 0 12m 0')]):
         xx=x+(k+1)*9*G; t.vsource("PWL",f'pwl=\\"{pw}\\"',xx,y); t.W(xx,y-2*G,xx,y-3*G); t.L(n,xx,y-3*G,90,'output'); t.PW('GND',xx,y+2*G)
     open(os.path.join(OUT,f'{PROJECT}-testbench.kicad_sch'),'w').write(t.file(80*G,50*G))
-    open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))
+    ksch.write_project(OUT,PROJECT)
     print("wrote",OUT,"transistors",d.ntransistors()+2,"tiles",w.pcb_extent)
 if __name__=='__main__': main()

@@ -90,6 +90,6 @@ def main():
     W=16*G+2*22*G+10*G; H=hy+24*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
     ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(frame.CARD,frame.CARD),extra=dict(silk_big=[("NIBBLE  BUS HUB",34.0,76.0,1.5)],hide_refs=['R','D','C','J','TP','F'],rules=dict(track=0.2,clearance=0.15),holes=frame.HOLES,no_pour=True,router=dict(jar='freerouting-2.4.1.jar')))      # freerouting 1.9 drops an M5 via inside the 0.35 mm-pitch bundle of the 64 bus lines (two shorts, both runs); 2.4.1 (Java 25, NIBBLE_JAVA) routes it clean
-    open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))
+    ksch.write_project(OUT,PROJECT)
     print("wrote",OUT)
 if __name__=='__main__': main()

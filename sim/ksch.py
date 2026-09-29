@@ -349,6 +349,12 @@ class DenseWriter(Writer):
 def project_file(name):
     return '{\n  "board": {"design_settings": {"defaults": {}, "rules": {}}},\n  "meta": {"filename": "%s.kicad_pro", "version": 3},\n  "schematic": {"drawing": {}, "legacy_lib_dir": "", "legacy_lib_list": []},\n  "sheets": [],\n  "text_variables": {}\n}\n' % name
 
+def write_project(outdir,name):
+    """Create <name>.kicad_pro if the card has none.  An existing one is left alone: pcb.py writes the board's design rules into it
+    after the route, and a schematic rebuild that overwrote it would leave kicad-cli judging the board by KiCad's 0.2 mm default."""
+    path=os.path.join(outdir,f'{name}.kicad_pro')
+    if not os.path.exists(path): open(path,'w').write(project_file(name))
+
 def write_plan(w,path,outline,extra=None):
     """PCB placement plan consumed by pcb.py (run with KiCad's python)."""
     import json

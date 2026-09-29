@@ -82,7 +82,7 @@ def main(pack='column'):
     ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(W,H),extra=dict(silk_big=[("NIBBLE  SEQUENCER",frame.X0+20,H-1.8,1.5)],hide_refs=['Q','R','D'],patches=PATCHES,rules=dict(track=0.2,clearance=0.15),holes=holes,layers=4,router=dict(timeout=36000,attempts=2,route_in1=True,jar='freerouting-2.4.1.jar',layer_order=['In2.Cu','F.Cu','B.Cu','In1.Cu'],exclude_nets=['GND','+5V'])))      # freerouting 1.9 needs hours per pass on this board (a thread dump shows it deep in the maze search); 2.x does a pass in minutes. 2.4.1 (Java 25, NIBBLE_JAVA) headless: it stops at the pass cap and saves; 2.1.0 ignores the cap headless and, with its window, sometimes never saves
     Wsch=mx0+(len(sequencer.COLS)+10)*5*G+10*G; Hsch=max(yend,66*G+mh)+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(Wsch,Hsch))
-    open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))
+    ksch.write_project(OUT,PROJECT)
     fill=sorted((round(x,1),round(y,1)) for x,y in w.rail_end.items())
     print("wrote",OUT,"transistors",d.ntransistors(),"diodes",d.ndiodes(),"matrix to",(mxe,mye),"right field from y",ry,"tile extent",w.pcb_extent,"board",(W,H))
     print("rail ends:",fill)

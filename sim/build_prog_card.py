@@ -48,7 +48,7 @@ def main(pack='column'):
     json.dump(dict(diodes=mapping,jumpers={f'JS{k}':[f'PN{k}',f'PC{k}'] for k in range(2,8)}),open(os.path.join(OUT,f'{PROJECT}.map.json'),'w'),indent=0)
     W=10*G+cols*w.CELL_W+30*G; H=yend+12*G+12*G+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
-    open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))
+    ksch.write_project(OUT,PROJECT)
     fill=[round(v,1) for v in sorted(w.rail_end.values())]
     print("wrote",OUT,"transistors",d.ntransistors(),"lowest stub per rail",fill)
 

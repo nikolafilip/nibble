@@ -28,7 +28,7 @@ def main(i,pack='column'):
     ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(frame.CARD,frame.CARD),extra=extra)
     W=10*G+cols*w.CELL_W+30*G; H=yend+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
-    open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))
+    ksch.write_project(OUT,PROJECT)
     fill=[round(v,1) for v in sorted(w.rail_end.values())]
     print("wrote",OUT,"transistors",d.ntransistors(),"lowest stub per rail",fill)
 

@@ -69,7 +69,7 @@ def main():
         t.symbol("Device","R",t.ref('R'),tb_registers.HUB_PU,xx,y-3*G,0,('1','2'),"",[("Description","Resistor",True)],in_bom=False,on_board=False)
         t.W(xx,y-1.5*G,xx,y); t.L(f'BUS{i}#',xx,y,270,'bidirectional')
     open(os.path.join(OUT,f'{PROJECT}-testbench.kicad_sch'),'w').write(t.file(x+40*G,130*G))
-    open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))
+    ksch.write_project(OUT,PROJECT)
     print("wrote",OUT,"transistors",d.ntransistors(),"sheet",W,"x",H,"mm, pcb extent",w.pcb_extent)
 
 if __name__=='__main__': main()

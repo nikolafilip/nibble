@@ -67,6 +67,6 @@ def main():
     W=16*G+N_HEADERS*22*G+10*G; H=hy+24*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
     ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(BW,BH),extra=dict(silk_big=[("NIBBLE BUS HUB",BW-44,BH-3.2,1.5)],rules=dict(track=0.2,clearance=0.15)))
-    open(os.path.join(OUT,f'{PROJECT}.kicad_pro'),'w').write(ksch.project_file(PROJECT))
+    ksch.write_project(OUT,PROJECT)
     print("wrote",OUT)
 if __name__=='__main__': main()

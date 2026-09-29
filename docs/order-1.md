@@ -210,7 +210,7 @@ About $150, all stock items; a face left empty needs no rails.
    - silk that says what the bench needs: the board name, pin 1, the socket colours, the fuse rating, the test loops' names; 53 labels on the pilot's three boards are 0.8 mm tall, under JLCPCB's stated 1.0 mm, and may print soft;
    - what the builder is told: the cards print no values, so the assembly drawing is the only map (the gate's `asm` check keeps it the board's);
    - what stands behind the board: a part's length through the board against the 12 mm to the rail (the hub's sockets), the ribbon's path against the cards' faces (docs/mounting.md, "Open");
-   - what the supply can do: nothing on the hub stops a bench supply turned past 20 V or leads plugged in reversed.
+   - what the supply can do: until the hub carries its crowbar and reverse diode (D061), nothing stops a bench supply turned past 20 V or leads plugged in reversed.
 2. `sim/gate.py` is green with every card in the deck and the clock card running the machine from its own power-on reset: all thirteen programs at TYP, the six corner programs at LO, HI and MIX seeds 1 to 4, at 500 pF per bus line, at 4.5 and 4.25 V, with 100 pF between neighbouring bus lines (`sim/results/`, docs/cards.md steps 9 and 11).
 3. Look at the renders in each `fab/` folder for 30 seconds each: header on the top edge, pin 1 marked, LEDs on the front, the board name on the silk.
 4. `docs/bring-up.md` read once, so the test plan is known before the boards exist.

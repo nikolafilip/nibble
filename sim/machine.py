@@ -97,9 +97,31 @@ def export(board,dev=False):
     if not any(l[0] in 'MRCDQ' for l in lines): raise SystemExit(f"{board}: the export has no components\n"+r.stdout+r.stderr)
     return lines
 
-def subckt(board,lines,corner,rng=None):
+def hold_off(l):
+    """The clock card's hold-off transistor (D064): the one with its gate on the RST line."""
+    w=l.split(); return l[0] in 'Mm' and len(w)>3 and w[2]=='RST'
+
+MIX_ORDER_FILE=os.path.join(HERE,'mix_order.json')
+def mix_order(write=False):
+    """The order in which a board's transistors draw their models at a mixed corner: the order of its export on 2026-09-29,
+    kept in mix_order.json. kicad-cli lists the symbols in the order of their ids and the builders draw the ids at random,
+    so a card built again comes out in another order, and the same seed would give every transistor another threshold:
+    another machine than the one the earlier runs proved. `python3 machine.py --mix-order` writes the file from the
+    schematics as they are; it is run once, before a card is changed, not after."""
+    import json
+    if write:
+        o={b:[l.split()[0] for l in export(b) if l[0] in 'Mm' and int(re.sub(r'\D','',l.split()[0]) or 0)<9000] for b in sorted(BOARD) if os.path.exists(os.path.join(BOARDS,BOARD[b][0]))}
+        json.dump(o,open(MIX_ORDER_FILE,'w'),indent=0); return o
+    return json.load(open(MIX_ORDER_FILE)) if os.path.exists(MIX_ORDER_FILE) else {}
+MIX_ORDER=None
+
+def subckt(board,lines,corner,rng=None,seed=1):
     """Wrap a board's export as .subckt <board> <bus ports>. Drops directives and testbench parts (refs >= 9000).
-    corner TYP/LO/HI gives every transistor that model; MIX gives each transistor a random one (threshold spread between parts)."""
+    corner TYP/LO/HI gives every transistor that model; MIX gives each transistor a random one (threshold spread between parts):
+    the transistors draw in the order mix_order.json has for the board, whatever order the export lists them in; one the
+    file does not know (added to the card since) draws from a generator of its own, so the others keep their models. The
+    clock card's hold-off transistor (D064) is the first of those: seed + 1000, as in the decks that tried it with HOLD=1."""
+    global MIX_ORDER
     assert any(l[0] in 'MRCDQ' for l in lines), f"{board}: empty netlist"      # an empty card never reaches ngspice (the export race of 2026-09-17)
     models={'TYP':'2N7000','LO':'2N7000_LO','HI':'2N7000_HI'}
     body=[]
@@ -107,10 +129,15 @@ def subckt(board,lines,corner,rng=None):
         if l.startswith(('.','*')): continue
         ref=l.split()[0]; num=re.sub(r'\D','',ref)
         if num and int(num)>=9000: continue
-        if l[0] in 'Mm':
-            model=models[rng.choice(['LO','TYP','HI'])] if corner=='MIX' else models[corner]
-            l=l.replace(' 2N7000',' '+model)
         body.append(l)
+    if corner=='MIX':
+        if MIX_ORDER is None: MIX_ORDER=mix_order()
+        refs=[l.split()[0] for l in body if l[0] in 'Mm']; num=lambda r:int(re.sub(r'\D','',r) or 0)
+        order=MIX_ORDER.get(board) or sorted(refs,key=num)      # (a board the file does not have: by reference)
+        if not set(order)&set(refs): order=refs                  # (the gate list's own netlist, @dev, has other references: in the order it lists them, as before)
+        drawn={r:rng.choice(['LO','TYP','HI']) for r in order}                                            # a transistor the card has lost still draws: the ones after it keep theirs
+        for k,r in enumerate(sorted((r for r in refs if r not in drawn),key=num)): drawn[r]=random.Random(seed+1000+k).choice(['LO','TYP','HI'])
+    body=[l.replace(' 2N7000',' '+models[drawn[l.split()[0]] if corner=='MIX' else corner]) if l[0] in 'Mm' else l for l in body]
     ports=ports_of(body)
     return ports, [f".subckt {board} "+" ".join(ports)]+body+[".ends"]
 
@@ -163,9 +190,9 @@ def deck(program,boards,corner,trace,outfile,seed=1):
     for spec in boards:
         b,_,dev=spec.partition('@')
         if b in ('clk','clkc'):       # the clock board or card: RUN switch closed, pot at minimum, timing capacitor empty at power-up
-            ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
+            ports,sub=subckt(b,export(b,dev=='dev'),corner,rng,seed)
             body=["Rrun +5V RUNSW 1m","Rpot RT X 1m","Rj2 Net-_J2-Pin_2_ 0 1G"]+(["Rhd HLT HLTD 100k","Chd HLTD 0 2.2n"] if dev=='dev' else [])      # the RC on HLT is drawn on the sheet (D050)
-            if HOLD:
+            if HOLD and not any(hold_off(l) for l in sub):      # (a card that has the two parts gets no second pair)
                 hm={'TYP':'2N7000','LO':'2N7000_LO','HI':'2N7000_HI'}; body+=["Rhold X XH 100",f"Mhold XH RST GND {hm[random.Random(seed+1000).choice(['LO','TYP','HI'])] if corner=='MIX' else hm[corner]}"]      # a draw of its own: every other transistor keeps the model it has without the hold-off
             L+=sub[:-1]+body+[sub[-1]]; L.append(f"X{b} "+" ".join(ports)+f" {b}"); L.append(f".ic V(x{b}.X)=0 V(x{b}.POR)={POR_V0:g}")      # both capacitors empty (POR_V0 shifts the release): the card's power-on reset resets the machine
             probes+=[f'x{b}.X',f'x{b}.VD2']
@@ -174,7 +201,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
             import json
             npages=max(1,(len(program)+15)//16); mp=json.load(open(os.path.join(BOARDS,'04-program','program.map.json')))
             for p in range(npages):
-                ports,sub=subckt(b,export(b,dev=='dev'),corner,rng); sub[0]=sub[0].replace('.subckt prog ',f'.subckt prog{p} ')
+                ports,sub=subckt(b,export(b,dev=='dev'),corner,rng,seed); sub[0]=sub[0].replace('.subckt prog ',f'.subckt prog{p} ')
                 body=[]
                 for i in range(4): body.append(f"Rj{i} JS{i} {f'PC{i+4}' if (p>>i)&1 else f'PN{i}'} 1m")            # the page jumpers
                 for w in range(16):
@@ -192,7 +219,7 @@ def deck(program,boards,corner,trace,outfile,seed=1):
             import json
             ncards=max(1,(len(program)+3)//4); mp=json.load(open(os.path.join(BOARDS,'..','cards','prog','prog.map.json')))
             for c in range(ncards):
-                ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
+                ports,sub=subckt(b,export(b,dev=='dev'),corner,rng,seed)
                 body=[f"Rj{k} JS{k} {f'PC{k}' if (c>>(k-2))&1 else f'PN{k}'} 1m" for k in range(2,8)]
                 for w in range(4):
                     word=program[4*c+w] if 4*c+w<len(program) else 0
@@ -207,12 +234,12 @@ def deck(program,boards,corner,trace,outfile,seed=1):
             continue
         if b=='memslot':   # eight copies of the slot card, the pair jumpers of copy p set for slots 2p and 2p+1
             for p in range(8):
-                ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
+                ports,sub=subckt(b,export(b,dev=='dev'),corner,rng,seed)
                 body=[f"Rj{k} {x} {m} 1m" for k,(x,m) in enumerate(__import__('memory').slot_jumpers(p).items())]
                 ports=ports_of(sub[1:-1]+body)      # the jumpers bring MAR1..3 (or their complements) onto the card: ports too, else they float inside
                 L+=[f".subckt memslot{p} "+" ".join(ports)]+sub[1:-1]+body+[sub[-1]]; L.append(f"Xmemslot{p} "+" ".join(ports)+f" memslot{p}")
             continue
-        ports,sub=subckt(b,export(b,dev=='dev'),corner,rng)
+        ports,sub=subckt(b,export(b,dev=='dev'),corner,rng,seed)
         if b=='panelb' and RST_PRESS:      # the RST button (not in the export: a push button has no model): a switch from +5V to the 10k that leads into the debounce capacitor
             rc=[l.split() for l in sub if l.split()[-1]=='100k' and 'RST_N' in l.split()[1:3]]; assert len(rc)==1, 'panelb: the 100k into RST_N not found'
             node=[x for x in rc[0][1:3] if x!='RST_N'][0]; r10=[l.split() for l in sub if l.split()[-1]=='10k' and node in l.split()[1:3]]; assert len(r10)==1, 'panelb: the button\'s 10k not found'
@@ -423,6 +450,7 @@ def run(prog,boards,corner='TYP',ticks=None,tag=None,seed=1):
     return trace,rows,bad
 
 if __name__=='__main__':
+    if '--mix-order' in sys.argv: o=mix_order(write=True); print('wrote',MIX_ORDER_FILE,':',len(o),'boards,',sum(len(v) for v in o.values()),'transistors'); sys.exit(0)
     prog=sys.argv[1]; boards=sys.argv[sys.argv.index('--boards')+1].split(',')
     corner=sys.argv[sys.argv.index('--corner')+1] if '--corner' in sys.argv else 'TYP'
     ticks=int(sys.argv[sys.argv.index('--ticks')+1]) if '--ticks' in sys.argv else None

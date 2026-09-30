@@ -12,7 +12,7 @@ def main():
     os.makedirs(OUT,exist_ok=True); root_uuid=ksch.U()
     w=ksch.DenseWriter(PROJECT,root_uuid); w.n['RV']=1
     w.T("NIBBLE CARD CLOCK: RC oscillator with a speed knob, RUN/STEP switch, halt, power-on reset",10*G,6*G,3.5,True)
-    w.T(f"{d.ntransistors()+2} transistors, {d.nresistors()+9} resistors, {d.nleds()} LEDs, one pot, one switch, one jumper, 100 x 100 mm (docs/cards.md).\n"
+    w.T(f"{d.ntransistors()+3} transistors, {d.nresistors()+10} resistors, {d.nleds()} LEDs, one pot, one switch, one jumper, 100 x 100 mm (docs/cards.md).\n"
         "RUN: the switch puts 1k from +5V on CLK (a few microseconds into the 3 nF of cards and ribbon, D053) and the oscillator pulls CLK low for half of each cycle, or for as long as HLT is high.\n"
         "STEP: the switch is open and the pull-down transistor is held off; the front panel's CLK button owns the line, one edge per press.\n"
         f"Speed: a Schmitt-trigger RC oscillator, {R_FIX} + the pot from SA to X, {C_FAST} on X: about 500 Hz down to 40 Hz; the SLOW jumper adds {C_SLOW} for 10 Hz down to 0.8 Hz.\n"
@@ -71,8 +71,15 @@ def main():
     w.W(xs+6*G,y3,xs+6*G,y3-G); w.at(w.R('1Meg',xs+6*G,y3-2.5*G),76,86,270); w.W(xs+6*G,y3-4*G,xs+6*G,y3-5*G); w.L('PB',xs+6*G,y3-5*G,90,'input')
     xr=x+30*G; w.L('RD',xr,y3,180,'input'); w.W(xr,y3,xr+G,y3); w.at(w.R('100',xr+2.5*G,y3,90),64,86,270); w.W(xr+4*G,y3,xr+5*G,y3)
     w.at(w.diode(xr+6.5*G,y3,180),52,70,0); w.W(xr+8*G,y3,xr+9*G,y3); w.L('RST',xr+9*G,y3,0,'output')
+    # the hold-off (D064): while RST is high the timing capacitor is held empty, so the clock stands still and its first edge comes after the release
+    y4=y3+16*G
+    w.T("HOLD-OFF (D064): while RST is high this transistor holds X at 0 V through 100 ohm: the Schmitt trigger reads low and the clock gate holds CLK low.  When RST lets go, the card's own reset or the panel's button, X charges from 0 V and the first clock edge comes 1.3 to 5.4 ms later at the fastest setting, never in the 45 us in which the cards leave their resets",x-4*G,y4-10*G,1.6,True)
+    gx,gy=max(((r[2],max(r[3],r[5])) for r in w.rails if r[0]=='GND' and r[1]=='B.Cu' and abs(r[2]-r[4])<1e-6),key=lambda t:t[1])      # the tiles' ground trunk that reaches lowest (23.09, 56.64)
+    qh=w.Q(x+8*G,y4); w.at(qh,gx,66,0); w.rails.append(('GND','B.Cu',gx,gy,gx,66.0,0.5)); w.L('RST',x+2*G,y4,180,'input'); w.W(x+2*G,y4,x+6*G,y4)      # its source pad on the trunk, extended to it: routed once, the pour on its own left this pad on an island
+    w.W(x+9*G,y4-2*G,x+9*G,y4-3*G); w.at(w.R('100',x+9*G,y4-4.5*G),33,64,270); w.W(x+9*G,y4-6*G,x+9*G,y4-7*G); w.L('X',x+9*G,y4-7*G,90,'input')
+    w.W(x+9*G,y4+2*G,x+9*G,y4+3*G); w.PW('GND',x+9*G,y4+3*G)
     ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(frame.CARD,frame.CARD),extra=extra)
-    W=10*G+cols*w.CELL_W+30*G; H=y3+14*G
+    W=10*G+cols*w.CELL_W+30*G; H=y4+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
     ksch.write_project(OUT,PROJECT)
     print("wrote",OUT,"transistors",d.ntransistors(),"tiles",w.pcb_extent)

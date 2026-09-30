@@ -103,9 +103,9 @@ banana-to-banana leads, and a short 64-way ribbon with three sockets.
 <!-- bom.py: parts -->
 | Part | Need | Buy | Spares rule |
 |---|---|---|---|
-| 2N7000 transistor, TO-92 | 3515 | 3900 | a tenth over, to the next 100 |
+| 2N7000 transistor, TO-92 | 3516 | 3900 | a tenth over, to the next 100 |
 | 1N4148 diode, DO-35 | 733 | 900 | a tenth over, to the next 100 |
-| Resistor 100 ohm, 1/4 W axial | 5 | 100 | a tenth over, to the next 100 (they come in hundreds) |
+| Resistor 100 ohm, 1/4 W axial | 6 | 100 | a tenth over, to the next 100 (they come in hundreds) |
 | Resistor 1 kohm, 1/4 W axial | 288 | 400 | a tenth over, to the next 100 (they come in hundreds) |
 | Resistor 3.3 kohm, 1/4 W axial | 81 | 100 | a tenth over, to the next 100 (they come in hundreds) |
 | Resistor 4.7 kohm, 1/4 W axial | 4 | 100 | a tenth over, to the next 100 (they come in hundreds) |
@@ -141,7 +141,7 @@ banana-to-banana leads, and a short 64-way ribbon with three sockets.
 | Polyfuse 1.5 A (Bel 0ZRE0150FF) | 1 | 2 | one over |
 | Banana socket, 4 mm, for the board, upright: Cal Test CT3151V1-2 (red) and CT3151V1-0 (black), one of each | 2 | 2 | none over: two are fitted |
 | Jumper cap, 2.54 mm (one on every 1x3 and 1x2 pin header) | 146 | 154 | a twentieth over, two at the least |
-| **7134 parts soldered on 52 boards** | | | |
+| **7136 parts soldered on 52 boards** | | | |
 <!-- bom.py: end parts -->
 
 Need is what the 52 boards carry. Buy is Need with spares by the rule in

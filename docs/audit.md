@@ -41,7 +41,9 @@ One stage does not carry over: the crosstalk stage (`CROSS_PF=100`,
 `sim/results/gate25_cross.md`) coupled the lines that were neighbours on
 the ribbon then. The neighbours are other lines now (RST and BUS1#, BUS1#
 and BUS0#, BUS0# and BUS3#, ...), so that stage is owed again on the new
-order: six programs at TYP and HI.
+order: six programs at TYP and HI. Paid 2026-09-30: `sim/results/gate26_cross.md`,
+12 of 12 pass (with the clock card's hold-off, D064, in the deck; the card
+with it on carries the same deck).
 
 ## 2. Findings
 
@@ -75,8 +77,8 @@ ordered first. The counts are the whole machine's: 52 boards, 7129 parts.
 
 | Part | Footprint: hole, pitch | The part must be | Risk |
 |---|---|---|---|
-| 2N7000 (3515) | 0.8 mm, three holes 2.54 mm apart | TO-92; leads 0.4 to 0.55 mm | A straight TO-92 has its leads 1.27 mm apart: every one is spread by hand, or bought with formed leads. Which order code is formed to 2.54 mm has not been read from a datasheet yet |
-| Resistor, upright (2137) | 0.8 mm, 5.08 mm | 1/4 W axial, body to 6.3 x 2.5 mm, lead 0.6 mm | none |
+| 2N7000 (3516) | 0.8 mm, three holes 2.54 mm apart | TO-92; leads 0.4 to 0.55 mm | A straight TO-92 has its leads 1.27 mm apart: every one is spread by hand, or bought with formed leads. Which order code is formed to 2.54 mm has not been read from a datasheet yet |
+| Resistor, upright (2138) | 0.8 mm, 5.08 mm | 1/4 W axial, body to 6.3 x 2.5 mm, lead 0.6 mm | none |
 | 1N4148, upright (727) | 0.8 mm, 2.54 mm | DO-35 glass, body under 2 mm across | At 2.54 mm between neighbours two 1.85 mm bodies leave 0.7 mm |
 | LED (281) | 0.9 mm, 2.54 mm | 3 mm round | none |
 | Electrolytic (56) | 0.8 mm, 2.0 mm | 5 mm can. 10 uF, 2.2 uF, 1 uF, and 100 uF 16 V on the hub | A 100 uF 25 V can is 6.3 mm: buy 16 V |

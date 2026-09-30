@@ -162,7 +162,16 @@ mismatches; the exports carry every program of the step 9 gate
 
 Board 05's circuit on a card: the source-coupled Schmitt RC oscillator with
 the speed pot and SLOW jumper, the RUN/STEP switch, the halt gate, the
-power-on reset (`sim/clock.py`, drawn by `build_clock_card.py`). HLT
+power-on reset, and the hold-off (`sim/clock.py`, drawn by
+`build_clock_card.py`). The hold-off (D064): a 2N7000 from the oscillator's
+timing node X to ground through 100 ohm, its gate on the RST line. While
+RST is high the timing capacitor is held empty, the Schmitt trigger reads
+low and the clock gate holds CLK low; when RST lets go, the card's own
+reset or the panel's button, X charges from 0 V and the first clock edge
+comes 1.3 to 5.7 ms later at the fastest setting (`sim/results/reset_release.md`,
+`starts_hold.md`), never in the 45 us in which the cards leave their
+resets, which had started the machine wrong once in a hundred times
+(`sweep_por.md`). HLT
 reaches the halt gate through 100k into 2.2 nF (0.22 ms, D050), so the
 clock pulse that started the halt step completes before the clock stops.
 CLK's pull-up in RUN is 1k and RST comes from a 1k inverter stage (RD = NOT

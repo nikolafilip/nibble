@@ -376,16 +376,17 @@ def silk_obstacles(board,margin=0.3):
 
 LOGO_LIB=os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','lib','nibble.pretty'))
 def place_logo(projdir,name):
-    """The Nibble logo on the front of every board (lib/nibble.pretty/Logo_Nibble*, from sim/logo.py), reference LOGO:
-    the icon and the word where a free patch 27 x 8 mm is to be had, the icon alone (8 x 8) otherwise, the nearest such
-    patch to the board's name. Free: 0.5 mm clear of every pad, via, part outline, courtyard and label as the plan put it,
-    1 mm inside the edge; judged on a 0.5 mm grid. A plan may say extra.logo = null for no logo. The same board gives the
-    same place; the fitter then keeps the labels off it."""
+    """The Nibble logo (lib/nibble.pretty/Logo_Nibble*, from sim/logo.py), reference LOGO, on the front of a board whose
+    plan says extra.logo = "auto" (the sequencer's: one maker's mark on the machine, not one on every card, which read as
+    a product line): the icon and the word where a free patch 27 x 8 mm is to be had, the icon alone (8 x 8) otherwise,
+    the nearest such patch to the board's name. Free: 0.5 mm clear of every pad, via, part outline, courtyard and label as
+    the plan put it, 1 mm inside the edge; judged on a 0.5 mm grid. The same board gives the same place; the fitter then
+    keeps the labels off it."""
     import math
     pcb=os.path.join(projdir,f'{name}.kicad_pcb'); board=pcbnew.LoadBoard(pcb)
     plan=json.load(open(os.path.join(projdir,f'{name}.plan.json')))
     if any(m.GetReference()=='LOGO' for m in board.GetFootprints()): raise SystemExit(f'{name} already has a logo: resilk takes it off first')
-    if plan['extra'].get('logo','auto') is None: print('   no logo on',name); return
+    if plan['extra'].get('logo') is None: print('   no logo on',name); return
     box,solid,yards,edge,hit,free=silk_obstacles(board,margin=1.0); L=pcbnew.F_SilkS
     texts=[d for d in board.GetDrawings() if isinstance(d,pcbnew.PCB_TEXT) and d.GetLayer()==L]
     near=solid[L]+[box(t.GetBoundingBox(),mm(0.5)) for t in texts]; yard=yards[L]

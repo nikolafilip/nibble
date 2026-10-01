@@ -13,7 +13,7 @@ piece of fibreglass that is built. The machine is 26 designs and 52 boards.
 
 | | State |
 |---|---|
-| Coupon, register bit 0, hub (the pilot) | Ready. `ORDER GATE: all pass` on all 26 boards at commit `17286cc` (2026-10-01): the headers on the back, the hub with its sockets, its crowbar (D061, D063) and the empty C-RST spot, the logo on the front silk. Every command of section 6 ended as written |
+| Coupon, register bit 0, hub (the pilot) | Ready. `ORDER GATE: all pass` on all 26 boards at commit `17286cc` (2026-10-01): the headers on the back, the hub with its sockets, its crowbar (D061, D063) and the empty C-RST spot, the front silk with the pin numbers only (the logo is on the sequencer alone). Every command of section 6 ended as written |
 | Everything else | After the pilot is built and measured (D055) |
 | Cables, frame | After `docs/mounting.md` is redrawn for the ribbon behind the cards (D059); `docs/audit.md` section 5 has the open points |
 
@@ -28,9 +28,9 @@ design's `fab/` folder; the md5 is of that file):
 
 | Zip | md5 |
 |---|---|
-| `cards/coupon/fab/coupon-gerbers.zip` | 33249e465c5a2851f3e7c74bddefd0ff |
-| `cards/reg0/fab/reg0-gerbers.zip` | 3e730d344c2e542a2a77201bd381d9e6 |
-| `cards/hub/fab/hub-gerbers.zip` | 72ae8d58cea741bfd54a0dc3f6d005bc |
+| `cards/coupon/fab/coupon-gerbers.zip` | 80d2c4a4d107c5885c59909ef3b65807 |
+| `cards/reg0/fab/reg0-gerbers.zip` | 95735a930bbdcb2e9361d42e02de0f2a |
+| `cards/hub/fab/hub-gerbers.zip` | 40e0588b695449c76d9f7edc6b536248 |
 
 In JLCPCB's preview: the outline is the square; the front has two rows of
 32 holes along the top edge with 1, 2, 63, 64 at their corners; the back

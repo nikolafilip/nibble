@@ -1401,7 +1401,6 @@
 <text x="1018" y="384" font-size="16" fill="#111">box header 2x32, on the back  x 1</text>
 <text x="1018" y="408" font-size="16" fill="#111">capacitor 100n  x 1</text>
 <text x="1018" y="432" font-size="16" fill="#111">electrolytic 10u  x 1</text>
-<text x="1018" y="456" font-size="16" fill="#111">part Logo_Nibble  x 1</text>
 <text x="18" y="1040" font-size="16" fill="#444">Square pad = pad 1: the cathode of a diode or an LED, the plus of an electrolytic, pin 1 of a header.</text>
 <text x="18" y="1066" font-size="16" fill="#444">Grey and unlabelled: the commonest resistor of the card (see the legend) and the 2N7000, flat side as the outline shows. Resistors stand upright on 5.08 mm.</text>
 <text x="18" y="1092" font-size="16" fill="#444">Upright diodes (black, unlabelled): the body stands on the square pad, band down; the bare lead bends over to the round pad.</text>

@@ -134,9 +134,10 @@ def check_card(name,make_zip=False):
     sp=open(pcb).read(); sizes=[float(x) for hw in re.findall(r'^\t\(gr_text "[^"]*"\s*\(at [^)]*\)\s*\(layer "[FB]\.SilkS"\).*?\(size ([\d.]+) ([\d.]+)\)',sp,re.M|re.S) for x in hw]
     clipped=[x for x in j['violations'] if x['type']=='silk_over_copper' and any('PCB text' in i['description'] for i in x['items'])]
     front=re.findall(r'\(footprint "IDC-Header_2x32[^"]*"\s*\(layer "F\.Cu"\)',sp); said='"HEADER HERE"' in sp and '"HEADER ON THE BACK"' not in sp
-    res['silk']=bool(sizes) and min(sizes)>=1.0 and not clipped and not front and said
-    note['silk']=(f'{len(sizes)//2} labels, none under 1.0 mm, none clipped; the bus header is on the back and the back says so' if res['silk'] else
-                  '; '.join(([f'{len(clipped)} labels clipped by a pad'] if clipped else [])+([f'a label of {min(sizes)} mm'] if sizes and min(sizes)<1.0 else [])+(['the bus header is on the front'] if front else [])+(['the back does not say HEADER HERE, or the front still says where it is'] if not said else [])))
+    logo=len(re.findall(r'\(property "Reference" "LOGO"',sp))==1 and '(footprint "Logo_Nibble' in sp
+    res['silk']=bool(sizes) and min(sizes)>=1.0 and not clipped and not front and said and logo
+    note['silk']=(f'{len(sizes)//2} labels, none under 1.0 mm, none clipped; the bus header is on the back and the back says so; the logo is on' if res['silk'] else
+                  '; '.join(([f'{len(clipped)} labels clipped by a pad'] if clipped else [])+([f'a label of {min(sizes)} mm'] if sizes and min(sizes)<1.0 else [])+(['the bus header is on the front'] if front else [])+(['the back does not say HEADER HERE, or the front still says where it is'] if not said else [])+(['no logo (or more than one)'] if not logo else [])))
     # asm
     ap=os.path.join(fab,f'{name}-assembly.svg'); at=os.path.join(tmp,'asm.svg'); assembly.draw(name,out=at,d=d)
     res['asm']=os.path.exists(ap) and open(ap).read()==open(at).read(); note['asm']='the drawing is the board\'s' if res['asm'] else 'missing or stale (python3 assembly.py <card>)'

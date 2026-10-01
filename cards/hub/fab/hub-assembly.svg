@@ -513,8 +513,9 @@
 <text x="1018" y="458" font-size="16" fill="#111">diode 1N5408  x 1</text>
 <text x="1018" y="482" font-size="16" fill="#111">electrolytic 100u  x 1</text>
 <text x="1018" y="506" font-size="16" fill="#111">fuse 1.5A  x 1</text>
-<text x="1018" y="530" font-size="16" fill="#111">zener 1N4735A  x 1</text>
-<text x="1018" y="566" font-size="16" fill="#777">left empty  x 1</text>
+<text x="1018" y="530" font-size="16" fill="#111">part Logo_Nibble  x 1</text>
+<text x="1018" y="554" font-size="16" fill="#111">zener 1N4735A  x 1</text>
+<text x="1018" y="590" font-size="16" fill="#777">left empty  x 1</text>
 <text x="18" y="1040" font-size="16" fill="#444">Square pad = pad 1: the cathode of a diode or an LED, the plus of an electrolytic, pin 1 of a header.</text>
 <text x="18" y="1066" font-size="16" fill="#444">Grey and unlabelled: the commonest resistor of the card (see the legend) and the 2N7000, flat side as the outline shows. Resistors stand upright on 5.08 mm.</text>
 <text x="18" y="1092" font-size="16" fill="#444">SCR (the crowbar, D061): its metal tab toward the top edge, as the outline's thick side shows; square pad = cathode. The zener and the large diode: band on the square pad.</text>

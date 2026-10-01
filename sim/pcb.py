@@ -334,19 +334,91 @@ def resilk(projdir,name):
             t=t.Cast()
             if t.GetLayer()==pcbnew.F_SilkS and isinstance(t,pcbnew.PCB_TEXT): t.SetLayer(pcbnew.F_Fab)
     # (the footprint pass goes first: after board.Remove of a text, pcbnew hands back untyped footprint objects)
+    for m in [m for m in board.GetFootprints() if m.GetReference()=='LOGO']: board.Remove(m)      # the logo off first (here, not in the fitter's process: a removal there leaves the next loaded board untyped, and every hidden reference became an obstacle; and after a text is removed the footprints are untyped too)
     for d in [d for d in board.GetDrawings() if isinstance(d,pcbnew.PCB_TEXT) and d.GetLayer() in (pcbnew.F_SilkS,pcbnew.B_SilkS)]: board.Remove(d)
     add_silk(board,plan); pcbnew.SaveBoard(pcb,board)
     rules=plan['extra'].get('rules',{}); sync_project(projdir,name,rules.get('track',0.25),rules.get('clearance',0.2))
     fit_silk_apart(projdir,name)
     return pcb
 
+SILK_BOX=lambda b,g=0:(b.GetLeft()-g,b.GetTop()-g,b.GetRight()+g,b.GetBottom()+g)
+def silk_obstacles(board,margin=0.3):
+    """What board-level silkscreen may not lie on, per face: pads (0.12 mm round them), the parts' own printed outlines and
+    visible names, vias (under the mask, but the hole takes the ink), the courtyards of the parts on that face (an LED's
+    printed circle stands for its courtyard), and the strip of margin mm inside the board's edge.
+    Returns (box, solid, yards, edge, hit, free): box(bbox[,grow]) -> (l,t,r,b) in nm; solid[layer] -> boxes;
+    yards[layer] -> (courtyard shape, its box); hit(a,b) -> the two boxes overlap; free(b, near, yard) -> b lies on none."""
+    SILK=(pcbnew.F_SilkS,pcbnew.B_SilkS); box=SILK_BOX
+    solid={l:[] for l in SILK}; yards={l:[] for l in SILK}
+    for m in board.GetFootprints():
+        for pad in m.Pads():
+            for l,cu in zip(SILK,(pcbnew.F_Cu,pcbnew.B_Cu)):
+                if pad.IsOnLayer(cu): solid[l].append(box(pad.GetBoundingBox(),mm(0.12)))
+        for g in list(m.GraphicalItems())+[m.Reference(),m.Value()]:
+            if g.GetLayer() in SILK and (not isinstance(g,pcbnew.PCB_TEXT) or g.IsVisible()): solid[g.GetLayer()].append(box(g.GetBoundingBox(),mm(0.1)))
+        if str(m.GetFPID().GetLibItemName()).startswith('LED'): continue
+        m.BuildCourtyardCaches()
+        for l,cy in zip(SILK,(pcbnew.F_CrtYd,pcbnew.B_CrtYd)):
+            c=m.GetCourtyard(cy)
+            if c.OutlineCount(): yards[l].append((c,box(c.BBox())))
+    for t in board.GetTracks():
+        if t.GetClass()=='PCB_VIA':
+            for l in SILK: solid[l].append(box(t.GetBoundingBox(),mm(0.05)))
+    e=board.GetBoardEdgesBoundingBox(); edge=(e.GetLeft()+mm(margin),e.GetTop()+mm(margin),e.GetRight()-mm(margin),e.GetBottom()-mm(margin))
+    hit=lambda a,b:a[0]<b[2] and b[0]<a[2] and a[1]<b[3] and b[1]<a[3]
+    def free(b,near,yard):
+        if b[0]<edge[0] or b[1]<edge[1] or b[2]>edge[2] or b[3]>edge[3]: return False
+        if any(hit(b,o) for o in near): return False
+        for c,cb in yard:
+            if hit(b,cb) and any(c.Contains(pcbnew.VECTOR2I(x,y)) for x in list(range(b[0],b[2],mm(0.2)))+[b[2]] for y in list(range(b[1],b[3],mm(0.2)))+[b[3]]): return False
+        return True
+    return box,solid,yards,edge,hit,free
+
+LOGO_LIB=os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','lib','nibble.pretty'))
+def place_logo(projdir,name):
+    """The Nibble logo on the front of every board (lib/nibble.pretty/Logo_Nibble*, from sim/logo.py), reference LOGO:
+    the icon and the word where a free patch 27 x 8 mm is to be had, the icon alone (8 x 8) otherwise, the nearest such
+    patch to the board's name. Free: 0.5 mm clear of every pad, via, part outline, courtyard and label as the plan put it,
+    1 mm inside the edge; judged on a 0.5 mm grid. A plan may say extra.logo = null for no logo. The same board gives the
+    same place; the fitter then keeps the labels off it."""
+    import math
+    pcb=os.path.join(projdir,f'{name}.kicad_pcb'); board=pcbnew.LoadBoard(pcb)
+    plan=json.load(open(os.path.join(projdir,f'{name}.plan.json')))
+    if any(m.GetReference()=='LOGO' for m in board.GetFootprints()): raise SystemExit(f'{name} already has a logo: resilk takes it off first')
+    if plan['extra'].get('logo','auto') is None: print('   no logo on',name); return
+    box,solid,yards,edge,hit,free=silk_obstacles(board,margin=1.0); L=pcbnew.F_SilkS
+    texts=[d for d in board.GetDrawings() if isinstance(d,pcbnew.PCB_TEXT) and d.GetLayer()==L]
+    near=solid[L]+[box(t.GetBoundingBox(),mm(0.5)) for t in texts]; yard=yards[L]
+    big=max(texts,key=lambda t:(t.GetTextSize().x,-t.GetPosition().y),default=None); nb=box(big.GetBoundingBox()) if big else edge
+    nx,ny=(nb[0]+nb[2])//2,(nb[1]+nb[3])//2
+    G=mm(0.5); cols=range(edge[0],edge[2],G); rows=range(edge[1],edge[3],G)
+    taken=set()           # the cells any obstacle touches: a candidate is read off the grid first, exactly only when the grid is clear
+    for o in near:
+        for cx in range((o[0]-edge[0])//G,(o[2]-edge[0])//G+1):
+            for cy in range((o[1]-edge[1])//G,(o[3]-edge[1])//G+1): taken.add((cx,cy))
+    for c,cb in yard:
+        for cx in range((cb[0]-edge[0])//G,(cb[2]-edge[0])//G+1):
+            for cy in range((cb[1]-edge[1])//G,(cb[3]-edge[1])//G+1):
+                if (cx,cy) not in taken and c.Contains(pcbnew.VECTOR2I(edge[0]+cx*G+G//2,edge[1]+cy*G+G//2)): taken.add((cx,cy))
+    for fp in ('Logo_Nibble','Logo_Nibble_Icon'):
+        m=pcbnew.FootprintLoad(LOGO_LIB,fp); m.SetReference('LOGO'); m.SetPosition(pcbnew.VECTOR2I(0,0))
+        b=box(m.GetBoundingBox(False,False),mm(0.5)); w,h=b[2]-b[0],b[3]-b[1]; cw,ch=w//G+2,h//G+2
+        cands=sorted(((math.hypot(x+w//2-nx,y+h//2-ny),y,x) for x in cols for y in rows if x+w<=edge[2] and y+h<=edge[3]))
+        for d,y,x in cands:
+            cx0,cy0=(x-edge[0])//G,(y-edge[1])//G
+            if any((cx,cy) in taken for cx in range(cx0,cx0+cw) for cy in range(cy0,cy0+ch)): continue
+            if free((x,y,x+w,y+h),near,yard):
+                m.SetPosition(pcbnew.VECTOR2I(x-b[0],y-b[1])); board.Add(m); pcbnew.SaveBoard(pcb,board)
+                print(f'   logo: {fp} at ({(x-b[0])/1e6:.1f}, {(y-b[1])/1e6:.1f}), {d/1e6:.0f} mm from the name'); return
+    print('   logo: NO ROOM on',name)
+
 def fit_silk_apart(projdir,name):
     """fit_silk in a python of its own: once a text has been removed from a board, pcbnew hands this process untyped objects
     (a board loaded afterwards has no GetDrawings)."""
     r=subprocess.run([sys.executable,os.path.abspath(__file__),projdir,name,'--fit-silk'],capture_output=True,text=True)
-    out=[l for l in r.stdout.splitlines() if l.startswith('   silk:')]
+    out=[l for l in r.stdout.splitlines() if l.startswith('   silk:') or l.startswith('   logo:') or l.startswith('   no logo')]
     if r.returncode or not out: print(r.stdout[-2000:],r.stderr[-2000:]); raise SystemExit('fit_silk failed')
-    print(out[-1])
+    print('\n'.join(out))
 
 SILK_MIN=1.0          # mm: the text height JLCPCB says it prints; 0.8 mm may or may not come out
 def fit_silk(projdir,name):
@@ -364,33 +436,11 @@ def fit_silk(projdir,name):
     still objects to goes back to the plan's place and size. The plan is not touched: the same plan and the same board give
     the same silkscreen."""
     import tempfile, shutil, math
+    place_logo(projdir,name)       # first, so that the labels are fitted around the logo
     pcb=os.path.join(projdir,f'{name}.kicad_pcb'); board=pcbnew.LoadBoard(pcb); SILK=(pcbnew.F_SilkS,pcbnew.B_SilkS)
     T=sorted([d for d in board.GetDrawings() if isinstance(d,pcbnew.PCB_TEXT) and d.GetLayer() in SILK],key=lambda t:(t.GetLayer(),t.GetPosition().y,t.GetPosition().x,t.GetText()))
     at0=[(t.GetPosition().x,t.GetPosition().y) for t in T]; size0=[t.GetTextSize().x for t in T]; turn0=[t.GetTextAngleDegrees() for t in T]
-    box=lambda b,g=0:(b.GetLeft()-g,b.GetTop()-g,b.GetRight()+g,b.GetBottom()+g)
-    solid={l:[] for l in SILK}; yards={l:[] for l in SILK}
-    for m in board.GetFootprints():
-        for pad in m.Pads():
-            for l,cu in zip(SILK,(pcbnew.F_Cu,pcbnew.B_Cu)):
-                if pad.IsOnLayer(cu): solid[l].append(box(pad.GetBoundingBox(),mm(0.12)))
-        for g in list(m.GraphicalItems())+[m.Reference(),m.Value()]:
-            if g.GetLayer() in SILK and (not isinstance(g,pcbnew.PCB_TEXT) or g.IsVisible()): solid[g.GetLayer()].append(box(g.GetBoundingBox(),mm(0.1)))
-        if str(m.GetFPID().GetLibItemName()).startswith('LED'): continue
-        m.BuildCourtyardCaches()
-        for l,cy in zip(SILK,(pcbnew.F_CrtYd,pcbnew.B_CrtYd)):
-            c=m.GetCourtyard(cy)
-            if c.OutlineCount(): yards[l].append((c,box(c.BBox())))
-    for t in board.GetTracks():
-        if t.GetClass()=='PCB_VIA':
-            for l in SILK: solid[l].append(box(t.GetBoundingBox(),mm(0.05)))
-    e=board.GetBoardEdgesBoundingBox(); edge=(e.GetLeft()+mm(0.3),e.GetTop()+mm(0.3),e.GetRight()-mm(0.3),e.GetBottom()-mm(0.3))
-    hit=lambda a,b:a[0]<b[2] and b[0]<a[2] and a[1]<b[3] and b[1]<a[3]
-    def free(b,near,yard):
-        if b[0]<edge[0] or b[1]<edge[1] or b[2]>edge[2] or b[3]>edge[3]: return False
-        if any(hit(b,o) for o in near): return False
-        for c,cb in yard:
-            if hit(b,cb) and any(c.Contains(pcbnew.VECTOR2I(x,y)) for x in list(range(b[0],b[2],mm(0.2)))+[b[2]] for y in list(range(b[1],b[3],mm(0.2)))+[b[3]]): return False
-        return True
+    box,solid,yards,edge,hit,free=silk_obstacles(board)
     ring=sorted(((dx*0.1,dy*0.1) for dx in range(-60,61) for dy in range(-60,61)),key=lambda d:(round(math.hypot(*d),3),d[1],d[0]))
     def put(k,d,size,turn=0):
         T[k].SetPosition(pcbnew.VECTOR2I(at0[k][0]+mm(d[0]),at0[k][1]+mm(d[1]))); T[k].SetTextSize(pcbnew.VECTOR2I(size,size)); T[k].SetTextAngleDegrees(turn0[k]+turn)

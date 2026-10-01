@@ -63,7 +63,7 @@ def from_board(name):
     s=open(os.path.join(folder(name),f'{name}.kicad_pcb')).read(); c=collections.Counter()
     for m in re.finditer(r'^\t\(footprint "([^"]+)"(.*?)^\t\)$',s,re.S|re.M):
         fp,b=m.group(1),m.group(2); a=re.search(r'\(attr ([^)]*)\)',b)
-        if fp.startswith('MountingHole') or (a and 'dnp' in a.group(1).split()): continue
+        if fp.startswith('MountingHole') or fp.startswith('Logo_') or (a and 'dnp' in a.group(1).split()): continue      # a hole, the logo (silkscreen only) and a do-not-populate spot are no parts
         c[named(fp,re.search(r'\(property "Value" "([^"]*)"',b).group(1))]+=1
     return c
 

@@ -98,6 +98,15 @@ def main():
     for k,n in enumerate(['BUS0#','BUS1#','BUS2#','BUS3#','CLK','RST']):
         xx=tx+k*5*G; w.at(w.testpoint(n,xx,y),30.0+k*8,TY,0); w.label(n.replace("#",""),28.0+k*8,TY+4.0,0.8); w.W(xx,y,xx,y+2*G); w.L(n,xx,y+2*G,270,'input')
     w.label("TEST LOOPS",30.0,TY-3.5,0.8)
+    # an empty spot for a capacitor from RST to ground, beside the RST loop (D062, bring-up section 9): the simulation says RST picks up 0.3 to 0.4 V
+    # from BUS1# on the ribbon, under the 0.6 V it may; if the scope says more, a 2.2 nF disc goes here. Do not populate: pads on the board, nothing
+    # in the parts list or in the simulation (the deck is the one the gates ran)
+    cx=tx+6*5*G
+    w.L('RST',cx,y-4*G,90,'input'); w.W(cx,y-4*G,cx,y-3*G)
+    crst=w.symbol("Device","C",w.ref('C'),"2.2n",cx,y-1.5*G,0,('1','2'),w.C_FOOT,[("Description","capacitor RST to ground: fit only if the scope shows over 0.6 V on RST (bring-up 9)",True)],dnp=True)
+    w.W(cx,y,cx,y+2*G); w.PW('GND',cx,y+2*G); w.T("fit if needed",cx+1.5*G,y-1.5*G,1.0)
+    w.at(crst,78.0,TY,0); R('GND',80.5,TY,XG,TY)      # pad 1 (RST) at 78, pad 2 (GND) at 80.5, wired across to the ring
+    w.label("C-RST",76.5,TY-3.5,1.0); w.label("FIT IF NEEDED",73.5,TY+4.0,1.0)
     frame.holes(w,tx+34*G,y,2)
     # the two bus headers: every line on both
     used=set(s for s in bus.PINS.values() if s not in ('+5V','GND'))

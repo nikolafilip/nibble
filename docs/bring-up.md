@@ -238,9 +238,10 @@ With the whole machine running a program, RST on the scope at the far end
 of the ribbon (its neighbour on the ribbon is BUS1# since the headers went
 to the back, D062): bumps of up to half a volt each time the bus is
 released are what the simulation says (0.28 to 0.43 V,
-`sim/results/rst_neighbour.md`). Above 0.6 V, fit a capacitor from RST to
-ground at the hub (2.2 nF halves the bump and RST then releases in 50 us
-instead of 20).
+`sim/results/rst_neighbour.md`). Above 0.6 V, fit a 2.2 nF disc in the
+hub's empty spot marked C-RST, beside the RST test loop (it halves the
+bump, and RST then releases in 50 us instead of 20). Nothing goes there
+otherwise.
 
 ## 10. Sequencer
 

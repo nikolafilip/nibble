@@ -205,7 +205,10 @@ fits (no USB, D057), through a 1.5 A polyfuse (D052) and past a crowbar
 (D061: above 6.3 to 7.8 V a zener fires an SCR that holds the rail near
 1 V; a 3 A diode takes crossed leads; `sim/results/crowbar.md`), the four bus pull-ups, the eight M-line pull-downs (220k, D048:
 with 1 Meg an M line released by a jump took 0.6 ms to fall), a power LED,
-100 uF, test loops on BUS3..0, CLK and RST. Deck name `hubc`.
+100 uF, test loops on BUS3..0, CLK and RST, and an empty spot (C-RST,
+do not populate) for a 2.2 nF from RST to ground should the scope show
+more pickup on RST than the simulation says (bring-up section 9). Deck
+name `hubc`.
 
 ## Panel cards (`panela`, `panelb`, `panelc`)
 

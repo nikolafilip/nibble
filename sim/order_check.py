@@ -229,9 +229,11 @@ LINKS=([(f'alu{i}','OUT',f'alu{i+1}','IN') for i in range(3)]+[(f'ctr{i}','OUT',
 
 def headers(name):
     """A board's connectors: {value: (footprint, layer, {pad number: net or None})}; a net KiCad named unconnected-... is None."""
-    B=assembly.board(name); s=open(os.path.join(B['dir'],f'{name}.kicad_pcb')).read(); out={}
+    B=assembly.board(name); s=open(os.path.join(B['dir'],f'{name}.kicad_pcb')).read(); out={}; found=[]
     for m in re.finditer(r'^\t\(footprint "((?:IDC-Header|PinHeader)[^"]*)"\s*\(layer "([^"]+)"\)(.*?)^\t\)$',s,re.S|re.M):
-        b=m.group(3); val=re.search(r'\(property "Value" "([^"]*)"',b).group(1); ref=re.search(r'\(property "Reference" "([^"]*)"',b).group(1); pads={}
+        b=m.group(3); found.append((re.search(r'\(property "Reference" "([^"]*)"',b).group(1),m))
+    for ref,m in sorted(found,key=lambda t:(re.sub(r'\d','',t[0]),int(re.sub(r'\D','',t[0]) or 0))):      # by reference, not by the order the file happens to hold them (a rebuild shuffles it)
+        b=m.group(3); val=re.search(r'\(property "Value" "([^"]*)"',b).group(1); pads={}
         for p in re.finditer(r'\(pad "(\d+)" \w+ \w+(.*?)\n\t\t\)',b,re.S):
             net=re.search(r'\(net (?:\d+ )?"([^"]*)"\)',p.group(2)); net=net.group(1) if net else None
             pads[int(p.group(1))]=None if not net or net.startswith('unconnected-') else net

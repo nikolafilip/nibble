@@ -95,8 +95,8 @@ def tables():
         for k,v in per[n].items(): total[k]+=v*COPIES.get(n,1)
     L=['| Part | Need | Buy | Spares rule |','|---|---|---|---|']
     for k in sorted(total,key=key): L.append(f"| {k[0]} | {total[k]} | {RULES[k[1]][1](total[k]) or ''} | {RULES[k[1]][0]} |")
-    jump=sum(v for k,v in total.items() if 'Pin header 1x3' in k[0] or 'Pin header 1x2' in k[0])
-    L.append(f"| Jumper cap, 2.54 mm (one on every 1x3 and 1x2 pin header) | {jump} | {RULES['conn'][1](jump)} | {RULES['conn'][0]} |")
+    jump=sum(v*COPIES.get(n,1) for n in names if n!='coupon' for k,v in per[n].items() if 'Pin header 1x3' in k[0] or 'Pin header 1x2' in k[0])      # the coupon's 1x2 is its supply inlet, not a jumper
+    L.append(f"| Jumper cap, 2.54 mm (one on every 1x3 and 1x2 pin header, the coupon's supply inlet excepted) | {jump} | {RULES['conn'][1](jump)} | {RULES['conn'][0]} |")
     L.append(f"| **{sum(total.values())} parts soldered on {boards} boards** | | | |")
     T['parts']=L
     # the pilot

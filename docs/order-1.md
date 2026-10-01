@@ -106,11 +106,15 @@ One board of each of the three designs:
 | **325 parts on one board of each** | 134 | 159 | 32 | |
 <!-- bom.py: end pilot -->
 
-All of these come out of the machine's quantities in section 4, the
-polyfuse and the hub's 100 uF excepted, which the hub alone uses. The
-bench also wants: a 3.3 nF capacitor with clip leads and a x10 scope
-probe for the coupon (`sim/results/coupon_expected.md`), a pair of
-banana-to-banana leads, and a short 64-way ribbon with three sockets.
+Every line here is a line of section 4, and section 4's Need counts
+these three boards among its 52, so the machine's quantities cover the
+pilot. The hub's empty C-RST spot (a 2.2 nF ceramic, fitted only if the
+scope asks for it, `bring-up.md` section 9) is not in this table; section
+4 has ten. The bench also wants: a 3.3 nF capacitor with clip leads and a
+x10 scope probe for the coupon (`sim/results/coupon_expected.md`), a pair
+of banana-to-banana leads, a short 64-way ribbon with three IDC sockets
+crimped on (section 5), and a few jumper wires with a 1k resistor to
+raise the register's control lines by hand (`bring-up.md`, top).
 
 ## 4. Parts for the machine
 
@@ -154,7 +158,7 @@ banana-to-banana leads, and a short 64-way ribbon with three sockets.
 | Potentiometer 1 M linear, 9 mm upright (Alpha RD901F-40) | 1 | 2 | one over |
 | Polyfuse 1.5 A (Bel 0ZRE0150FF) | 1 | 2 | one over |
 | Banana socket, 4 mm, for the board, upright: Cal Test CT3151V1-2 (red) and CT3151V1-0 (black), one of each | 2 | 2 | none over: two are fitted |
-| Jumper cap, 2.54 mm (one on every 1x3 and 1x2 pin header) | 146 | 154 | a twentieth over, two at the least |
+| Jumper cap, 2.54 mm (one on every 1x3 and 1x2 pin header, the coupon's supply inlet excepted) | 145 | 153 | a twentieth over, two at the least |
 | **7136 parts soldered on 52 boards** | | | |
 <!-- bom.py: end parts -->
 

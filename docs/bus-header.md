@@ -5,10 +5,10 @@ board with a 64-way IDC ribbon cable. Clock and reset each sit next to a
 ground pin.
 
 **The header is soldered on the back of the board (D059, D062), with its
-notch toward the top edge.** The ribbon runs behind the cards. The boards
-print `HEADER ON THE BACK` on the front and the header's outline on the
-back; on the front, `1`, `2`, `63` and `64` stand at the corners of the two
-rows of solder joints, and the square pad is pin 1.
+notch toward the top edge.** The ribbon runs behind the cards. The back
+prints the header's outline with `HEADER HERE` and `NOTCH TO TOP`; the
+front has only `1`, `2`, `63` and `64` at the corners of the two rows of
+solder joints, and the square pad is pin 1.
 
 2x32 is the largest standard IDC size (2x34 and 2x40 are not stocked
 anywhere). Checked 2026-09-10: shrouded headers (XFCN BH254V-64P, LCSC

@@ -22,13 +22,15 @@ def hole(hx,hy,n):
     the odd row is the upper one (hy-2.54), the columns run left to right."""
     return (hx+((n-1)//2)*2.54, hy-(n%2)*2.54)
 def header_labels(hx,hy):
-    """The silkscreen that goes with a header on the back: on the front the pin numbers at the four corners of the rows of
-    solder joints and which face the header is on; on the back, under the header's printed outline, what goes there and
-    which way round: two short labels, each between two of the ground vias that stand in a row there every 15.36 mm (one
-    label of 31 mm lay across two of them on every card). The notch is toward the card's top edge on every header, the
-    hub's lower one too: all 27 sit the same way round, or a ribbon could not join them. A label on the back is mirrored and runs toward the left of the
-    board as the front sees it: its x is its right-hand end. [text, x, y, size, angle, face]."""
+    """The silkscreen that goes with a header on the back: on the front only the pin numbers at the four corners of the rows
+    of solder joints; on the back, under the header's printed outline, what goes there and which way round: two short
+    labels, each between two of the ground vias that stand in a row there every 15.36 mm (one label of 31 mm lay across
+    two of them on every card). The front said HEADER ON THE BACK until 2026-10-01: a "not here" note under the holes, the
+    kind of text that narrates instead of naming, and the back already says where. The notch is toward the card's top
+    edge on every header, the hub's lower one too: all 27 sit the same way round, or a ribbon could not join them. A label
+    on the back is mirrored and runs toward the left of the board as the front sees it: its x is its right-hand end.
+    [text, x, y, size, angle, face]."""
     r=lambda v:round(v,2); xl=r(hx-2.9); xr=r(hx+31*2.54+1.5); yu=r(hy-2.54); yt=r(hy+4.7 if hy<50 else hy+5.2)
     return [["1",xl,yu,1.0,0,'F'],["2",xl,hy,1.0,0,'F'],["63",xr,yu,1.0,0,'F'],["64",xr,hy,1.0,0,'F'],
-            ["HEADER ON THE BACK",r(hx+16.0),yt,1.0,0,'F'],["HEADER HERE",r(hx+56.0),yt,1.0,0,'B'],["NOTCH TO TOP",r(hx+41.2),yt,1.0,0,'B']]
+            ["HEADER HERE",r(hx+56.0),yt,1.0,0,'B'],["NOTCH TO TOP",r(hx+41.2),yt,1.0,0,'B']]
 SIGNALS=[s for s in PINS.values() if s not in ('+5V','GND')]

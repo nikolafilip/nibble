@@ -24494,7 +24494,7 @@
 	(gr_text "1"
 		(at 7.73 4.96 0)
 		(layer "F.SilkS")
-		(uuid "8f69ba07-7d8f-469f-8d3b-67aa4138c2ce")
+		(uuid "3492f51a-b4ec-4016-a63b-ce9c0a748b5c")
 		(effects
 			(font
 				(size 1 1)
@@ -24506,7 +24506,7 @@
 	(gr_text "2"
 		(at 7.73 7.5 0)
 		(layer "F.SilkS")
-		(uuid "3efcefe9-65aa-4451-ad01-d34a4132a446")
+		(uuid "22fa120f-276c-410e-915f-0a9a98e1d791")
 		(effects
 			(font
 				(size 1 1)
@@ -24518,19 +24518,7 @@
 	(gr_text "IN"
 		(at 9 87.4 0)
 		(layer "F.SilkS")
-		(uuid "bd4fbbbb-a785-4c9c-9423-47099f287428")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-			(justify left)
-		)
-	)
-	(gr_text "HEADER ON THE BACK"
-		(at 26.63 11.4 0)
-		(layer "F.SilkS")
-		(uuid "17f28d4f-863c-4818-a172-c5b7c8b9277a")
+		(uuid "e46ed91a-849d-4d3d-8b32-f28b74436626")
 		(effects
 			(font
 				(size 1 1)
@@ -24542,7 +24530,7 @@
 	(gr_text "LINK"
 		(at 35 87.4 0)
 		(layer "F.SilkS")
-		(uuid "790121f7-94a7-4ee3-a546-da604056d454")
+		(uuid "0485c50b-a4b9-4aed-9090-8d19aecaeee8")
 		(effects
 			(font
 				(size 1 1)
@@ -24554,7 +24542,7 @@
 	(gr_text "PC3"
 		(at 60.02 66.785 0)
 		(layer "F.SilkS")
-		(uuid "0061ed01-e7e1-4e20-8608-44026696279d")
+		(uuid "0de1027e-0194-4dc1-9a19-2ba6492555a3")
 		(effects
 			(font
 				(size 1 1)
@@ -24566,7 +24554,7 @@
 	(gr_text "RA3"
 		(at 67.7 21.7 0)
 		(layer "F.SilkS")
-		(uuid "e4be329e-22aa-4770-baa0-269ad786091c")
+		(uuid "907ccbfd-aa05-40ac-a57f-522ddcc00825")
 		(effects
 			(font
 				(size 1 1)
@@ -24578,7 +24566,7 @@
 	(gr_text "OUT"
 		(at 75 87.4 0)
 		(layer "F.SilkS")
-		(uuid "7393cfb2-213b-4bcb-8006-296ff30de381")
+		(uuid "3e904a66-2d8b-49a2-b45f-c73f1404b768")
 		(effects
 			(font
 				(size 1 1)
@@ -24590,7 +24578,7 @@
 	(gr_text "63"
 		(at 90.87 4.96 0)
 		(layer "F.SilkS")
-		(uuid "59262b37-f60b-4649-91e2-349bdd9c3b4a")
+		(uuid "5459a1aa-0e02-4ed0-865a-d94ec5a5b3c2")
 		(effects
 			(font
 				(size 1 1)
@@ -24602,7 +24590,7 @@
 	(gr_text "64"
 		(at 90.87 7.5 0)
 		(layer "F.SilkS")
-		(uuid "2e626ad9-d055-4585-879d-6f0c3b38e46b")
+		(uuid "8fbdbb77-4faa-413c-bad9-8d73e897e564")
 		(effects
 			(font
 				(size 1 1)
@@ -24614,7 +24602,7 @@
 	(gr_text "NIBBLE  COUNTER BIT 3"
 		(at 44 87.5 0)
 		(layer "F.SilkS")
-		(uuid "6732763d-3429-444b-9dff-f01983401f60")
+		(uuid "7fc3ae18-488e-4dcd-acd5-dbe812604368")
 		(effects
 			(font
 				(size 1.5 1.5)
@@ -24626,7 +24614,7 @@
 	(gr_text "NOTCH TO TOP"
 		(at 51.83 12.2 0)
 		(layer "B.SilkS")
-		(uuid "076d3ea0-c771-4549-96f6-13a32dfa298f")
+		(uuid "d5b40065-775e-4178-9b8a-952dd7850e83")
 		(effects
 			(font
 				(size 1 1)
@@ -24638,7 +24626,7 @@
 	(gr_text "HEADER HERE"
 		(at 66.63 12.2 0)
 		(layer "B.SilkS")
-		(uuid "681d3df0-8327-4c8c-8f97-bab77f922b59")
+		(uuid "d79e3cf7-0e4e-428a-b899-de15fda85513")
 		(effects
 			(font
 				(size 1 1)

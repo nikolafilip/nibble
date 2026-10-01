@@ -25126,7 +25126,7 @@
 	(gr_text "1"
 		(at 7.73 4.96 0)
 		(layer "F.SilkS")
-		(uuid "0b898bde-1074-4d0f-9f08-d3628ae9b6d2")
+		(uuid "41c91226-64b9-44be-b278-9d70e3a2f9e1")
 		(effects
 			(font
 				(size 1 1)
@@ -25138,19 +25138,7 @@
 	(gr_text "2"
 		(at 7.73 7.5 0)
 		(layer "F.SilkS")
-		(uuid "6d72fc9a-53d9-4e1d-ae7a-1e8d24218a2f")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-			(justify left)
-		)
-	)
-	(gr_text "HEADER ON THE BACK"
-		(at 26.53 11.4 0)
-		(layer "F.SilkS")
-		(uuid "e05bdaa1-bd22-4bdf-8b94-32feb0c9ea7d")
+		(uuid "fc3dd8e2-f25f-4b98-9a53-df9635981e18")
 		(effects
 			(font
 				(size 1 1)
@@ -25162,7 +25150,7 @@
 	(gr_text "R0"
 		(at 60.02 78.215 0)
 		(layer "F.SilkS")
-		(uuid "70e672d9-3daf-429e-b43b-ad4b7d44cd2d")
+		(uuid "56122f96-04e4-40c8-9f76-46de4216f5d5")
 		(effects
 			(font
 				(size 1 1)
@@ -25174,7 +25162,7 @@
 	(gr_text "OUT"
 		(at 75 87.4 0)
 		(layer "F.SilkS")
-		(uuid "e72cb973-dab9-4eb8-bb6b-dcba18d6f5f4")
+		(uuid "c4c00a76-2ce4-40db-a357-88d6b6c85eb0")
 		(effects
 			(font
 				(size 1 1)
@@ -25186,7 +25174,7 @@
 	(gr_text "63"
 		(at 90.87 4.96 0)
 		(layer "F.SilkS")
-		(uuid "56762f6c-ba87-4f32-b6c2-8cff6cd7422c")
+		(uuid "cfe99c20-2031-4f13-a298-d2b60644c13d")
 		(effects
 			(font
 				(size 1 1)
@@ -25198,7 +25186,7 @@
 	(gr_text "64"
 		(at 90.87 7.5 0)
 		(layer "F.SilkS")
-		(uuid "ec99060d-a49f-4f5f-aeaf-312d1d7a3d82")
+		(uuid "3c977e4f-da15-456f-a075-ea26a63d86eb")
 		(effects
 			(font
 				(size 1 1)
@@ -25210,7 +25198,7 @@
 	(gr_text "NIBBLE  ALU BIT 0"
 		(at 29 98.2 0)
 		(layer "F.SilkS")
-		(uuid "2c3bb88d-826d-4051-902d-9c541a31580e")
+		(uuid "03782378-f967-4213-a2e9-05e29eea42d3")
 		(effects
 			(font
 				(size 1.5 1.5)
@@ -25222,7 +25210,7 @@
 	(gr_text "NOTCH TO TOP"
 		(at 51.83 12.7 0)
 		(layer "B.SilkS")
-		(uuid "b0154c76-08f2-4aa8-b1ae-ab118eb2797b")
+		(uuid "07cd4dad-f1e6-4574-b036-c08141822723")
 		(effects
 			(font
 				(size 1 1)
@@ -25234,7 +25222,7 @@
 	(gr_text "HEADER HERE"
 		(at 66.63 12.2 0)
 		(layer "B.SilkS")
-		(uuid "7cc135f1-fbb0-474a-b018-9baf61931539")
+		(uuid "377405b6-e76c-4413-bcf8-7d4ec702d084")
 		(effects
 			(font
 				(size 1 1)

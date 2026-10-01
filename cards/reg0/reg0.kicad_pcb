@@ -35273,7 +35273,7 @@
 	(gr_text "1"
 		(at 7.73 4.96 0)
 		(layer "F.SilkS")
-		(uuid "7b37fcb4-f2ae-441d-897b-705042c50e16")
+		(uuid "20ae840b-ce6c-4bf5-9688-8bde86c81999")
 		(effects
 			(font
 				(size 1 1)
@@ -35285,19 +35285,7 @@
 	(gr_text "2"
 		(at 7.73 7.5 0)
 		(layer "F.SilkS")
-		(uuid "23a840cc-572d-46e7-83a7-caedf3725443")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-			(justify left)
-		)
-	)
-	(gr_text "HEADER ON THE BACK"
-		(at 26.63 10.4 0)
-		(layer "F.SilkS")
-		(uuid "94f3c0db-9577-4055-a6b1-6bbcbc7bc295")
+		(uuid "6ab6491a-bc0b-4ee6-9243-ac9e4f9f9c42")
 		(effects
 			(font
 				(size 1 1)
@@ -35309,7 +35297,7 @@
 	(gr_text "OUT0"
 		(at 75.38 80.12 0)
 		(layer "F.SilkS")
-		(uuid "01ac0fb6-449f-44e4-96a3-2ee5d04aa6e8")
+		(uuid "0ad8bec6-472a-4736-81f5-d2c9cb2a869f")
 		(effects
 			(font
 				(size 1 1)
@@ -35321,7 +35309,7 @@
 	(gr_text "A0"
 		(at 83.06 21.7 0)
 		(layer "F.SilkS")
-		(uuid "d2629335-19ad-4665-ab3d-70ff3d53354d")
+		(uuid "0ea68f89-35f1-4967-8dee-da398d31bdbb")
 		(effects
 			(font
 				(size 1 1)
@@ -35333,7 +35321,7 @@
 	(gr_text "B0"
 		(at 83.06 36.94 0)
 		(layer "F.SilkS")
-		(uuid "9a236f1a-af54-4136-85d9-f4eeb272d6f9")
+		(uuid "3ee7dc03-a344-4ec2-b20c-65ba204a8d26")
 		(effects
 			(font
 				(size 1 1)
@@ -35345,7 +35333,7 @@
 	(gr_text "63"
 		(at 90.87 4.96 0)
 		(layer "F.SilkS")
-		(uuid "3045e516-da7c-4798-9b73-ec4726dadb37")
+		(uuid "c74da647-be94-4a53-94f8-e0137ac808a2")
 		(effects
 			(font
 				(size 1 1)
@@ -35357,7 +35345,7 @@
 	(gr_text "64"
 		(at 90.87 7.5 0)
 		(layer "F.SilkS")
-		(uuid "ecb2733e-89e9-4246-97fd-7ec5ae4731da")
+		(uuid "a1dc4475-3d43-4d10-a2d9-d8492b130209")
 		(effects
 			(font
 				(size 1 1)
@@ -35369,7 +35357,7 @@
 	(gr_text "NIBBLE  REGISTER BIT 0"
 		(at 29 98.2 0)
 		(layer "F.SilkS")
-		(uuid "0be5dee3-5778-471b-8713-8ddd073ef1bd")
+		(uuid "d0af8bae-a0ad-432b-bbed-722b4f01b930")
 		(effects
 			(font
 				(size 1.5 1.5)
@@ -35381,7 +35369,7 @@
 	(gr_text "NOTCH TO TOP"
 		(at 51.83 12.2 0)
 		(layer "B.SilkS")
-		(uuid "6fbbe643-d730-42fb-8dae-0e52c4b1ce90")
+		(uuid "ac5f8ee5-226d-46a2-8e5f-b856bd3eca96")
 		(effects
 			(font
 				(size 1 1)
@@ -35393,7 +35381,7 @@
 	(gr_text "HEADER HERE"
 		(at 66.63 12.2 0)
 		(layer "B.SilkS")
-		(uuid "b6bd2c1e-350b-4800-a592-206f8b8e299e")
+		(uuid "20e8e519-d829-4a06-8d28-03937221c0df")
 		(effects
 			(font
 				(size 1 1)

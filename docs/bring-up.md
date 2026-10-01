@@ -42,8 +42,8 @@ square pad), transistors last with the strap on.
 
 **The 64-pin bus header goes on the back of the board** (D059), with its
 notch toward the top edge (on the hub both headers, the lower one too): the
-front says `HEADER ON THE BACK`, the back has the header's outline with
-`HEADER HERE` and `NOTCH TO TOP`. Its pins are soldered on the front. The link
+back has the header's outline with `HEADER HERE` and `NOTCH TO TOP`, the
+front only the pin numbers. Its pins are soldered on the front. The link
 headers (2x3, 2x6) and the jumpers stay on the front. A header on the wrong
 face puts every signal on the wrong conductor of the ribbon. Before
 the transistors go in, power the card and check that no pull-up is

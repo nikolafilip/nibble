@@ -13,7 +13,7 @@ piece of fibreglass that is built. The machine is 26 designs and 52 boards.
 
 | | State |
 |---|---|
-| Coupon, register bit 0, hub (the pilot) | Ready. `ORDER GATE: all pass` on all 26 boards at commit `1328073` (2026-10-01): the headers on the back, the hub with its sockets, its crowbar (D061, D063) and the empty C-RST spot, the logo on the front silk. Every command of section 6 ended as written |
+| Coupon, register bit 0, hub (the pilot) | Ready. `ORDER GATE: all pass` on all 26 boards at commit `17286cc` (2026-10-01): the headers on the back, the hub with its sockets, its crowbar (D061, D063) and the empty C-RST spot, the logo on the front silk. Every command of section 6 ended as written |
 | Everything else | After the pilot is built and measured (D055) |
 | Cables, frame | After `docs/mounting.md` is redrawn for the ribbon behind the cards (D059); `docs/audit.md` section 5 has the open points |
 
@@ -23,7 +23,7 @@ are paid for. The coupon has every kind of cell with a test loop on it;
 the register card is one full logic card; the hub is the power entry and
 the first ribbon.
 
-The three files to upload, as committed at `1328073` (the zip in each
+The three files to upload, as committed at `17286cc` (the zip in each
 design's `fab/` folder; the md5 is of that file):
 
 | Zip | md5 |

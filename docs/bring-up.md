@@ -130,7 +130,7 @@ limit at 1.5 A the supply cannot lift the rail above 7.5 V and the crowbar
 may not fire at all: that is the limit doing the same job. Keep the limit
 at 1.5 A; with it at 3 A or more a fired SCR overheats unless it has a
 clip-on heatsink. Crimp the first ribbon: a short piece with three sockets for the
-bench, then the long ones for the column.
+bench, then the two long ones for the panel (`mounting.md`: 3.7 m each).
 
 Every ribbon, before it sees power: with nothing plugged into it but the
 hub, beep each socket's pin 1 to the hub's pin 1 and its pin 64 to the

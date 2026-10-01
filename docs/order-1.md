@@ -15,7 +15,7 @@ piece of fibreglass that is built. The machine is 26 designs and 52 boards.
 |---|---|
 | Coupon, register bit 0, hub (the pilot) | Ready. `ORDER GATE: all pass` on all 26 boards at commit `3d7befc` (2026-10-01): the headers on the back, the hub with its sockets, its crowbar (D061, D063) and the empty C-RST spot, the front silk with the pin numbers only (the logo is on the sequencer alone). Every command of section 6 ended as written |
 | Everything else | After the pilot is built and measured (D055) |
-| Cables, frame | After `docs/mounting.md` is redrawn for the ribbon behind the cards (D059); `docs/audit.md` section 5 has the open points |
+| Cables, frame | Drawn (`docs/mounting.md`, D065, 2026-10-01). Bought after the pilot's standoff measurement and the 800 pF run |
 
 The pilot (D055) is the coupon, register bit 0 and the hub, five of each:
 the fab, the parts and the hands are tried on three designs before thirty
@@ -191,12 +191,13 @@ Counted on the boards:
 | IDC socket 2x32 (ZHOURI FC-2.54-64P, LCSC C49261185, or any) | 53 | 60 | one for every bus header: 52 boards, the hub has two. A socket is crimped once |
 | IDC socket 2x3 | 20 | 24 | the ALU's and the counter's chains |
 | IDC socket 2x6 | 18 | 22 | the sequencer's operand link, the memory's address link |
-| Ribbon, 64-way, 1.27 mm | | | the length follows from the route behind the cards, which is not drawn yet |
-| Ribbon, 6-way and 12-way | | | offcuts of the 64-way, split along a groove |
+| Ribbon, 64-way, 1.27 mm | 7.4 m | 10 m | the two bus ribbons, 3.74 and 3.65 m with slack (`docs/mounting.md`); the 6- and 12-way pieces come off the rest |
+| Ribbon, 6-way and 12-way | 2.2 m, 2.0 m | | torn off the 64-way along a groove: ten 6-way carry links (80 or 230 mm), two 12-way chains of 9 sockets (about 1 m each) |
 
-The frame's parts are in `docs/mounting.md`. They are bought after the
-ribbon's route is drawn: the space between card and rail is where the
-ribbon now runs, and the length of the standoffs depends on it.
+The frame's parts are in `docs/mounting.md` (two-sided panel, D065).
+They are bought after the pilot's hub has been measured with a socket on
+its header (the standoff length) and the machine deck has been run at
+800 pF per bus line (the 7.4 m of ribbon may put that much on a line).
 
 ## 6. Before pressing order
 

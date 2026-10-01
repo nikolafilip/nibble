@@ -38,7 +38,7 @@ The commit trailers say which is which.
 4. `docs/gate-cell.md` — the one logic cell everything is made of.
 5. `docs/plan.md` — the gates every board passes before copper exists, and the whole-machine simulation.
 6. `docs/cards.md` — the machine as 100 x 100 mm cards on one crimped ribbon (2026-09-10 evening), and the order of work from here.
-7. `docs/mounting.md` — the column it stands in.
+7. `docs/mounting.md` — the panel it stands on.
 8. `docs/DECISIONS.md` — why things are the way they are, in order.
 
 ## Status

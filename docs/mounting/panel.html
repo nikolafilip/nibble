@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nibble Panel</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f3f1ec; --panel:#ffffff; --ink:#1f2320; --muted:#6b706a; --line:#d9d5cc;
+  --pcb:#1d5c3a; --pcb-edge:#12402a; --led:#ff3b2f; --alu:#c9ccd1; --alu-dark:#8d9298; --accent:#b5432a;
+  --grid:#e6e2d9; --ribbon:#8a8f96; --strip:#b9a66b;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181a; --panel:#1d2124; --ink:#e8e6e0; --muted:#9a9f9a; --line:#33393c;
+    --pcb:#2a7a4e; --pcb-edge:#1a4d31; --led:#ff4a3d; --alu:#a9adb3; --alu-dark:#6c7177; --accent:#e0664a; --grid:#262b2e; --ribbon:#5f656c; --strip:#9a8a55;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181a; --panel:#1d2124; --ink:#e8e6e0; --muted:#9a9f9a; --line:#33393c;
+  --pcb:#2a7a4e; --pcb-edge:#1a4d31; --led:#ff4a3d; --alu:#a9adb3; --alu-dark:#6c7177; --accent:#e0664a; --grid:#262b2e; --ribbon:#5f656c; --strip:#9a8a55;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.5;margin:0}
+main{max-width:1080px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:34px;font-weight:600;letter-spacing:-0.01em;margin:0 0 4px;text-wrap:balance}
+h2{font-size:20px;font-weight:600;margin:40px 0 8px}
+p{max-width:66ch;margin:8px 0}
+.lede{color:var(--muted);max-width:70ch;font-size:16px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0 6px}
+.kv div{border-top:2px solid var(--ink);padding-top:6px}
+.kv b{display:block;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.kv span{color:var(--muted);font-size:13px}
+.viewer{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:14px}
+.viewer canvas{display:block;width:100%;height:520px;cursor:grab}
+.viewer canvas:active{cursor:grabbing}
+.controls{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.controls label{display:flex;gap:8px;align-items:center;color:var(--ink)}
+.controls input[type=range]{width:140px}
+.controls button{font:inherit;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:4px 10px;cursor:pointer}
+.controls button:focus-visible,.controls input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{position:absolute;left:14px;top:12px;font-size:12px;color:var(--muted);background:color-mix(in srgb,var(--panel) 80%,transparent);padding:3px 8px;border-radius:4px;pointer-events:none}
+.faces{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:14px}
+.face{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px}
+.face h3{margin:0 0 6px;font-size:14px;font-weight:600}
+.face svg{width:100%;height:auto;display:block}
+.face .cap{font-size:12px;color:var(--muted);margin-top:6px}
+svg text{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:13px;color:var(--muted);letter-spacing:0.02em;text-transform:uppercase}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+ol{padding-left:22px;max-width:70ch}
+li{margin:6px 0}
+.note{border-left:3px solid var(--accent);padding:6px 14px;color:var(--muted);max-width:70ch;margin:14px 0}
+.section-detail{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media (max-width:720px){.section-detail{grid-template-columns:1fr}}
+@media (prefers-reduced-motion: reduce){.spin{display:none}}
+</style>
+
+<main>
+<h1>Nibble Panel</h1>
+<p class="lede">The machine as 100 x 100 mm cards on the two faces of one flat panel of aluminium extrusion standing on a table: five columns of cards a face, LEDs out, the sequencer board bottom left of the front with the counter cards above it, the hub bottom right with the back's first column behind it. Drawn from the card outlines in the repo (<code>panel.js</code> holds the plan; <code>node panel.js</code> prints its numbers). Drag the model to walk round it; slide the program-card count to see the back fill.</p>
+
+<div class="kv">
+  <div><b id="kv-size">58 × 82 cm</b><span>wide and tall, on a table; 30 cm of feet front to back</span></div>
+  <div><b id="kv-depth">about 13 cm</b><span>deep with both faces' cards on</span></div>
+  <div><b id="kv-slots">61 slots</b><span>front 26 beside the sequencer, back 35; 50 cards in them, 11 free</span></div>
+  <div><b id="kv-ribbon">7.7 m</b><span>of 64-way ribbon in the two bus ribbons, 52 sockets</span></div>
+</div>
+
+<div class="viewer">
+  <canvas id="c3d" aria-label="3D model of the panel with the cards on both faces"></canvas>
+  <div class="hint">drag to rotate · scroll to zoom</div>
+  <div class="controls">
+    <label>Program cards <input id="pages" type="range" min="0" max="26" value="20"> <span id="pagesv" class="mono">20</span></label>
+    <label><input id="ribbons" type="checkbox" checked> ribbons</label>
+    <label><input id="labels" type="checkbox" checked> labels</label>
+    <label class="spin"><input id="spin" type="checkbox" checked> slow turn</label>
+    <button id="reset" type="button">Front view</button>
+    <button id="back" type="button">Back view</button>
+    <span>6 cards is <code>list</code> (24 words), 20 is <code>sort</code>; 26 fills the back. LED counts are the real ones per card, their placement schematic.</span>
+  </div>
+</div>
+
+<h2>The two faces, to scale</h2>
+<p>Both faces are five columns of cards at a 110 mm pitch, 20 mm inside the uprights' outer edges. A card's two holes are mid-height on its sides, so one rail per row carries the whole row; the front has four rows above a band of three where the sequencer (245 × 255, four corner holes 231 mm apart) stands on two rails of its own with the clock, the panel cards and the hub beside it on the same rails. The bus ribbons run behind the cards (grey, seen in the gaps), down one column and up the next; the 12-way chains run over the fronts of the counter columns and the memory column (sand), and the 6-way carry links round the column gaps (thin lines).</p>
+<div class="faces" id="faces"></div>
+
+<h2>How a card mounts</h2>
+<div class="section-detail">
+  <div>
+    <svg id="xs" viewBox="0 0 560 280" role="img" aria-label="Cross-section of a rail, T-nut, standoff and board"></svg>
+    <p class="cap mono" style="font-size:12px;color:var(--muted)">Cross-section through one rail, looking along it: the card hangs on two standoffs, one at each side hole; the bus ribbon passes between card and rail.</p>
+  </div>
+  <div>
+    <ol>
+      <li><b>Frame.</b> Two 800 mm uprights of 2020 extrusion, 580 mm apart outside to outside, each standing on a 300 mm foot of the same extrusion laid flat across the panel (two corner brackets). Nothing is drilled.</li>
+      <li><b>Rails.</b> A 580 mm rail across the uprights' front faces for every row of the front, and across their back faces for every row of the back, at the height of the row's holes, one corner bracket at each end. Fourteen rails. The front's fifth and seventh rails are the sequencer's.</li>
+      <li><b>Cards.</b> An M3 T-nut slides into the rail's front slot at each of the card's two side holes. A 12 mm M3 standoff screws into the T-nut; the card screws onto the standoff. A card moves with two T-nuts. The standoff must clear the socket on the card's header; that is measured on the pilot's hub before the standoffs are bought.</li>
+      <li><b>Hub.</b> Bottom right of the front, a header along its top edge (ribbon A, up the front) and one along its bottom edge (ribbon B, under the panel and up the back), both on its back; its two banana sockets on its front, about 9 cm above the table.</li>
+      <li><b>Ribbons.</b> Every card's 64-way header is on its back along its top edge. The ribbon runs down a column behind the cards, between the standoffs, with a socket crimped on wherever there is a card, and turns at the top or bottom of a column with three folds (<code>docs/mounting.md</code>).</li>
+      <li><b>Power.</b> A bench supply at 5.0 V with its limit at 1.5 A, two banana leads into the hub's sockets. Nothing else powers the machine.</li>
+    </ol>
+  </div>
+</div>
+
+<h2>Rails and ribbons</h2>
+<p>Rail heights are from the table top to the rail's centre (the row's holes). A ribbon's length is its route plus 40 mm for every turn and 300 mm of slack.</p>
+<div class="scroll"><table id="rails"><thead><tr><th>Face</th><th>Row</th><th class="n">Rail height</th><th>Cards, left to right as that face is seen</th></tr></thead><tbody></tbody></table></div>
+<div class="scroll"><table id="ribs"><thead><tr><th>Ribbon</th><th>Route</th><th class="n">Sockets</th><th class="n">Turns</th><th class="n">Length</th></tr></thead><tbody></tbody></table></div>
+<p id="pf"></p>
+
+<h2>Frame parts</h2>
+<div class="scroll"><table id="parts"><thead><tr><th>Part</th><th class="n">Qty</th><th>Note</th></tr></thead><tbody></tbody></table></div>
+<div class="note">The extrusion is the 2020 profile that 3D printers use, so every part is a stock item cut to length. A row without cards needs no rail, and a longer program is more cards on the same ribbon, up the back's last column.</div>
+
+<h2>What it does not do</h2>
+<p>It has a back: the memory and the program are behind what you stand in front of, so it wants a table you can walk round, or it turns on its feet. The switches and buttons of the panel cards are 4 to 26 cm above the table top, seated height. The 12-way chains lie over the fronts of the counter and memory cards, across the transistors where no LED stands: visible wiring, by design.</p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="panel.js"></script>
+<script>
+(function(){
+const P=window.PANEL; const {CARD,PITCH,COLS,SIDE,UP,HEIGHT,FOOT,FOOT_H,WIDTH,STANDOFF,SEQ,SEQ_X,SEQ_Y,HDR_Y,LINK_Y,LINK_IN,LINK_OUT,CHAIN_X,RIBBON_W,FRONT_RAILS,BACK_RAILS,KINDS}=P;
+const TABLE=HEIGHT+FOOT_H;                       // the uprights' top above the table
+const Y=d=>TABLE-d;                              // a plan's y (down from the top) to the model's y (up from the table)
+const ZC=UP/2+UP+STANDOFF;                       // a card's back: behind the upright's half, the rail and the standoff
+const ZR=UP/2+UP+STANDOFF/2;                     // the ribbon, between rail and card
+const XF=(face,x)=>face==='front'?x:WIDTH-x;     // the back's plan is drawn as the back sees it: its x runs the other way in the world
+
+// ---- 3D ----
+let buildDynamic=()=>{}, renderer=null;
+function three(){
+const canvas=document.getElementById('c3d');
+renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();
+const css=getComputedStyle(document.documentElement);
+const col=v=>new THREE.Color(css.getPropertyValue(v).trim());
+scene.background=col('--panel');
+const camera=new THREE.PerspectiveCamera(32,1,10,10000);
+const light=new THREE.DirectionalLight(0xffffff,0.9); light.position.set(600,1200,900); scene.add(light);
+const light2=new THREE.DirectionalLight(0xffffff,0.45); light2.position.set(-800,400,-900); scene.add(light2);
+scene.add(new THREE.AmbientLight(0xffffff,0.35));
+const group=new THREE.Group(); scene.add(group); let dyn=new THREE.Group(); group.add(dyn);
+const matAlu=new THREE.MeshStandardMaterial({color:col('--alu'),metalness:0.6,roughness:0.45});
+const matPcb=new THREE.MeshStandardMaterial({color:col('--pcb'),roughness:0.7});
+const matLed=new THREE.MeshBasicMaterial({color:col('--led')});
+const matRib=new THREE.MeshStandardMaterial({color:col('--ribbon'),roughness:0.9,side:THREE.DoubleSide});
+const matStrip=new THREE.MeshStandardMaterial({color:col('--strip'),roughness:0.9,side:THREE.DoubleSide});
+const matDark=new THREE.MeshStandardMaterial({color:0x2b2f33,roughness:0.9});
+const matTable=new THREE.MeshStandardMaterial({color:0xd8d2c4,roughness:1});
+function box(w,h,d,m){return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);}
+function buildStatic(){
+  for(const x of [UP/2,WIDTH-UP/2]){ const u=box(UP,HEIGHT,UP,matAlu); u.position.set(x,FOOT_H+HEIGHT/2,0); group.add(u);
+    const f=box(UP,FOOT_H,FOOT,matAlu); f.position.set(x,FOOT_H/2,0); group.add(f); }
+  for(const [rails,z] of [[FRONT_RAILS,UP/2+UP/2],[BACK_RAILS,-(UP/2+UP/2)]]) for(const y of rails){ const r=box(WIDTH,UP,UP,matAlu); r.position.set(WIDTH/2,Y(y),z); group.add(r); }
+  const t=box(1400,6,900,matTable); t.position.set(WIDTH/2,-3,0); group.add(t);
+}
+const labelSprites=[];
+function makeLabel(text){
+  const c=document.createElement('canvas'); c.width=512; c.height=96; const g=c.getContext('2d');
+  g.font='500 34px "IBM Plex Mono", monospace'; g.fillStyle='rgba(31,35,32,0.85)';
+  const w=g.measureText(text).width+28; g.fillRect((512-w)/2,20,w,58);
+  g.fillStyle='#fff'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(text,256,49);
+  const t=new THREE.CanvasTexture(c); const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:true})); s.scale.set(130,24,1); return s;
+}
+function ribbonMesh(pts,width,m){
+  // a flat strip along a polyline: one quad per segment, lying in the panel's plane (or flat under it where a segment runs through the panel), the corners overlapping
+  const pos=[]; const push=(a,b,c,d)=>{ for(const v of [a,b,c,a,c,d]) pos.push(v.x,v.y,v.z); };
+  for(let i=1;i<pts.length;i++){ const p0=pts[i-1], p1=pts[i]; const dir=p1.clone().sub(p0); if(dir.length()<1e-6) continue; dir.normalize();
+    const n=Math.abs(dir.z)>0.5?new THREE.Vector3(0,1,0):new THREE.Vector3(0,0,1); const lat=new THREE.Vector3().crossVectors(dir,n).normalize().multiplyScalar(width/2);
+    const ext=dir.clone().multiplyScalar(i===1||i===pts.length-1?0:width/2);         // overlap at the corners so a turn has no notch
+    const a=p0.clone().sub(ext), b=p1.clone().add(ext);
+    push(a.clone().add(lat),b.clone().add(lat),b.clone().sub(lat),a.clone().sub(lat)); }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); g.computeVertexNormals();
+  return new THREE.Mesh(g,m);
+}
+function card3d(face,k,x,y,w,h,leds,name,headers){
+  const s=face==='front'?1:-1; const cx=XF(face,x+w/2), cy=Y(y+h/2);
+  const g=new THREE.Group();
+  const plate=box(w,h,1.6,matPcb); plate.position.set(cx,cy,s*(ZC+0.8)); g.add(plate);
+  for(const hd of headers){ const b=box(84,9,9,matDark); b.position.set(XF(face,hd[0]),Y(hd[1]),s*(ZC-4.5)); g.add(b);
+    const so=box(84,10,8,matDark); so.position.set(XF(face,hd[0]),Y(hd[1]),s*(ZC-10)); so.name='ribbon'; g.add(so); }
+  const per=8; for(let i=0;i<leds;i++){ const rr=Math.floor(i/per), c=i%per, n=Math.min(per,leds-rr*per);
+    const l=new THREE.Mesh(new THREE.SphereGeometry(1.8,8,6),matLed); l.position.set(XF(face,x+w/2-(n-1)*5.5+c*11),Y(y+24+rr*15),s*(ZC+3.5)); g.add(l); }
+  const lab=makeLabel(name); lab.position.set(cx,Y(y+h-10),s*(ZC+20)); lab.name='label'; g.add(lab); labelSprites.push(lab);
+  return g;
+}
+buildDynamic=function(nprog){
+  group.remove(dyn); dyn=new THREE.Group(); group.add(dyn); labelSprites.length=0;
+  const plan=P.plan(nprog);
+  for(const face of ['front','back']) for(const k of P.cards(face,plan)){
+    const kd=KINDS[P.kind(k.name)]; const hdrs=[[k.x+CARD/2,k.y+HDR_Y]]; if(k.name==='hub') hdrs.push([k.x+CARD/2,k.y+93]);
+    dyn.add(card3d(face,kd,k.x,k.y,CARD,CARD,kd[1],kd[0]+(/\d$/.test(k.name)?' '+k.name.match(/\d+$/)[0]:''),hdrs));
+    if(k.name==='hub') for(const [dx,c] of [[12,0xd03030],[31,0x202020]]){ const b=new THREE.Mesh(new THREE.CylinderGeometry(4,4,19,12),new THREE.MeshStandardMaterial({color:c})); b.rotation.x=Math.PI/2; b.position.set(k.x+dx,Y(k.y+50),ZC+11); dyn.add(b); }
+  }
+  dyn.add(card3d('front',KINDS.seq,SEQ_X,SEQ_Y,SEQ.w,SEQ.h,KINDS.seq[1],'sequencer',[[SEQ_X+50,SEQ_Y+HDR_Y]]));
+  for(let r=0;r<12;r++)for(let c=0;c<12;c++){ const d=box(2,4,2,matDark); d.position.set(SEQ_X+110+c*9,Y(SEQ_Y+70+r*11),ZC+2.5); dyn.add(d); }
+  // the bus ribbons
+  for(const r of P.ribbons(plan)){
+    const pts=[];
+    if(r.name==='A') for(const [x,y] of r.pts) pts.push(new THREE.Vector3(x,Y(y),ZR));
+    else { const [h,u,...rest]=r.pts; pts.push(new THREE.Vector3(XF('back',h[0]),Y(h[1]),ZR)); pts.push(new THREE.Vector3(XF('back',u[0]),Y(u[1]),ZR)); pts.push(new THREE.Vector3(XF('back',u[0]),Y(u[1]),-ZR));
+      for(const [x,y] of rest) pts.push(new THREE.Vector3(XF('back',x),Y(y),-ZR)); }
+    const m=ribbonMesh(pts,RIBBON_W,matRib); m.name='ribbon'; dyn.add(m);
+  }
+  // the 12-way chains over the fronts, and the 6-way links round the gaps
+  const F=P.cards('front',plan), B=P.cards('back',plan); const at=(L,n)=>L.find(k=>k.name===n);
+  const strip=(face,pts)=>{ const s=face==='front'?1:-1; const m=ribbonMesh(pts.map(([x,y])=>new THREE.Vector3(XF(face,x),Y(y),s*(ZC+6))),15.2,matStrip); m.name='ribbon'; dyn.add(m); };
+  const c2=P.col_x(2)+CHAIN_X, c3=P.col_x(3)+CHAIN_X;
+  strip('front',[[SEQ_X+SEQ.link_x,SEQ_Y+10],[SEQ_X+SEQ.link_x,SEQ_Y-25],[c2,SEQ_Y-35],[c2,P.card_top('front',1)+4],[c2+PITCH/2,P.card_top('front',1)-4],[c3,P.card_top('front',1)+4],[c3,P.card_top('front',4)+LINK_Y]]);
+  const b1=P.col_x(1)+CHAIN_X, b2=P.col_x(2)+CHAIN_X;
+  strip('back',[[b1,P.card_top('back',1)+LINK_Y],[b1,P.card_top('back',7)+LINK_Y+12],[b1+PITCH/2,P.card_top('back',7)+LINK_Y+25],[b2,P.card_top('back',7)+LINK_Y+12],[b2,P.card_top('back',6)+LINK_Y]]);
+  const six=(a,b)=>{ const A=at(F,a), Bc=at(F,b); const o=[A.x+LINK_OUT,A.y+LINK_Y], i=[Bc.x+LINK_IN,Bc.y+LINK_Y]; let pts;
+    if(A.row===Bc.row) pts=[o,[o[0],o[1]+12],[i[0],i[1]+12],i];
+    else { const gx=A.x+CARD+5; pts=[o,[o[0],o[1]+7],[gx,o[1]+7],[gx,i[1]+7],[i[0],i[1]+7],i]; }
+    const m=ribbonMesh(pts.map(([x,y])=>new THREE.Vector3(x,Y(y),ZC+5)),7.6,matStrip); m.name='ribbon'; dyn.add(m); };
+  for(const l of P.links(plan).six) six(l.from,l.to);
+  applyToggles();
+};
+function applyToggles(){
+  const rib=document.getElementById('ribbons').checked, lab=document.getElementById('labels').checked;
+  dyn.traverse(o=>{ if(o.name==='ribbon') o.visible=rib; if(o.name==='label') o.visible=lab; });
+}
+buildStatic(); buildDynamic(20);
+
+let theta=0.45, phi=1.25, dist=1900; const target=new THREE.Vector3(WIDTH/2,TABLE/2,0);
+function place(){ camera.position.set(target.x+dist*Math.sin(phi)*Math.sin(theta),target.y+dist*Math.cos(phi),target.z+dist*Math.sin(phi)*Math.cos(theta)); camera.lookAt(target); }
+let drag=null;
+canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY}; canvas.setPointerCapture(e.pointerId); document.getElementById('spin').checked=false;});
+canvas.addEventListener('pointermove',e=>{ if(!drag) return; theta-=(e.clientX-drag.x)*0.006; phi=Math.min(1.55,Math.max(0.3,phi-(e.clientY-drag.y)*0.005)); drag={x:e.clientX,y:e.clientY}; });
+canvas.addEventListener('pointerup',()=>drag=null);
+canvas.addEventListener('wheel',e=>{ e.preventDefault(); dist=Math.min(5000,Math.max(700,dist*(1+e.deltaY*0.001))); },{passive:false});
+document.getElementById('reset').addEventListener('click',()=>{theta=0.45;phi=1.25;dist=1900;document.getElementById('spin').checked=false;});
+document.getElementById('back').addEventListener('click',()=>{theta=Math.PI-0.45;phi=1.25;dist=1900;document.getElementById('spin').checked=false;});
+document.getElementById('ribbons').addEventListener('change',applyToggles);
+document.getElementById('labels').addEventListener('change',applyToggles);
+if(matchMedia('(prefers-reduced-motion: reduce)').matches) document.getElementById('spin').checked=false;
+function resize(){ const w=canvas.clientWidth, h=canvas.clientHeight, pr=renderer.getPixelRatio(); if(canvas.width!==Math.floor(w*pr)||canvas.height!==Math.floor(h*pr)){ renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); } }
+function frame(){ resize(); if(document.getElementById('spin').checked&&!drag) theta+=0.0025; place(); renderer.render(scene,camera); requestAnimationFrame(frame); }
+frame();
+}
+try{ three(); }catch(e){ document.querySelector('.hint').textContent='no WebGL here: the elevations below are the same plan'; console.warn(e); }
+
+// ---- elevations (SVG), the tables ----
+const S=0.5;
+function renderFaces(nprog){
+  const plan=P.plan(nprog); const host=document.getElementById('faces'); host.innerHTML='';
+  const H=HEIGHT, W=WIDTH; const px=v=>(v*S).toFixed(1);
+  for(const [face,title] of [['front','Front: ALU, counter, registers; the sequencer, clock, panel and hub below'],['back','Back: memory down the first column, the program']]){
+    const rails=face==='front'?FRONT_RAILS:BACK_RAILS; const cardsOn=P.cards(face,plan);
+    let s=`<svg viewBox="0 0 ${W*S+10} ${H*S+24}" role="img" aria-label="${title}">`;
+    s+=`<rect x="5" y="4" width="${px(W)}" height="${px(H)}" fill="var(--grid)"/>`;
+    for(const x of [0,W-UP]) s+=`<rect x="${5+x*S}" y="4" width="${px(UP)}" height="${px(H)}" fill="var(--alu-dark)"/>`;
+    for(const y of rails) s+=`<rect x="5" y="${4+(y-UP/2)*S}" width="${px(W)}" height="${px(UP)}" fill="var(--alu)"/>`;
+    // the bus ribbon behind the cards, seen in the gaps
+    for(const r of P.ribbons(plan)) if((r.name==='A')===(face==='front')){ const pts=r.name==='A'?r.pts:r.pts.slice(1); s+=`<polyline points="${pts.map(([x,y])=>`${5+x*S},${4+Math.max(0,y)*S}`).join(' ')}" fill="none" stroke="var(--ribbon)" stroke-width="${px(RIBBON_W)}" stroke-opacity="0.55" stroke-linejoin="round"/>`; }
+    const card=(x,y,w,h,name,leds,hdrs)=>{ let t=`<rect x="${5+x*S}" y="${4+y*S}" width="${px(w)}" height="${px(h)}" fill="var(--pcb)" stroke="var(--pcb-edge)"/>`;
+      for(const hy of hdrs) t+=`<rect x="${5+(x+w/2-42)*S}" y="${4+(y+hy-4.5)*S}" width="${px(84)}" height="${px(9)}" fill="#2b2f33" fill-opacity="0.5"/>`;
+      t+=`<text x="${5+(x+3)*S}" y="${4+(y+h-4)*S}" font-size="6.5" fill="#fff">${name}</text>`;
+      for(let i=0;i<leds;i++){ const rr=Math.floor(i/8), c=i%8; t+=`<circle cx="${5+(x+16+c*11)*S}" cy="${4+(y+24+rr*15)*S}" r="1.1" fill="var(--led)"/>`; } return t; };
+    for(const k of cardsOn){ const kd=KINDS[P.kind(k.name)]; s+=card(k.x,k.y,CARD,CARD,k.name,kd[1],k.name==='hub'?[HDR_Y,93]:[HDR_Y]); }
+    if(face==='front'){ s+=card(SEQ_X,SEQ_Y,SEQ.w,SEQ.h,'sequencer 245 x 255',KINDS.seq[1],[]); s+=`<rect x="${5+(SEQ_X+8)*S}" y="${4+(SEQ_Y+3)*S}" width="${px(84)}" height="${px(9)}" fill="#2b2f33" fill-opacity="0.5"/>`;
+      for(let r=0;r<12;r++)for(let c=0;c<12;c++) s+=`<rect x="${5+(SEQ_X+110+c*9)*S-0.6}" y="${4+(SEQ_Y+70+r*11)*S-0.6}" width="1.2" height="1.6" fill="#2b2f33"/>`; }
+    // the chains and links
+    const line=(pts,w,op)=>`<polyline points="${pts.map(([x,y])=>`${5+x*S},${4+y*S}`).join(' ')}" fill="none" stroke="var(--strip)" stroke-width="${w}" stroke-opacity="${op}" stroke-linejoin="round"/>`;
+    if(face==='front'){ const c2=P.col_x(2)+CHAIN_X, c3=P.col_x(3)+CHAIN_X;
+      s+=line([[SEQ_X+SEQ.link_x,SEQ_Y+10],[SEQ_X+SEQ.link_x,SEQ_Y-25],[c2,SEQ_Y-35],[c2,P.card_top('front',1)+4],[c2+PITCH/2,P.card_top('front',1)-4],[c3,P.card_top('front',1)+4],[c3,P.card_top('front',4)+LINK_Y]],px(15.2),0.8);
+      for(const l of P.links(plan).six){ const A=cardsOn.find(k=>k.name===l.from), Bc=cardsOn.find(k=>k.name===l.to); const o=[A.x+LINK_OUT,A.y+LINK_Y], i=[Bc.x+LINK_IN,Bc.y+LINK_Y];
+        s+=line(A.row===Bc.row?[o,[o[0],o[1]+12],[i[0],i[1]+12],i]:[o,[o[0],o[1]+7],[A.x+CARD+5,o[1]+7],[A.x+CARD+5,i[1]+7],[i[0],i[1]+7],i],1.6,0.9); } }
+    else { const b1=P.col_x(1)+CHAIN_X, b2=P.col_x(2)+CHAIN_X;
+      s+=line([[b1,P.card_top('back',1)+LINK_Y],[b1,P.card_top('back',7)+LINK_Y+12],[b1+PITCH/2,P.card_top('back',7)+LINK_Y+25],[b2,P.card_top('back',7)+LINK_Y+12],[b2,P.card_top('back',6)+LINK_Y]],px(15.2),0.8); }
+    s+=`<text x="5" y="${H*S+20}" font-size="8" fill="var(--muted)">0</text><text x="${5+W*S}" y="${H*S+20}" font-size="8" fill="var(--muted)" text-anchor="end">${W} mm</text>`;
+    s+='</svg>';
+    host.insertAdjacentHTML('beforeend',`<div class="face"><h3>${title}</h3>${s}<div class="cap">${cardsOn.length} cards${face==='front'?' and the sequencer':''}; ${(face==='front'?26:35)-cardsOn.length} slots free</div></div>`);
+  }
+  const tb=document.querySelector('#rails tbody'); tb.innerHTML='';
+  for(const face of ['front','back']){ const rails=face==='front'?FRONT_RAILS:BACK_RAILS;
+    rails.forEach((y,i)=>{ const row=plan[face][i+1]||{}; const names=[1,2,3,4,5].map(c=>row[c]||'—').join(', ');
+      const extra=face==='front'&&(i===4||i===6)?' (the sequencer\'s)':''; tb.insertAdjacentHTML('beforeend',`<tr><td>${i===0?face:''}</td><td>${i+1}${extra}</td><td class="n">${TABLE-y} mm</td><td>${names}${face==='front'&&i>=4?'; the sequencer over columns 1 to 3':''}</td></tr>`); }); }
+  const rb=document.querySelector('#ribs tbody'); rb.innerHTML=''; let total=0;
+  const how={A:'from the hub\'s top header up column 5, down 4, up 3, down 2, a sideways step over the sequencer, down through its socket and back up column 1',B:'from the hub\'s bottom header under the panel, up the back\'s column 1 (behind the hub), down 2, up 3, down 4, up 5 as far as the program goes'};
+  for(const r of P.ribbons(plan)){ total+=r.mm; rb.insertAdjacentHTML('beforeend',`<tr><td>${r.name}</td><td>${how[r.name]}</td><td class="n">${r.sockets}</td><td class="n">${r.hops}</td><td class="n">${(r.mm/1000).toFixed(2)} m</td></tr>`); }
+  const L=P.links(plan);
+  for(const t of L.twelve) rb.insertAdjacentHTML('beforeend',`<tr><td>12-way</td><td>${t.what}, over the fronts</td><td class="n">${t.sockets}</td><td class="n">1</td><td class="n">${(t.mm/1000).toFixed(2)} m</td></tr>`);
+  rb.insertAdjacentHTML('beforeend',`<tr><td>6-way</td><td>${L.six.length} carry links, ${L.six.filter(l=>l.how[0]==='U').length} side by side (80 mm), the rest round a column gap (230 mm)</td><td class="n">${L.six.length*2}</td><td class="n"></td><td class="n">${(L.six.reduce((s,l)=>s+l.mm,0)/1000).toFixed(2)} m</td></tr>`);
+  rb.insertAdjacentHTML('beforeend',`<tr><td colspan="4"><b>64-way ribbon to buy</b>: the two bus ribbons, and the 6- and 12-way pieces torn off a metre of it along a groove</td><td class="n"><b>${Math.ceil(total/1000)+1} m, buy 10</b></td></tr>`);
+  document.getElementById('kv-ribbon').textContent=(total/1000).toFixed(1)+' m';
+  document.getElementById('pf').textContent=`The two bus ribbons are ${(total/1000).toFixed(1)} m end to end. Flat ribbon is about 50 pF per metre between neighbouring conductors, and the bus pinout puts signal beside signal, so a line sees 400 to 800 pF depending on what its neighbours do; the machine deck is proven at 300 and 500 pF per line and a run at 800 pF is on the list before the ribbon is cut (docs/mounting.md).`;
+  const pb=document.querySelector('#parts tbody'); pb.innerHTML='';
+  for(const [p,q,n] of P.parts(plan)) pb.insertAdjacentHTML('beforeend',`<tr><td>${p}</td><td class="n">${q}</td><td>${n}</td></tr>`);
+  document.getElementById('kv-size').textContent=`${Math.round(WIDTH/10)} × ${Math.round(TABLE/10)} cm`;
+  document.getElementById('kv-depth').textContent=`about ${Math.round((2*(ZC+22))/10)} cm`;
+}
+renderFaces(20);
+document.getElementById('pages').addEventListener('input',e=>{ document.getElementById('pagesv').textContent=e.target.value; buildDynamic(+e.target.value); renderFaces(+e.target.value); });
+
+// ---- cross-section ----
+(function(){
+  const s=document.getElementById('xs'); const k=6; const ox=190, oy=250;
+  const rail=`<rect x="${ox}" y="${oy-20*k}" width="${20*k}" height="${20*k}" fill="var(--alu)" stroke="var(--alu-dark)"/>`+
+    `<rect x="${ox+7*k}" y="${oy-20*k}" width="${6*k}" height="${5*k}" fill="var(--panel)" stroke="var(--alu-dark)"/>`+
+    `<rect x="${ox+3*k}" y="${oy-15*k}" width="${14*k}" height="${7*k}" fill="var(--panel)" stroke="var(--alu-dark)"/>`;
+  const tnut=`<rect x="${ox+4*k}" y="${oy-14*k}" width="${12*k}" height="${5*k}" fill="var(--alu-dark)"/>`+`<rect x="${ox+8.5*k}" y="${oy-20*k}" width="${3*k}" height="${6*k}" fill="var(--alu-dark)"/>`;
+  const standoff=`<rect x="${ox+7.5*k}" y="${oy-32*k}" width="${5*k}" height="${12*k}" fill="#b08a3e"/>`;
+  const ribbon=`<rect x="${ox-30*k}" y="${oy-27*k}" width="${34*k}" height="${1*k}" fill="var(--ribbon)"/>`;
+  const board=`<rect x="${ox-30*k}" y="${oy-33.6*k}" width="${70*k}" height="${1.6*k}" fill="var(--pcb)"/>`;
+  const screw=`<rect x="${ox+9*k}" y="${oy-36*k}" width="${2*k}" height="${3*k}" fill="#333"/><rect x="${ox+7.5*k}" y="${oy-37.5*k}" width="${5*k}" height="${1.5*k}" fill="#333"/>`;
+  const led=`<rect x="${ox-14*k}" y="${oy-38*k}" width="${3*k}" height="${4.4*k}" fill="var(--led)"/><rect x="${ox+22*k}" y="${oy-38*k}" width="${3*k}" height="${4.4*k}" fill="var(--led)"/>`;
+  const fet=`<rect x="${ox-24*k}" y="${oy-39*k}" width="${4.5*k}" height="${5.4*k}" fill="#222"/>`;
+  const lab=(x,y,t,a)=>`<text x="${x}" y="${y}" font-size="11" fill="var(--ink)" text-anchor="${a||'start'}">${t}</text>`;
+  const line=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--muted)" stroke-width="1"/>`;
+  s.innerHTML=rail+tnut+standoff+ribbon+board+screw+led+fet+
+    line(ox+20*k+6,oy-10*k,ox+20*k+40,oy-10*k)+lab(ox+20*k+44,oy-10*k+4,'2020 rail, 20 × 20 mm')+
+    line(ox+16*k,oy-11*k,ox+20*k+40,oy-1*k)+lab(ox+20*k+44,oy-1*k+4,'M3 T-nut in the slot')+
+    line(ox+12.5*k,oy-26*k,ox+20*k+40,oy-26*k)+lab(ox+20*k+44,oy-26*k+4,'M3 standoff, 12 mm or more')+
+    line(ox+4*k,oy-26.5*k,ox+20*k+40,oy-33*k)+lab(ox+20*k+44,oy-33*k+4,'the bus ribbon, behind the card')+
+    line(ox+40*k,oy-32.8*k,ox+20*k+40,oy-40*k)+lab(ox+20*k+44,oy-40*k+4,'board, 1.6 mm, LEDs out')+
+    lab(ox-30*k,12,'↑ outside: the face you look at')+lab(ox-30*k,oy+18,'↓ the uprights, then the other face');
+})();
+})();
+</script>
+</html>

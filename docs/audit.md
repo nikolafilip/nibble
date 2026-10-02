@@ -87,7 +87,7 @@ ordered first. The counts are the whole machine's: 52 boards, 7129 parts.
 | Pin header 1x3 (144), 1x2 (2), 1x6 (1) | 1.0 mm | 0.64 mm square pins, a jumper cap on each 1x3 and on the clock's 1x2 | none |
 | DIP switch 8-way (84), 4-way (1), 1-way (1) | 0.8 mm, 7.62 mm rows | the common slide type, 9.8 mm wide | none |
 | Push button (2) | 1.1 mm, 6.5 x 4.5 mm | 6 mm tactile switch; fits two ways round, both right | none |
-| Potentiometer (1) | 1.0 mm pins 2.5 mm apart, two slotted lug holes 9.6 mm apart, 7.5 mm from the pins | Alpha RD901F-40, 9 mm, 1 M linear | Another maker's 9 mm pot only after its drawing has been laid on these numbers |
+| Potentiometer (1) | 1.0 mm pins 2.5 mm apart, two 2.2 mm leg holes 8.8 mm apart, 7.0 mm from the pins | Bourns PTV09A-4, 9 mm, 1 M linear (`lib/nibble.pretty`, from the maker's layout) | Another maker's 9 mm pot only after its drawing has been laid on these numbers; the Alpha RD901F-40 the card was first drawn for has slotted lugs 9.6 mm apart and does not fit |
 | Polyfuse (1) | 1.0 mm, 10.2 mm with a 1.9 mm offset | Bel 0ZRE0150FF | The offset is this family's kinked leads |
 | Test loop (21) | 1.0 mm | the miniature size | The larger sizes want 1.6 mm |
 | Banana socket (2) | four 1.6 mm holes on a 4.76 mm diamond | Cal Test CT3151V1 (D063); footprint drawn from the maker's drawing, `lib/nibble.pretty` | It stands on four solder joints without the panel its drawing has in front of it |

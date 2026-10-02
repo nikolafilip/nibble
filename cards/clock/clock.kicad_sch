@@ -14288,7 +14288,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Potentiometer_THT:Potentiometer_Alpha_RD901F-40-00D_Single_Vertical"
+		(property "Footprint" "nibble:Potentiometer_Bourns_PTV09A-4_Single_Vertical"
 			(at 60.96 477.52 0)
 			(hide yes)
 			(show_name no)

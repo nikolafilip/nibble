@@ -356,6 +356,11 @@ class DenseWriter(Writer):
 def project_file(name):
     return '{\n  "board": {"design_settings": {"defaults": {}, "rules": {}}},\n  "meta": {"filename": "%s.kicad_pro", "version": 3},\n  "schematic": {"drawing": {}, "legacy_lib_dir": "", "legacy_lib_list": []},\n  "sheets": [],\n  "text_variables": {}\n}\n' % name
 
+FP_LIB_TABLE='(fp_lib_table\n\t(version 7)\n\t(lib (name "nibble") (type "KiCad") (uri "${KIPRJMOD}/../../lib/nibble.pretty") (options "") (descr "Nibble\'s own footprints, drawn from makers\' drawings"))\n)\n'
+def write_fp_lib_table(outdir):
+    """The project's own table: KiCad and kicad-cli find the footprints of lib/nibble.pretty (nibble:...) by it."""
+    open(os.path.join(outdir,'fp-lib-table'),'w').write(FP_LIB_TABLE)
+
 def write_project(outdir,name):
     """Create <name>.kicad_pro if the card has none.  An existing one is left alone: pcb.py writes the board's design rules into it
     after the route, and a schematic rebuild that overwrote it would leave kicad-cli judging the board by KiCad's 0.2 mm default."""

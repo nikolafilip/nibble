@@ -135,6 +135,6 @@ def main():
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
     ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(frame.CARD,frame.CARD),extra=dict(silk_big=[("NIBBLE  BUS HUB",34.0,76.0,1.5)],hide_refs=['R','D','C','J','TP','F','Q'],rules=dict(track=0.2,clearance=0.15),holes=frame.HOLES,no_pour=True,router=dict(jar='freerouting-2.4.1.jar')))      # freerouting 1.9 drops an M5 via inside the 0.35 mm-pitch bundle of the 64 bus lines (two shorts, both runs); 2.4.1 (Java 25, NIBBLE_JAVA) routes it clean
     ksch.write_project(OUT,PROJECT)
-    open(os.path.join(OUT,'fp-lib-table'),'w').write('(fp_lib_table\n\t(version 7)\n\t(lib (name "nibble") (type "KiCad") (uri "${KIPRJMOD}/../../lib/nibble.pretty") (options "") (descr "Nibble\'s own footprints, drawn from makers\' drawings"))\n)\n')      # the project's own table: KiCad and kicad-cli find the sockets' footprint
+    ksch.write_fp_lib_table(OUT)      # the sockets' footprint is the repository's own
     print("wrote",OUT)
 if __name__=='__main__': main()

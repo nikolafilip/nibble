@@ -29,6 +29,7 @@
 | `gate26_nop.md` | Gate 26 (D064, `e65ca46`), nop, 2026-10-02: the nop program to its halt at LO and HI. 2 of 2 pass |
 | `gate26_500pF_HI.md` | Gate 26 (D064, `e65ca46`), 500 pF cables at HI, 2026-10-02/03: the six corner programs to their halt at HI with 500 pF on every bus line (`CABLE_PF=500`, the ribbon's worst case before the 800 pF stage). 6 of 6 pass, 0 mismatches |
 | `gate26_vdd45.md` | Gate 26 (D064, `e65ca46`), 4.5 V supply, 2026-10-03: the six corner programs to their halt at TYP and HI with the rail at 4.5 V (`VDD=4.5`). 12 of 12 pass, 0 mismatches |
+| `gate26_vdd425.md` | Gate 26 (D064, `e65ca46`), 4.25 V supply, 2026-10-03: fib, logic and call to their halt at HI with the rail at 4.25 V (`VDD=4.25`). 3 of 3 pass, 0 mismatches |
 | `rst_neighbour.md` | The reset line beside BUS1#, 2026-09-28 (D062): with the bus header on the back RST has one ground neighbour on the ribbon, not two; the bump it picks up when BUS1# is released, with every gate the routed boards hang on the two lines, against the coupling and a capacitor at the hub (written by `tb_rst_neighbour.py`) |
 | `crowbar.md` | The hub's crowbar and reverse diode, 2026-09-28 (D061): the models against their datasheets, which zener and gate resistor, and the rail in every way the voltage can arrive (turned up, switched on at 30 V, plugged in live, leads crossed), with the heat in the SCR (written by `tb_crowbar.py`). The parts are not on the hub yet |
 

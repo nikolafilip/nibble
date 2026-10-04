@@ -45,8 +45,8 @@ order: six programs at TYP and HI. Paid 2026-09-30: `sim/results/gate26_cross.md
 12 of 12 pass (with the clock card's hold-off, D064, in the deck; the card
 with it on carries the same deck). The hold-off itself then went through the
 whole gate again (gate 26, 2026-09-30 to 10-04): smoke, all programs at TYP,
-the corners, nop, 500 pF at HI, 4.5 V, 4.25 V, MIX seeds 3 and 4; 85 of 85
-pass, `sim/results/gate26_*.md`.
+the corners, nop, 500 pF at HI, 4.5 V, 4.25 V, MIX seeds 3 and 4, then 800 pF
+at HI for the panel's ribbon; 91 of 91 pass, `sim/results/gate26_*.md`.
 
 ## 2. Findings
 
@@ -100,7 +100,8 @@ ordered first. The counts are the whole machine's: 52 boards, 7129 parts.
 
 (2026-10-01: settled in `docs/mounting.md` and drawn in `docs/mounting/panel.html`,
 D065: the two-sided panel, the slot plan, the routes and lengths of every
-ribbon. Open: the standoff length, measured on the pilot, and the 800 pF run.
+ribbon. The 800 pF run is paid, 2026-10-04 (`sim/results/gate26_800pF_HI.md`,
+6 of 6). Open: the standoff length, measured on the pilot.
 The points below are kept as the reasoning.)
 
 An IDC socket lies across its ribbon. Every header on every board lies

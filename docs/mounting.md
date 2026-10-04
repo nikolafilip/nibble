@@ -129,9 +129,9 @@ are torn off the rest along a groove. The bus sees it all: a line's
 capacitance is the whole 7.4 m. Flat ribbon is about 50 pF per metre
 between neighbouring conductors and the bus pinout puts signal beside
 signal, so a line sees 400 to 800 pF depending on what its neighbours
-are doing. The machine deck is proven at 300 and 500 pF per line
-(`cards.md` step 9); **a run at 800 pF is on the list before the ribbon
-is cut.**
+are doing. The machine deck is proven at 300, 500 and 800 pF per line
+(`cards.md` step 9; the 800 pF run: `sim/results/gate26_800pF_HI.md`,
+2026-10-04, six programs at HI, 6 of 6 pass).
 
 ### The links between neighbours
 
@@ -169,7 +169,6 @@ Their ribbon leaves downward.
   the socket sits in front of the rail: its four standoffs must be longer
   than the socket is thick. Measure the pilot's hub with a socket crimped
   on, then buy.
-- **The 800 pF run** (above).
 
 ## Parts
 

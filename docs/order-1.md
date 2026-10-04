@@ -15,7 +15,7 @@ piece of fibreglass that is built. The machine is 26 designs and 52 boards.
 |---|---|
 | Coupon, register bit 0, hub (the pilot) | Ready. `ORDER GATE: all pass` on all 26 boards at commit `3d7befc` (2026-10-01): the headers on the back, the hub with its sockets, its crowbar (D061, D063) and the empty C-RST spot, the front silk with the pin numbers only (the logo is on the sequencer alone). Every command of section 6 ended as written |
 | Everything else | After the pilot is built and measured (D055) |
-| Cables, frame | Drawn (`docs/mounting.md`, D065, 2026-10-01). Bought after the pilot's standoff measurement and the 800 pF run |
+| Cables, frame | Drawn (`docs/mounting.md`, D065, 2026-10-01). Bought after the pilot's standoff measurement; the 800 pF run is paid (`sim/results/gate26_800pF_HI.md`, 2026-10-04) |
 
 The pilot (D055) is the coupon, register bit 0 and the hub, five of each:
 the fab, the parts and the hands are tried on three designs before thirty
@@ -196,8 +196,9 @@ Counted on the boards:
 
 The frame's parts are in `docs/mounting.md` (two-sided panel, D065).
 They are bought after the pilot's hub has been measured with a socket on
-its header (the standoff length) and the machine deck has been run at
-800 pF per bus line (the 7.4 m of ribbon may put that much on a line).
+its header (the standoff length). The machine deck has been run at
+800 pF per bus line (the 7.4 m of ribbon may put that much on a line):
+6 of 6 pass, `sim/results/gate26_800pF_HI.md`, 2026-10-04.
 
 ## 6. Before pressing order
 

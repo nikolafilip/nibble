@@ -40,7 +40,7 @@ def main():
     w.T(f"TIMING: SA -> {R_FIX} + pot -> X, {C_FAST} from X to GND; the SLOW jumper adds {C_SLOW}.  X swings only between the two trip points, about half a volt around Vth.",x-4*G,y-6*G,1.6,True)
     w.L('SA',x,y,180,'input'); w.W(x,y,x+G,y); w.at(w.R(R_FIX,x+2.5*G,y,90),40,64,270); w.W(x+4*G,y,x+5*G,y); w.L('RT',x+5*G,y,0,'output')
     xp=x+10*G; w.L('RT',xp,y-3*G,90,'input'); w.W(xp,y-3*G,xp,y-1.5*G)
-    pv=w.symbol("Device","R_Potentiometer",w.ref('RV'),R_POT,xp,y,0,('1','2','3'),"Potentiometer_THT:Potentiometer_Alpha_RD901F-40-00D_Single_Vertical",[("Description","Potentiometer",True)],sim=False)
+    pv=w.symbol("Device","R_Potentiometer",w.ref('RV'),R_POT,xp,y,0,('1','2','3'),"nibble:Potentiometer_Bourns_PTV09A-4_Single_Vertical",[("Description","Potentiometer",True)],sim=False)
     w.at(pv,62,54,0); w.label("SPEED",58,49,1.5)
     w.W(xp+1.5*G,y,xp+2*G,y); w.W(xp+2*G,y,xp+2*G,y+2*G); w.W(xp,y+1.5*G,xp,y+2*G); w.W(xp,y+2*G,xp+2*G,y+2*G); w.J(xp,y+2*G)   # wiper tied to the low end: a two-terminal variable resistor
     w.W(xp,y+2*G,xp,y+3*G); w.L('X',xp,y+3*G,270,'output')
@@ -81,7 +81,7 @@ def main():
     ksch.write_plan(w,os.path.join(OUT,f'{PROJECT}.plan.json'),(frame.CARD,frame.CARD),extra=extra)
     W=10*G+cols*w.CELL_W+30*G; H=y4+10*G
     open(os.path.join(OUT,f'{PROJECT}.kicad_sch'),'w').write(w.file(W,H))
-    ksch.write_project(OUT,PROJECT)
+    ksch.write_project(OUT,PROJECT); ksch.write_fp_lib_table(OUT)      # the pot's footprint is the repository's own
     print("wrote",OUT,"transistors",d.ntransistors(),"tiles",w.pcb_extent)
 
 if __name__=='__main__': main()

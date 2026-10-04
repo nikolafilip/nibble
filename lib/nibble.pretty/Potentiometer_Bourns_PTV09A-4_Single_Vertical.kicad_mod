@@ -1,0 +1,215 @@
+(footprint "Potentiometer_Bourns_PTV09A-4_Single_Vertical"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "9 mm potentiometer standing on the board, shaft up, Bourns PTV09A-4 (rear mount, bushingless; the -1, -5 and -6 share the holes): three pins 2.5 mm apart in 1.0 mm holes, two mounting legs 1.8 mm wide in 2.2 mm holes 8.8 mm apart and 7.0 mm behind the pins. Drawn from the maker's recommended PCB layout (horizontal/rear mount), https://www.bourns.com/docs/Product-Datasheets/ptv09.pdf. The three pins sit where the Alpha RD901F-40's do (KiCad's Potentiometer_Alpha_RD901F-40-00D_Single_Vertical), pin 1 the counter-clockwise end, so a board drawn for the Alpha takes this part with only its two leg holes changed.")
+	(tags "potentiometer vertical 9mm single Bourns PTV09A")
+	(property "Reference" "REF**"
+		(at 6.71 -4.64 180)
+		(layer "F.SilkS")
+		(uuid "6c1a6a7e-2f0f-5a3e-9d7e-4b8c1d0f2a01")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "Potentiometer_Bourns_PTV09A-4_Single_Vertical"
+		(at 7 9.9 180)
+		(layer "F.Fab")
+		(uuid "6c1a6a7e-2f0f-5a3e-9d7e-4b8c1d0f2a02")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" "https://www.bourns.com/docs/Product-Datasheets/ptv09.pdf"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "6c1a6a7e-2f0f-5a3e-9d7e-4b8c1d0f2a03")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "6c1a6a7e-2f0f-5a3e-9d7e-4b8c1d0f2a04")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start 0.89 -2.46)
+		(end 4.635 -2.46)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+	)
+	(fp_line
+		(start 0.89 -2.46)
+		(end 0.89 -1.19)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+	)
+	(fp_line
+		(start 0.89 1.18)
+		(end 0.89 1.804)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+	)
+	(fp_line
+		(start 0.89 3.196)
+		(end 0.89 4.304)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+	)
+	(fp_line
+		(start 0.89 5.696)
+		(end 0.89 7.46)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+	)
+	(fp_line
+		(start 0.89 7.46)
+		(end 4.635 7.46)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+	)
+	(fp_line
+		(start 9.365 -2.46)
+		(end 13.11 -2.46)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+	)
+	(fp_line
+		(start 13.11 -2.46)
+		(end 13.11 7.46)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+	)
+	(fp_line
+		(start 13.11 7.46)
+		(end 9.365 7.46)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+	)
+	(fp_rect
+		(start -1.15 -4.36)
+		(end 13.25 9.36)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+	)
+	(fp_rect
+		(start 1 -2.35)
+		(end 13 7.35)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+	)
+	(fp_circle
+		(center 7 2.5)
+		(end 10 2.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 2 2.5 90)
+		(layer "F.Fab")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" thru_hole rect
+		(at 0 0 90)
+		(size 1.8 1.8)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "2" thru_hole circle
+		(at 0 2.5 90)
+		(size 1.8 1.8)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "3" thru_hole circle
+		(at 0 5 90)
+		(size 1.8 1.8)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "" thru_hole circle
+		(at 7 -1.9)
+		(size 3.6 3.6)
+		(drill 2.2)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "" thru_hole circle
+		(at 7 6.9)
+		(size 3.6 3.6)
+		(drill 2.2)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(embedded_fonts no)
+)

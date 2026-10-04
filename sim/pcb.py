@@ -1,5 +1,5 @@
 """Build, route and check a board from a KiCad project + placement plan.
-Run with KiCad's python:  <kicad>/python3 pcb.py <projectdir> <name> [--no-route] [--passes N] [--silk] [--patch] [--back-header] [--dsn-only] [--ses file.ses]   (N: freerouting router and optimizer pass cap, default 300 (a dense card needs about 200 to close its last net); a board that cannot finish stops there with its unrouted nets listed; --silk only replaces the silkscreen text of a routed board from the plan; --back-header turns the bus headers of a routed board onto its back in the holes they have (D059) and mirrors their symbols on the schematic: no track moves)
+Run with KiCad's python:  <kicad>/python3 pcb.py <projectdir> <name> [--no-route] [--passes N] [--silk] [--patch] [--back-header] [--refit REF] [--dsn-only] [--ses file.ses]   (N: freerouting router and optimizer pass cap, default 300 (a dense card needs about 200 to close its last net); a board that cannot finish stops there with its unrouted nets listed; --silk only replaces the silkscreen text of a routed board from the plan; --back-header turns the bus headers of a routed board onto its back in the holes they have (D059) and mirrors their symbols on the schematic: no track moves)
 Reads <name>.kicad_sch (via kicad-cli netlist), <name>.plan.json; writes <name>.kicad_pcb, fab/ outputs.
 """
 import glob, sys, os, json, subprocess, re
@@ -308,6 +308,35 @@ def back_headers(projdir,name):
     pcbnew.ZONE_FILLER(board).Fill(board.Zones()); pcbnew.SaveBoard(pcb,board)
     print(f'   {name}: {", ".join(moved)} on the back, {k} symbol{"s" if k!=1 else ""} mirrored'); return resilk(projdir,name)
 
+def refit(projdir,name,ref):
+    """--refit REF: a placed part of a routed board takes the footprint its schematic now names, in its holes: the new footprint
+    goes where the old one was (same position, rotation and side), every numbered pad must land where the old pad of that
+    number was and keeps its net, so no track, via or rail changes; only the part's unnumbered holes (mounting legs), outline
+    and silk are the new footprint's. For a part another maker's drawing fits the same pins (the clock's pot, Alpha to Bourns)."""
+    pcb=os.path.join(projdir,f'{name}.kicad_pcb'); sch=os.path.join(projdir,f'{name}.kicad_sch')
+    s=open(sch).read(); i=s.find(f'(property "Reference" "{ref}"')
+    if i<0: raise SystemExit(f'{name}: no {ref} on the schematic')
+    fp=re.search(r'\(property "Footprint" "([^"]+)"',s[i:]).group(1); lib,fn=fp.split(':')
+    new=pcbnew.FootprintLoad(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','lib','nibble.pretty') if lib=='nibble' else f'{F}/{lib}.pretty',fn)
+    if new is None: raise SystemExit(f'{name} {ref}: no footprint {fp}')
+    board=pcbnew.LoadBoard(pcb); old=board.FindFootprintByReference(ref)
+    if old is None: raise SystemExit(f'{name}: no {ref} on the board')
+    if str(old.GetFPID().GetLibItemName())==fn: print(f'   {name} {ref} already has {fp}'); return pcb
+    new.SetReference(ref); new.SetValue(old.GetValue()); new.Reference().SetVisible(old.Reference().IsVisible())
+    new.SetPosition(old.GetPosition()); new.SetOrientation(old.GetOrientation())
+    if old.IsFlipped(): new.Flip(old.GetPosition(),pcbnew.FLIP_DIRECTION_TOP_BOTTOM)
+    had={p.GetNumber():(p.GetPosition().x,p.GetPosition().y,p.GetNetname()) for p in old.Pads() if p.GetNumber()}
+    for p in new.Pads():
+        if not p.GetNumber(): continue        # a mounting leg: a hole on no net, wherever the new drawing puts it
+        if p.GetNumber() not in had: raise SystemExit(f'{name} {ref} pad {p.GetNumber()}: the old footprint had no such pad')
+        x,y,net=had.pop(p.GetNumber())
+        if (p.GetPosition().x,p.GetPosition().y)!=(x,y): raise SystemExit(f'{name} {ref} pad {p.GetNumber()}: would move from ({x/1e6:.3f},{y/1e6:.3f}) to ({p.GetPosition().x/1e6:.3f},{p.GetPosition().y/1e6:.3f})')
+        if net: p.SetNet(board.FindNet(net))
+    if had: raise SystemExit(f'{name} {ref}: pads {sorted(had)} of the old footprint have no new pad')
+    board.Remove(old); board.Add(new)
+    pcbnew.ZONE_FILLER(board).Fill(board.Zones()); pcbnew.SaveBoard(pcb,board)
+    print(f'   {name} {ref}: {fp} in the old pins\' holes'); return pcb
+
 def add_silk(board,plan):
     """Board-level silkscreen text from the plan (labels, then the big board name). A label is [text, x, y, size] and may go
     on with an angle and a face, 'B' for the back (mirrored, as the back is read)."""
@@ -594,5 +623,5 @@ if __name__=='__main__':
     if '--fit-silk' in sys.argv: fit_silk(projdir,name); sys.exit(0)                               # (what resilk and build run at their end, in a process of its own)
     if '--dsn-only' in sys.argv: build(projdir,name,passes=passes,dsn_only=True); sys.exit(0)     # write the filtered DSN the router would get, and stop
     ses_file=sys.argv[sys.argv.index('--ses')+1] if '--ses' in sys.argv else None                 # import a session routed by hand from that DSN instead of running the router
-    pcb=back_headers(projdir,name) if '--back-header' in sys.argv else resilk(projdir,name) if '--silk' in sys.argv else repatch(projdir,name) if '--patch' in sys.argv else build(projdir,name,route='--no-route' not in sys.argv,passes=passes,ses_file=ses_file)
+    pcb=refit(projdir,name,sys.argv[sys.argv.index('--refit')+1]) if '--refit' in sys.argv else back_headers(projdir,name) if '--back-header' in sys.argv else resilk(projdir,name) if '--silk' in sys.argv else repatch(projdir,name) if '--patch' in sys.argv else build(projdir,name,route='--no-route' not in sys.argv,passes=passes,ses_file=ses_file)
     drc(pcb); outputs(pcb,name)

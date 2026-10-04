@@ -155,7 +155,7 @@ raise the register's control lines by hand (`bring-up.md`, top).
 | DIP switch, 4-way | 1 | 2 | one over |
 | DIP switch, 1-way | 1 | 2 | one over |
 | Push button, 6 mm tactile | 2 | 3 | one over |
-| Potentiometer 1 M linear, 9 mm upright (Alpha RD901F-40) | 1 | 2 | one over |
+| Potentiometer 1 M linear, 9 mm upright (Bourns PTV09A-4) | 1 | 2 | one over |
 | Polyfuse 1.5 A (Bel 0ZRE0150FF) | 1 | 2 | one over |
 | Banana socket, 4 mm, for the board, upright: Cal Test CT3151V1-2 (red) and CT3151V1-0 (black), one of each | 2 | 2 | none over: two are fitted |
 | Jumper cap, 2.54 mm (one on every 1x3 and 1x2 pin header, the coupon's supply inlet excepted) | 145 | 153 | a twentieth over, two at the least |
@@ -176,7 +176,7 @@ What to look for when buying:
 | Ceramic capacitors | 2.5 mm between the leads | Not the 5 mm kind |
 | Box headers | Shrouded, straight, 2.54 mm (2x32: XFCN BH254V-64P, LCSC C48603668, or any) | They are soldered on the **back** of the boards (D059) |
 | DIP switches | Slide type, 7.62 mm between the rows | |
-| Potentiometer | Alpha RD901F-40, 1 M linear | The footprint is this family's: two lugs 9.6 mm apart, 7.5 mm from the pins |
+| Potentiometer | Bourns PTV09A-4020F-B105 (1 M linear, 20 mm shaft) | The footprint is this family's: two 2.2 mm leg holes 8.8 mm apart, 7.0 mm from the pins; the PTV09A-1, -5 and -6 share them |
 | Polyfuse | Bel 0ZRE0150FF | The footprint is this part's kinked leads: 10.2 mm with a 1.9 mm offset |
 | LEDs | 3 mm, any colour; 2 mA types are bright behind 1 k | |
 | Banana sockets | Cal Test CT3151V1-2 (red) and CT3151V1-0 (black), the V1 (upright, 19 mm) | The footprint is this part's four pins. The plain CT3151 lies on its side and does not fit |

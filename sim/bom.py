@@ -28,7 +28,7 @@ NAMES=[('TO-92','2N7000 transistor, TO-92','semi'),('TO-220','SCR BT151-500R, TO
        ('IDC-Header_2x32','Box header 2x32, 2.54 mm (the bus)','conn'),('IDC-Header_2x06','Box header 2x6, 2.54 mm (link)','conn'),('IDC-Header_2x03','Box header 2x3, 2.54 mm (link)','conn'),
        ('PinHeader_1x03','Pin header 1x3, 2.54 mm (address jumper)','conn'),('PinHeader_1x02','Pin header 1x2, 2.54 mm','conn'),('PinHeader_1x06','Pin header 1x6, 2.54 mm','conn'),
        ('SW_DIP_SPSTx08','DIP switch, 8-way','conn'),('SW_DIP_SPSTx04','DIP switch, 4-way','one'),('SW_DIP_SPSTx01','DIP switch, 1-way','one'),('SW_PUSH','Push button, 6 mm tactile','one'),
-       ('Potentiometer','Potentiometer 1 M linear, 9 mm upright (Alpha RD901F-40)','one'),('Fuse','Polyfuse 1.5 A (Bel 0ZRE0150FF)','one'),('TestPoint','Test loop, 1.0 mm hole','conn'),
+       ('Potentiometer','Potentiometer 1 M linear, 9 mm upright (Bourns PTV09A-4)','one'),('Fuse','Polyfuse 1.5 A (Bel 0ZRE0150FF)','one'),('TestPoint','Test loop, 1.0 mm hole','conn'),
        ('Banana_CalTest','Banana socket, 4 mm, for the board, upright: Cal Test CT3151V1-2 (red) and CT3151V1-0 (black), one of each','none2')]
 RULES={'semi':('a tenth over, to the next 100',lambda n:math.ceil(n*1.1/100)*100),'resistor':('a tenth over, to the next 100 (they come in hundreds)',lambda n:math.ceil(n*1.1/100)*100),
        'led':('a tenth over, to the next 50',lambda n:math.ceil(n*1.1/50)*50),'cap':('a tenth over, to the next 10',lambda n:math.ceil(n*1.1/10)*10),

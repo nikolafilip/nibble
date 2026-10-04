@@ -53,5 +53,5 @@ Ref,Val,Package,PosX,PosY,Rot,Side
 "R22","1Meg","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",76.000000,-86.000000,-90.000000,top
 "R23","100","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",64.000000,-86.000000,-90.000000,top
 "R24","100","R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical",33.000000,-64.000000,-90.000000,top
-"RV1","1M","Potentiometer_Alpha_RD901F-40-00D_Single_Vertical",62.000000,-54.000000,0.000000,top
+"RV1","1M","Potentiometer_Bourns_PTV09A-4_Single_Vertical",62.000000,-54.000000,0.000000,top
 "SW1","RUN","SW_DIP_SPSTx01_Slide_9.78x4.72mm_W7.62mm_P2.54mm",46.000000,-78.000000,0.000000,top

@@ -11,7 +11,8 @@ HERE=os.path.dirname(os.path.abspath(__file__)); OUT=os.path.join(HERE,'out')
 LOGS=[('starts_hold.log','starts with the hold-off',62),('gate25_cross2_hold.log','crosstalk gate with the hold-off',12),
       ('gate26_smoke.log','gate 26: smoke, 12 ticks',13),('gate26_TYP.log','gate 26: all programs at TYP',13),('gate26_corners.log','gate 26: corners LO, HI, MIX 1, MIX 2',24),
       ('gate26_nop.log','gate 26: nop at LO and HI',2),('gate26_500pF_HI.log','gate 26: 500 pF cables at HI',6),('gate26_vdd45.log','gate 26: 4.5 V supply',12),
-      ('gate26_vdd425.log','gate 26: 4.25 V supply',3),('gate26_mix34.log','gate 26: MIX 3 and 4',12),('gate26_cross.log','gate 26: crosstalk',12)]
+      ('gate26_vdd425.log','gate 26: 4.25 V supply',3),('gate26_mix34.log','gate 26: MIX 3 and 4',12),('gate26_cross.log','gate 26: crosstalk',12),
+      ('gate26_800pF_HI.log','gate 26: 800 pF cables at HI',6)]
 sh=lambda c: subprocess.run(c,shell=True,capture_output=True,text=True).stdout
 
 def main():

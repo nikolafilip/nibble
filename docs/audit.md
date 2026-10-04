@@ -43,7 +43,10 @@ the ribbon then. The neighbours are other lines now (RST and BUS1#, BUS1#
 and BUS0#, BUS0# and BUS3#, ...), so that stage is owed again on the new
 order: six programs at TYP and HI. Paid 2026-09-30: `sim/results/gate26_cross.md`,
 12 of 12 pass (with the clock card's hold-off, D064, in the deck; the card
-with it on carries the same deck).
+with it on carries the same deck). The hold-off itself then went through the
+whole gate again (gate 26, 2026-09-30 to 10-04): smoke, all programs at TYP,
+the corners, nop, 500 pF at HI, 4.5 V, 4.25 V, MIX seeds 3 and 4; 85 of 85
+pass, `sim/results/gate26_*.md`.
 
 ## 2. Findings
 
